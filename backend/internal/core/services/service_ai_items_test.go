@@ -54,7 +54,7 @@ func TestAIItemServiceReanalyzeReturnsUnpersistedPreview(t *testing.T) {
 	svc := NewAIItemService(tRepos, NewAICaptureService(config.AIConfig{
 		Enabled: true, BaseURL: server.URL, Model: "qwen-model", Timeout: time.Second, MaxPhotos: 8, MaxItems: 25,
 	}))
-	preview, err := svc.Reanalyze(tCtx, item.ID, "Focus on the label")
+	preview, err := svc.Reanalyze(tCtx, item.ID, "")
 	require.NoError(t, err)
 	assert.Equal(t, AICaptureProviderDefault, preview.Provider)
 	assert.Equal(t, 1, preview.PhotoCount)
@@ -68,6 +68,10 @@ func TestAIItemServiceReanalyzeReturnsUnpersistedPreview(t *testing.T) {
 	assert.Equal(t, "Old item name", stored.Name, "preview must not persist Qwen's suggestion")
 	requestJSON, err := json.Marshal(got.Messages[1].Content)
 	require.NoError(t, err)
-	assert.Contains(t, string(requestJSON), "Focus on the label")
+	assert.Contains(t, string(requestJSON), "REVIEWED ITEM")
+	assert.NotContains(t, string(requestJSON), "Old item name")
+	assert.NotContains(t, string(requestJSON), "Current description")
+	assert.NotContains(t, string(requestJSON), "This is a correction request")
+	assert.NotContains(t, string(requestJSON), "User instruction")
 	assert.Contains(t, string(requestJSON), "data:image/png;base64,")
 }

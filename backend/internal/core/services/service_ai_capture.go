@@ -464,7 +464,7 @@ func buildAICapturePrompt(input AICaptureRequest) (string, error) {
 		b.WriteString(". If the views conflict, still return one item and set needsReview with a concise reason.")
 	}
 	if input.SingleItem {
-		b.WriteString("\nREVIEWED ITEM: The reviewer assigned every attached photo to one physical inventory item. Return exactly one item, use every photo as evidence, do not treat the number of photos as quantity, and preserve existing fields unless the evidence or user instruction supports a change.")
+		b.WriteString("\nREVIEWED ITEM: The reviewer assigned every attached photo to one physical inventory item. Return exactly one item, use every photo as evidence, and do not treat the number of photos as quantity.")
 	}
 	if input.Draft != nil {
 		draftJSON, err := json.Marshal(input.Draft)

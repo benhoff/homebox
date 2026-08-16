@@ -122,21 +122,8 @@ func (svc *AIItemService) Reanalyze(ctx Context, id uuid.UUID, instruction strin
 	if err != nil {
 		return AIItemReanalysisOut{}, err
 	}
-	tagIDs := make([]string, 0, len(item.Tags))
-	for _, tag := range item.Tags {
-		tagIDs = append(tagIDs, tag.ID.String())
-	}
-	photoIndexes := make([]int, len(photos))
-	for index := range photos {
-		photoIndexes[index] = index
-	}
-	current := AICaptureDraft{Items: []AICaptureItem{{
-		ClientID: id.String(), Name: item.Name, Quantity: item.Quantity, Description: item.Description,
-		Manufacturer: item.Manufacturer, ModelNumber: item.ModelNumber, EntityTypeID: item.EntityType.ID.String(),
-		TagIDs: tagIDs, PhotoIndexes: photoIndexes, MoveDisposition: AICaptureMoveDispositionUndecided,
-	}}, Warnings: []string{}}
 	result, err := svc.ai.Analyze(ctx, AICaptureRequest{
-		Photos: photos, Context: metadata, Draft: &current, SingleItem: true,
+		Photos: photos, Context: metadata, SingleItem: true,
 		Instruction: strings.TrimSpace(instruction),
 	})
 	if err != nil {

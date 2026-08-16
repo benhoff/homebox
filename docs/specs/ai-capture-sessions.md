@@ -229,6 +229,8 @@ On submission, HomeBox stores the plan on the created inventory item as text cus
 
 The item detail overflow menu and item editor expose **Re-analyze with Qwen**. The editor sends the item's local photo attachments, primary photo first, to the configured primary vision provider. An optional instruction can direct attention to a label, model number, or other visible evidence.
 
+Existing item values are not included in the provider request. Reanalysis uses the same base visual-analysis prompt as initial capture, plus a one-item constraint, so an incorrect earlier suggestion cannot anchor the new result. The item's location is retained as categorization context, and the collection's item types and tags remain the allowed metadata options.
+
 The response is a preview limited to name, quantity, description, manufacturer, model number, item type, and existing tags. The user compares current and suggested values and may apply one changed field or all changed fields to the editor. Applying a suggestion does not call the item update API; the ordinary **Save** action remains the only persistence boundary. Serial numbers, purchase and sale data, warranty data, insurance, notes, custom fields, attachments, location, and move-planning fields are never changed by reanalysis.
 
 All supported attached views are considered in primary-first order, up to `HBOX_AI_MAX_PHOTOS`. Unsupported or over-limit photos produce visible warnings. Existing-item reanalysis is synchronous preview work rather than a durable capture-session batch; if Qwen is unavailable, the item remains unchanged and the user can retry from the editor.
