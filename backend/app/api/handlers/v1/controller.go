@@ -130,6 +130,7 @@ type (
 		LabelPrinting     bool            `json:"labelPrinting"`
 		OIDC              OIDCStatus      `json:"oidc"`
 		Telemetry         TelemetryStatus `json:"telemetry"`
+		AI                AIStatus        `json:"ai"`
 	}
 
 	OIDCStatus struct {
@@ -141,6 +142,12 @@ type (
 
 	TelemetryStatus struct {
 		Enabled bool `json:"enabled"`
+	}
+
+	AIStatus struct {
+		Enabled   bool   `json:"enabled"`
+		Model     string `json:"model,omitempty"`
+		MaxPhotos int    `json:"maxPhotos"`
 	}
 )
 
@@ -200,6 +207,11 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 			},
 			Telemetry: TelemetryStatus{
 				Enabled: ctrl.config.Otel.Enabled,
+			},
+			AI: AIStatus{
+				Enabled:   ctrl.svc.AICapture.IsEnabled(),
+				Model:     ctrl.svc.AICapture.Model(),
+				MaxPhotos: ctrl.svc.AICapture.MaxPhotos(),
 			},
 		})
 	}

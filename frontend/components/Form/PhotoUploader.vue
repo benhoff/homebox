@@ -1,7 +1,7 @@
 <template>
   <div class="w-full">
     <div class="flex w-full flex-col gap-1.5">
-      <Label for="photo-uploader" class="flex w-full px-1">
+      <Label :for="inputId" class="flex w-full px-1">
         {{ label }}
       </Label>
 
@@ -10,12 +10,13 @@
           {{ buttonLabel }}
         </Button>
         <Input
-          id="photo-uploader"
+          :id="inputId"
           ref="fileInput"
           class="absolute left-0 top-0 size-full cursor-pointer opacity-0"
           type="file"
           accept="image/png,image/jpeg,image/gif,image/avif,image/webp,android/force-camera-workaround"
-          multiple
+          :multiple="multiple"
+          :capture="capture"
           @change="onFilesSelected"
         />
       </div>
@@ -36,11 +37,15 @@
       label?: string;
       buttonLabel?: string;
       existingCount?: number;
+      multiple?: boolean;
+      capture?: "environment" | "user";
     }>(),
     {
       label: undefined,
       buttonLabel: undefined,
       existingCount: 0,
+      multiple: true,
+      capture: undefined,
     }
   );
 
@@ -50,6 +55,7 @@
 
   const { t } = useI18n();
   const fileInput = ref<HTMLInputElement | null>(null);
+  const inputId = useId();
 
   const label = computed(() => props.label || t("components.entity.create_modal.item_photo"));
   const buttonLabel = computed(() => props.buttonLabel || t("components.entity.create_modal.upload_photos"));

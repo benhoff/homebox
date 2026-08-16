@@ -1,4 +1,73 @@
 {
+    "ai_capture": {
+        "analysis_complete": "Draft ready for review.",
+        "continue": "Continue",
+        "correction_applied": "AI correction applied. Review the changes before submitting.",
+        "disabled_help": "AI capture is not enabled on this HomeBox server. An administrator must configure an OpenAI-compatible vision provider.",
+        "done": {
+            "capture_more": "Capture more items",
+            "description": "Created {count} items in {location}, including their selected photos.",
+            "title": "Inventory updated",
+            "view_location": "View location"
+        },
+        "errors": {
+            "analysis_failed": "The vision provider could not analyze these photos. Check the photos and try again.",
+            "disabled": "AI capture is not enabled on this server.",
+            "failed_items": "These items still need attention: {names}. Retrying will continue without duplicating items already created.",
+            "items_required": "Add at least one item before submitting.",
+            "location_required": "Select a location first.",
+            "partial_submit": "Some items or photos could not be saved. You can safely retry.",
+            "photos_required": "Add at least one photo first.",
+            "review_required": "Every item needs a name, positive quantity, and item type.",
+            "rotate": "That photo could not be rotated.",
+            "too_many_photos": "You can analyze up to {count} photos at once. Extra photos were not added."
+        },
+        "location": {
+            "description": "Search, browse the location tree, or scan a QR label.",
+            "title": "Where do these items belong?"
+        },
+        "manual_item": "Added manually",
+        "photos": {
+            "analyze": "Detect items",
+            "analyzing": "Detecting items…",
+            "description": "Add clear views of the items. You can use up to {count} photos in one capture.",
+            "empty": "Take a photo or choose images to begin.",
+            "privacy": "Photos are sent to the vision provider configured by your HomeBox administrator. Nothing is added to inventory until you review and submit.",
+            "rotate": "Rotate photo",
+            "take": "Open camera",
+            "take_label": "Take a photo",
+            "title": "Capture photos",
+            "upload": "Choose photos",
+            "upload_label": "Upload existing photos"
+        },
+        "progress": "AI capture progress",
+        "review": {
+            "add_item": "Add missing item",
+            "ask_ai": "Ask AI",
+            "check_item": "Please check this suggestion.",
+            "correction_placeholder": "Example: The second item is a 2-pack, and the brand is Bosch.",
+            "description": "AI suggestions are only a draft. Correct names, quantities, metadata, tags, and photo assignments.",
+            "description_label": "Description",
+            "manufacturer": "Manufacturer",
+            "model": "Model number",
+            "photos_button": "Photos",
+            "photos_for_item": "Photos attached to this item",
+            "retry": "Retry unfinished items",
+            "submit": "Create {count} items",
+            "title": "Review before creating",
+            "undo": "Undo AI correction",
+            "unnamed": "Unnamed item"
+        },
+        "steps": {
+            "done": "Done",
+            "location": "Location",
+            "photos": "Photos",
+            "review": "Review"
+        },
+        "submit_complete": "Created {count} inventory items.",
+        "subtitle": "Photograph a group of items, let vision AI draft the details, then approve every change.",
+        "title": "AI inventory capture"
+    },
     "collection": {
         "copy_invite": "Copy Invite Link",
         "create_invite": "Create Invite",
@@ -768,6 +837,7 @@
     },
     "menu": {
         "collection": "Collection",
+        "ai_capture": "AI capture",
         "create_item": "Item / Asset",
         "create_location": "Location",
         "create_tag": "Tag",

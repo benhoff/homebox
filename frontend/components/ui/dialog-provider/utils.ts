@@ -65,6 +65,7 @@ export type DialogParamsMap = {
   };
   [DialogID.CreateEntity]: { baseType: "item"; product?: BarcodeProduct; subItem?: true } | { baseType: "location" };
   [DialogID.ProductImport]?: { barcode?: string };
+  [DialogID.Scanner]?: { mode?: "navigate" | "select-location" };
   [DialogID.EditMaintenance]:
     | { type: "create"; itemId: string | string[] }
     | { type: "update"; maintenanceEntry: MaintenanceEntry | MaintenanceEntryWithDetails }
@@ -88,6 +89,7 @@ export type DialogResultMap = {
   [DialogID.ItemChangeDetails]?: boolean;
   [DialogID.WipeInventory]?: { wipeTags: boolean; wipeLocations: boolean; wipeMaintenance: boolean };
   [DialogID.CreateGroupInvite]?: GroupInvitation;
+  [DialogID.Scanner]?: { path: string };
 };
 
 /** Helpers to split IDs by requirement */

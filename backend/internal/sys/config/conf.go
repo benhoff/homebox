@@ -62,6 +62,30 @@ type Config struct {
 	Otel       OTelConfig     `yaml:"otel"`
 	Auth       AuthConfig     `yaml:"auth"`
 	Notifier   NotifierConf   `yaml:"notifier"`
+	AI         AIConfig       `yaml:"ai"`
+}
+
+// AIConfig controls the optional OpenAI-compatible vision integration used by
+// the assisted inventory capture flow. BaseURL may point at OpenAI, LiteLLM,
+// llama.cpp, or another server implementing chat completions.
+type AIConfig struct {
+	Enabled         bool          `yaml:"enabled"          conf:"default:false"`
+	BaseURL         string        `yaml:"base_url"         conf:"default:https://api.openai.com/v1"`
+	APIKey          string        `yaml:"api_key"          conf:"mask"`
+	Model           string        `yaml:"model"            conf:"default:gpt-4.1-mini"`
+	ReasoningEffort string        `yaml:"reasoning_effort"`
+	Timeout         time.Duration `yaml:"timeout"          conf:"default:2m"`
+	MaxPhotos       int           `yaml:"max_photos"       conf:"default:8"`
+	MaxItems        int           `yaml:"max_items"        conf:"default:25"`
+}
+
+func (c AIConfig) MarshalJSON() ([]byte, error) {
+	type alias AIConfig
+	a := alias(c)
+	if a.APIKey != "" {
+		a.APIKey = redactedValue
+	}
+	return json.Marshal(a)
 }
 
 type Options struct {

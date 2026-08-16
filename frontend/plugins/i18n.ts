@@ -2,24 +2,13 @@
 import type { CompileError, MessageContext } from "vue-i18n";
 import { createI18n } from "vue-i18n";
 import { IntlMessageFormat } from "intl-messageformat";
+import { matchPreferredLocale } from "~/lib/locale";
 
 export default defineNuxtPlugin(({ vueApp }) => {
   function checkDefaultLanguage() {
-    let matched = null;
     const languages = Object.getOwnPropertyNames(messages());
-    const matching = navigator.languages.filter(lang => languages.some(l => l.toLowerCase() === lang.toLowerCase()));
-    if (matching.length > 0) {
-      matched = matching[0];
-    }
-    if (!matched) {
-      languages.forEach(lang => {
-        const languagePartials = navigator.language.split("-")[0];
-        if (lang.toLowerCase() === languagePartials) {
-          matched = lang;
-        }
-      });
-    }
-    return matched;
+    const preferredLanguages = navigator.languages?.length ? [...navigator.languages] : [navigator.language];
+    return matchPreferredLocale(languages, preferredLanguages);
   }
   const preferences = useViewPreferences();
   const i18n = createI18n({

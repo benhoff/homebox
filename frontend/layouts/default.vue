@@ -253,6 +253,7 @@
   import MdiLogout from "~icons/mdi/logout";
   import MdiFileDocumentMultiple from "~icons/mdi/file-document-multiple";
   import MdiChevronRight from "~icons/mdi/chevron-right";
+  import MdiCameraPlus from "~icons/mdi/camera-plus";
 
   import {
     Sidebar,
@@ -411,6 +412,13 @@
       active: computed(() => route.path === "/locations"),
       name: computed(() => t("menu.locations")),
       to: "/locations",
+    },
+    {
+      icon: MdiCameraPlus,
+      id: 8,
+      active: computed(() => route.path === "/ai-capture"),
+      name: computed(() => t("menu.ai_capture")),
+      to: "/ai-capture",
     },
     {
       icon: MdiTagMultiple,

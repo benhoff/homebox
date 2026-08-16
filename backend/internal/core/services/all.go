@@ -16,6 +16,7 @@ type AllServices struct {
 	Entities          *EntityService
 	BackgroundService *BackgroundService
 	Exports           *ExportService
+	AICapture         *AICaptureService
 	Currencies        *currencies.CurrencyRegistry
 }
 
@@ -31,6 +32,7 @@ type options struct {
 	pubSubConn           string
 	dialect              string
 	mailer               *mailer.Mailer
+	aiConfig             config.AIConfig
 }
 
 func WithAutoIncrementAssetID(v bool) func(*options) {
@@ -71,6 +73,12 @@ func WithExportPlumbing(bus *eventbus.EventBus, db *ent.Client, storage config.S
 func WithMailer(m *mailer.Mailer) func(*options) {
 	return func(o *options) {
 		o.mailer = m
+	}
+}
+
+func WithAIConfig(v config.AIConfig) func(*options) {
+	return func(o *options) {
+		o.aiConfig = v
 	}
 }
 
@@ -126,6 +134,7 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 			pubSubConn: options.pubSubConn,
 			dialect:    options.dialect,
 		},
+		AICapture:  NewAICaptureService(options.aiConfig),
 		Currencies: currencies.NewCurrencyService(options.currencies),
 	}
 }

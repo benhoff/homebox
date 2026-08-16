@@ -9,7 +9,9 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -244,6 +246,9 @@ func (r *AttachmentRepo) fullPath(relativePath string) string {
 	// Normalize path separators to forward slashes for blob storage
 	// The blob library expects forward slashes in keys regardless of OS
 	normalizedRelativePath := normalizePath(relativePath)
+	if _, ok := r.fileBucketRootedAtPrefix(); ok {
+		return normalizedRelativePath
+	}
 
 	// Always use forward slashes when joining paths for blob storage
 	if r.storage.PrefixPath == "" {
@@ -262,7 +267,30 @@ func (r *AttachmentRepo) GetFullPath(relativePath string) string {
 	return r.fullPath(relativePath)
 }
 
+// fileBucketRootedAtPrefix handles the production container's file-storage
+// layout. Its connection string points at the filesystem root and PrefixPath
+// selects /data. fileblob rejects every non-empty key when its bucket is rooted
+// at "/", so open /data as the bucket and keep blob keys relative to it.
+func (r *AttachmentRepo) fileBucketRootedAtPrefix() (string, bool) {
+	prefix := normalizePath(r.storage.PrefixPath)
+	if prefix == "" {
+		return "", false
+	}
+
+	u, err := url.Parse(r.storage.ConnString)
+	if err != nil || u.Scheme != "file" || u.Host != "" || path.Clean(u.Path) != "/" {
+		return "", false
+	}
+
+	u.Path = path.Join("/", prefix)
+	return u.String(), true
+}
+
 func (r *AttachmentRepo) GetConnString() string {
+	if connString, ok := r.fileBucketRootedAtPrefix(); ok {
+		return connString
+	}
+
 	// Handle the default case for file storage
 	// which is file:///./ meaning relative to the current working directory
 	if strings.HasPrefix(r.storage.ConnString, "file:///./") {

@@ -1311,6 +1311,25 @@ export interface ValueOverTimeEntry {
   value: number;
 }
 
+export interface AICaptureDraft {
+  items: AICaptureItem[];
+  warnings: string[];
+}
+
+export interface AICaptureItem {
+  clientId: string;
+  description: string;
+  entityTypeId: string;
+  manufacturer: string;
+  modelNumber: string;
+  name: string;
+  needsReview: boolean;
+  photoIndexes: number[];
+  quantity: number;
+  reviewReason: string;
+  tagIds: string[];
+}
+
 export interface Latest {
   date: Date | string;
   version: string;
@@ -1323,7 +1342,14 @@ export interface UserRegistration {
   token: string;
 }
 
+export interface AIStatus {
+  enabled: boolean;
+  maxPhotos: number;
+  model: string;
+}
+
 export interface APISummary {
+  ai: AIStatus;
   allowRegistration: boolean;
   build: Build;
   demo: boolean;

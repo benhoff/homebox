@@ -1,0 +1,92 @@
+package services
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
+)
+
+func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
+	var got chatCompletionRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1/chat/completions", r.URL.Path)
+		assert.Equal(t, "Bearer secret", r.Header.Get("Authorization"))
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Cordless drill\",\"quantity\":1,\"description\":\"Blue drill\",\"manufacturer\":\"Makita\",\"modelNumber\":\"\",\"entityTypeId\":\"type-1\",\"tagIds\":[\"tag-1\",\"made-up\"],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled:         true,
+		BaseURL:         server.URL + "/v1",
+		APIKey:          "secret",
+		Model:           "vision-model",
+		ReasoningEffort: "none",
+		Timeout:         time.Second,
+		MaxPhotos:       4,
+		MaxItems:        5,
+	})
+
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+		Context: AICaptureContext{
+			EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}},
+			Tags:        []AICaptureOption{{ID: "tag-1", Name: "Tools"}},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, draft.Items, 1)
+	assert.Equal(t, "Cordless drill", draft.Items[0].Name)
+	assert.Equal(t, []string{"tag-1"}, draft.Items[0].TagIDs)
+	assert.Equal(t, "vision-model", got.Model)
+	assert.Equal(t, "none", got.ReasoningEffort)
+	require.Len(t, got.Messages, 2)
+	userContent, err := json.Marshal(got.Messages[1].Content)
+	require.NoError(t, err)
+	assert.Contains(t, string(userContent), "data:image/jpeg;base64,")
+}
+
+func TestAICaptureAnalyzeSanitizesUnsafeDraft(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		content := "```json\n{\"items\":[{\"name\":\"\",\"quantity\":0,\"entityTypeId\":\"invalid\",\"tagIds\":[\"invalid\"],\"photoIndexes\":[99]}]}\n```"
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
+		})
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled:   true,
+		BaseURL:   server.URL,
+		Model:     "vision-model",
+		MaxPhotos: 2,
+		MaxItems:  5,
+	})
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos:  []AICapturePhoto{{MIMEType: "image/png", Data: []byte("photo")}},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "default-type", Name: "Item"}}},
+	})
+	require.NoError(t, err)
+	item := draft.Items[0]
+	assert.Equal(t, "Unidentified item 1", item.Name)
+	assert.Equal(t, float64(1), item.Quantity)
+	assert.Equal(t, "default-type", item.EntityTypeID)
+	assert.Equal(t, []int{0}, item.PhotoIndexes)
+	assert.True(t, item.NeedsReview)
+	assert.NotEmpty(t, item.ReviewReason)
+}
+
+func TestAICaptureAnalyzeDisabled(t *testing.T) {
+	svc := NewAICaptureService(config.AIConfig{})
+	_, err := svc.Analyze(context.Background(), AICaptureRequest{})
+	assert.ErrorIs(t, err, ErrAIDisabled)
+}

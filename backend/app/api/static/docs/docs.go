@@ -178,6 +178,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/ai/capture/analyze": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture"
+                ],
+                "summary": "Analyze inventory photos with an OpenAI-compatible vision model",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Inventory photos (repeat field for multiple photos)",
+                        "name": "photos",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Correction request",
+                        "name": "instruction",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Current AI draft JSON",
+                        "name": "draft",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureDraft"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/validate.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/validate.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/assets/{id}": {
             "get": {
                 "security": [
@@ -6277,6 +6337,67 @@ const docTemplate = `{
                 }
             }
         },
+        "services.AICaptureDraft": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureItem"
+                    }
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "services.AICaptureItem": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "entityTypeId": {
+                    "type": "string"
+                },
+                "manufacturer": {
+                    "type": "string"
+                },
+                "modelNumber": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "needsReview": {
+                    "type": "boolean"
+                },
+                "photoIndexes": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "quantity": {
+                    "type": "number"
+                },
+                "reviewReason": {
+                    "type": "string"
+                },
+                "tagIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "services.Latest": {
             "type": "object",
             "properties": {
@@ -6333,9 +6454,26 @@ const docTemplate = `{
                 "RoleOwner"
             ]
         },
+        "v1.AIStatus": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "maxPhotos": {
+                    "type": "integer"
+                },
+                "model": {
+                    "type": "string"
+                }
+            }
+        },
         "v1.APISummary": {
             "type": "object",
             "properties": {
+                "ai": {
+                    "$ref": "#/definitions/v1.AIStatus"
+                },
                 "allowRegistration": {
                     "type": "boolean"
                 },

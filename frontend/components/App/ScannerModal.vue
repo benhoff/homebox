@@ -45,7 +45,7 @@
               </SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" class="w-full" @click="openArMode">
+          <Button v-if="scanMode === 'navigate'" variant="outline" class="w-full" @click="openArMode">
             <MdiCameraOutline class="mr-2" />
             {{ t("scanner_ar.ar_mode") }}
           </Button>
@@ -69,7 +69,7 @@
   import { useDialog } from "@/components/ui/dialog-provider";
 
   const { t } = useI18n();
-  const { activeDialog, openDialog, closeDialog } = useDialog();
+  const { activeDialog, openDialog, closeDialog, registerOpenDialogCallback } = useDialog();
   const open = computed(() => activeDialog && activeDialog.value === DialogID.Scanner);
 
   const sources = ref<MediaDeviceInfo[]>([]);
@@ -80,6 +80,7 @@
   const errorMessage = ref<string | null>(null);
   const detectedBarcode = ref<string>("");
   const detectedBarcodeType = ref<string>("");
+  const scanMode = ref<"navigate" | "select-location">("navigate");
 
   const LAST_USED_DEVICE_ID_KEY = "homebox:lastUsedDeviceId";
 
@@ -181,8 +182,15 @@
               throw new Error(t("scanner.invalid_url"));
             }
             const sanitizedPath = url.pathname.replace(/[^a-zA-Z0-9-_/]/g, "");
-            closeDialog(DialogID.Scanner);
-            navigateTo(sanitizedPath);
+            if (scanMode.value === "select-location") {
+              if (!/^\/location\/[a-fA-F0-9-]{36}$/.test(sanitizedPath)) {
+                throw new Error("The scanned code is not a HomeBox location QR code.");
+              }
+              closeDialog(DialogID.Scanner, { path: sanitizedPath });
+            } else {
+              closeDialog(DialogID.Scanner);
+              navigateTo(sanitizedPath);
+            }
           } catch (err) {
             // Check if it's a barcode for a new element
             const bcfmt = result.getBarcodeFormat();
@@ -214,7 +222,12 @@
     }
   });
 
+  const unregisterOpenCallback = registerOpenDialogCallback(DialogID.Scanner, params => {
+    scanMode.value = params?.mode ?? "navigate";
+  });
+
   onUnmounted(() => {
+    unregisterOpenCallback();
     stopScanner();
   });
 </script>

@@ -13,6 +13,7 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
+	"gocloud.dev/blob"
 )
 
 func TestMimeTypeForSourceType(t *testing.T) {
@@ -409,6 +410,33 @@ func TestAttachmentRepo_PathNormalization(t *testing.T) {
 	fullPathSlashPrefix := repoSlashPrefix.fullPath("eb6bf410-a1a8-478d-a803-ca3948368a0c/documents/f295eb01-18a9-4631-a797-70bd9623edd4.png")
 	assert.Equal(t, "eb6bf410-a1a8-478d-a803-ca3948368a0c/documents/f295eb01-18a9-4631-a797-70bd9623edd4.png", fullPathSlashPrefix)
 	assert.NotContains(t, fullPathSlashPrefix, "//", "fullPath() should not have double slashes")
+}
+
+func TestAttachmentRepo_FileBucketAtFilesystemRoot(t *testing.T) {
+	root := t.TempDir()
+	repo := &AttachmentRepo{
+		storage: config.Storage{
+			ConnString: "file:///?no_tmp_dir=true",
+			PrefixPath: strings.TrimPrefix(filepath.ToSlash(root), "/"),
+		},
+	}
+
+	assert.Equal(t, "file://"+filepath.ToSlash(root)+"?no_tmp_dir=true", repo.GetConnString())
+	assert.Equal(t, "group/documents/photo.jpg", repo.GetFullPath("group/documents/photo.jpg"))
+
+	bucket, err := blob.OpenBucket(context.Background(), repo.GetConnString())
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, bucket.Close()) })
+
+	require.NoError(t, bucket.WriteAll(
+		context.Background(),
+		repo.GetFullPath("group/documents/photo.jpg"),
+		[]byte("photo"),
+		nil,
+	))
+	contents, err := os.ReadFile(filepath.Join(root, "group", "documents", "photo.jpg"))
+	require.NoError(t, err)
+	assert.Equal(t, []byte("photo"), contents)
 }
 
 func TestAttachmentRepo_MigrateLegacyFlatPaths(t *testing.T) {

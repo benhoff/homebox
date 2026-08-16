@@ -103,6 +103,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
+  /v1/ai/capture/analyze:
+    post:
+      security:
+        - Bearer: []
+      tags:
+        - AI Capture
+      summary: Analyze inventory photos with an OpenAI-compatible vision model
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                photos:
+                  description: Inventory photos (repeat field for multiple photos)
+                  type: string
+                  format: binary
+                instruction:
+                  description: Correction request
+                  type: string
+                draft:
+                  description: Current AI draft JSON
+                  type: string
+              required:
+                - photos
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/services.AICaptureDraft"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validate.ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validate.ErrorResponse"
   "/v1/assets/{id}":
     get:
       security:
@@ -4187,6 +4232,46 @@ components:
           type: string
         value:
           type: number
+    services.AICaptureDraft:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/services.AICaptureItem"
+        warnings:
+          type: array
+          items:
+            type: string
+    services.AICaptureItem:
+      type: object
+      properties:
+        clientId:
+          type: string
+        description:
+          type: string
+        entityTypeId:
+          type: string
+        manufacturer:
+          type: string
+        modelNumber:
+          type: string
+        name:
+          type: string
+        needsReview:
+          type: boolean
+        photoIndexes:
+          type: array
+          items:
+            type: integer
+        quantity:
+          type: number
+        reviewReason:
+          type: string
+        tagIds:
+          type: array
+          items:
+            type: string
     services.Latest:
       type: object
       properties:
@@ -4227,9 +4312,20 @@ components:
         - DefaultRole
         - RoleUser
         - RoleOwner
+    v1.AIStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        maxPhotos:
+          type: integer
+        model:
+          type: string
     v1.APISummary:
       type: object
       properties:
+        ai:
+          $ref: "#/components/schemas/v1.AIStatus"
         allowRegistration:
           type: boolean
         build:

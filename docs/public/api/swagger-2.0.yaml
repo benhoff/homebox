@@ -2122,6 +2122,46 @@ definitions:
       value:
         type: number
     type: object
+  services.AICaptureDraft:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/services.AICaptureItem'
+        type: array
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
+  services.AICaptureItem:
+    properties:
+      clientId:
+        type: string
+      description:
+        type: string
+      entityTypeId:
+        type: string
+      manufacturer:
+        type: string
+      modelNumber:
+        type: string
+      name:
+        type: string
+      needsReview:
+        type: boolean
+      photoIndexes:
+        items:
+          type: integer
+        type: array
+      quantity:
+        type: number
+      reviewReason:
+        type: string
+      tagIds:
+        items:
+          type: string
+        type: array
+    type: object
   services.Latest:
     properties:
       date:
@@ -2162,8 +2202,19 @@ definitions:
     - DefaultRole
     - RoleUser
     - RoleOwner
+  v1.AIStatus:
+    properties:
+      enabled:
+        type: boolean
+      maxPhotos:
+        type: integer
+      model:
+        type: string
+    type: object
   v1.APISummary:
     properties:
+      ai:
+        $ref: '#/definitions/v1.AIStatus'
       allowRegistration:
         type: boolean
       build:
@@ -2470,6 +2521,44 @@ paths:
       summary: Zero Out Time Fields
       tags:
       - Actions
+  /v1/ai/capture/analyze:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Inventory photos (repeat field for multiple photos)
+        in: formData
+        name: photos
+        required: true
+        type: file
+      - description: Correction request
+        in: formData
+        name: instruction
+        type: string
+      - description: Current AI draft JSON
+        in: formData
+        name: draft
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureDraft'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Analyze inventory photos with an OpenAI-compatible vision model
+      tags:
+      - AI Capture
   /v1/assets/{id}:
     get:
       parameters:
