@@ -38,6 +38,7 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
 		Photos: []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
 		Context: AICaptureContext{
+			Location:    AICaptureOption{ID: "location-1", Name: "Garage"},
 			EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}},
 			Tags:        []AICaptureOption{{ID: "tag-1", Name: "Tools"}},
 		},
@@ -52,6 +53,7 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	userContent, err := json.Marshal(got.Messages[1].Content)
 	require.NoError(t, err)
 	assert.Contains(t, string(userContent), "data:image/jpeg;base64,")
+	assert.Contains(t, string(userContent), "Garage")
 }
 
 func TestAICaptureAnalyzeSanitizesUnsafeDraft(t *testing.T) {
@@ -89,4 +91,11 @@ func TestAICaptureAnalyzeDisabled(t *testing.T) {
 	svc := NewAICaptureService(config.AIConfig{})
 	_, err := svc.Analyze(context.Background(), AICaptureRequest{})
 	assert.ErrorIs(t, err, ErrAIDisabled)
+}
+
+func TestAICapturePromptLimitsAIToVisualMetadata(t *testing.T) {
+	assert.Contains(t, aiCaptureSystemPrompt, "Only identify the item name")
+	assert.Contains(t, aiCaptureSystemPrompt, "Never infer or return serial numbers")
+	assert.NotContains(t, aiCaptureSystemPrompt, `"warrantyExpires"`)
+	assert.NotContains(t, aiCaptureSystemPrompt, `"purchasePrice"`)
 }

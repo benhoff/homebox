@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/hay-kot/httpkit/errchain"
 	"github.com/hay-kot/httpkit/server"
 	"github.com/rs/zerolog/log"
 	"github.com/sysadminsmedia/homebox/backend/internal/core/services"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/validate"
 )
 
@@ -25,6 +27,7 @@ const maxAICorrectionLength = 2000
 //	@Accept		multipart/form-data
 //	@Produce	json
 //	@Param		photos		formData	file	true	"Inventory photos (repeat field for multiple photos)"
+//	@Param		locationId	formData	string	true	"Selected HomeBox location UUID"
 //	@Param		instruction	formData	string	false	"Correction request"
 //	@Param		draft		formData	string	false	"Current AI draft JSON"
 //	@Success	200			{object}	services.AICaptureDraft
@@ -55,6 +58,22 @@ func (ctrl *V1Controller) HandleAICaptureAnalyze() errchain.HandlerFunc {
 			)
 		}
 
+		locationID, err := uuid.Parse(strings.TrimSpace(r.FormValue("locationId")))
+		if err != nil {
+			return validate.NewRequestError(errors.New("select a valid location"), http.StatusUnprocessableEntity)
+		}
+		auth := services.NewContext(r.Context())
+		location, err := ctrl.repo.Entities.GetOneByGroup(r.Context(), auth.GID, locationID)
+		if err != nil {
+			if ent.IsNotFound(err) {
+				return validate.NewRequestError(errors.New("select a valid location"), http.StatusUnprocessableEntity)
+			}
+			return validate.NewRequestError(err, http.StatusInternalServerError)
+		}
+		if location.EntityType == nil || !location.EntityType.IsLocation {
+			return validate.NewRequestError(errors.New("selected entity must be a location"), http.StatusUnprocessableEntity)
+		}
+
 		photos := make([]services.AICapturePhoto, 0, len(files))
 		for _, header := range files {
 			photo, err := readAICapturePhoto(header, ctrl.maxUploadSize<<20)
@@ -77,7 +96,6 @@ func (ctrl *V1Controller) HandleAICaptureAnalyze() errchain.HandlerFunc {
 			}
 		}
 
-		auth := services.NewContext(r.Context())
 		entityTypes, err := ctrl.repo.EntityTypes.GetAll(r.Context(), auth.GID)
 		if err != nil {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
@@ -87,6 +105,7 @@ func (ctrl *V1Controller) HandleAICaptureAnalyze() errchain.HandlerFunc {
 			return validate.NewRequestError(err, http.StatusInternalServerError)
 		}
 		metadata := services.AICaptureContext{
+			Location:    services.AICaptureOption{ID: location.ID.String(), Name: location.Name},
 			EntityTypes: make([]services.AICaptureOption, 0, len(entityTypes)),
 			Tags:        make([]services.AICaptureOption, 0, len(tags)),
 		}

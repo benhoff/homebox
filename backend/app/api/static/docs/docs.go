@@ -205,6 +205,13 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Selected HomeBox location UUID",
+                        "name": "locationId",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Correction request",
                         "name": "instruction",
                         "in": "formData"

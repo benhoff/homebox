@@ -19,12 +19,18 @@ export interface AICaptureDraft {
   warnings: string[];
 }
 
+export interface AICaptureLocation {
+  id: string;
+  name: string;
+}
+
 export class AICaptureAPI extends BaseAPI {
-  analyze(photos: File[], options: { draft?: AICaptureDraft; instruction?: string } = {}) {
+  analyze(photos: File[], location: AICaptureLocation, options: { draft?: AICaptureDraft; instruction?: string } = {}) {
     const formData = new FormData();
     for (const photo of photos) {
       formData.append("photos", photo, photo.name);
     }
+    formData.append("locationId", location.id);
     if (options.draft) {
       formData.append("draft", JSON.stringify(options.draft));
     }

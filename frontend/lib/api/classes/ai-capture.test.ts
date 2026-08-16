@@ -35,7 +35,14 @@ describe("AICaptureAPI", () => {
       new File(["two"], "two.jpg", { type: "image/jpeg" }),
     ];
 
-    const result = await api.analyze(photos, { draft: responseDraft, instruction: "Make the quantity two" });
+    const result = await api.analyze(
+      photos,
+      { id: "location-1", name: "Garage" },
+      {
+        draft: responseDraft,
+        instruction: "Make the quantity two",
+      }
+    );
 
     expect(result.error).toBe(false);
     expect(fetchMock).toHaveBeenCalledOnce();
@@ -44,6 +51,7 @@ describe("AICaptureAPI", () => {
     expect(init?.headers).toMatchObject({ Authorization: "Bearer token" });
     const form = init?.body as FormData;
     expect(form.getAll("photos")).toHaveLength(2);
+    expect(form.get("locationId")).toBe("location-1");
     expect(form.get("instruction")).toBe("Make the quantity two");
     expect(JSON.parse(form.get("draft") as string)).toEqual(responseDraft);
   });

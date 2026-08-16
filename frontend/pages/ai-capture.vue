@@ -143,7 +143,7 @@
     const before = draft.value ? cloneDraft(draft.value) : null;
     try {
       const analysisFiles = await Promise.all(photos.value.map(makeAnalysisFile));
-      const response = await api.aiCapture.analyze(analysisFiles, {
+      const response = await api.aiCapture.analyze(analysisFiles, selectedLocation.value, {
         draft: options.correction ? (draft.value ?? undefined) : undefined,
         instruction: options.correction ? correction.value : undefined,
       });
@@ -364,6 +364,18 @@
         <CardDescription>{{ $t("ai_capture.photos.description", { count: maxPhotos }) }}</CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
+        <div class="flex items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div class="flex min-w-0 items-center gap-2">
+            <MdiMapMarker class="size-5 shrink-0 text-primary" />
+            <div class="min-w-0">
+              <p class="text-xs text-muted-foreground">
+                {{ $t("ai_capture.location.selected") }}
+              </p>
+              <p class="truncate font-medium">{{ selectedLocation?.name }}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" @click="step = 'location'">{{ $t("global.update") }}</Button>
+        </div>
         <div class="grid gap-3 sm:grid-cols-2">
           <PhotoUploader
             :existing-count="photos.length"
@@ -427,6 +439,14 @@
           <CardDescription>{{ $t("ai_capture.review.description") }}</CardDescription>
         </CardHeader>
         <CardContent class="space-y-3">
+          <div class="flex items-center gap-2 rounded-md bg-muted p-3 text-sm">
+            <MdiMapMarker class="size-5 shrink-0 text-primary" />
+            <span>{{ $t("ai_capture.review.saving_to") }}</span>
+            <strong class="truncate">{{ selectedLocation?.name }}</strong>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("ai_capture.review.ai_scope") }}
+          </p>
           <div
             v-for="warning in draft.warnings"
             :key="warning"

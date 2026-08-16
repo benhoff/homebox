@@ -198,6 +198,10 @@
                                         "type": "string",
                                         "format": "binary"
                                     },
+                                    "locationId": {
+                                        "description": "Selected HomeBox location UUID",
+                                        "type": "string"
+                                    },
                                     "instruction": {
                                         "description": "Correction request",
                                         "type": "string"
@@ -208,7 +212,8 @@
                                     }
                                 },
                                 "required": [
-                                    "photos"
+                                    "photos",
+                                    "locationId"
                                 ]
                             }
                         }

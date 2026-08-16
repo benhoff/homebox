@@ -2531,6 +2531,11 @@ paths:
         name: photos
         required: true
         type: file
+      - description: Selected HomeBox location UUID
+        in: formData
+        name: locationId
+        required: true
+        type: string
       - description: Correction request
         in: formData
         name: instruction

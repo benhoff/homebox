@@ -24,6 +24,7 @@
         },
         "location": {
             "description": "Search, browse the location tree, or scan a QR label.",
+            "selected": "Selected location",
             "title": "Where do these items belong?"
         },
         "manual_item": "Added manually",
@@ -43,6 +44,7 @@
         "progress": "AI capture progress",
         "review": {
             "add_item": "Add missing item",
+            "ai_scope": "AI fills visual item details only. Add serial numbers, purchase information, warranty, insurance, asset IDs, and custom fields from the item page after creation.",
             "ask_ai": "Ask AI",
             "check_item": "Please check this suggestion.",
             "correction_placeholder": "Example: The second item is a 2-pack, and the brand is Bosch.",
@@ -53,6 +55,7 @@
             "photos_button": "Photos",
             "photos_for_item": "Photos attached to this item",
             "retry": "Retry unfinished items",
+            "saving_to": "Saving to",
             "submit": "Create {count} items",
             "title": "Review before creating",
             "undo": "Undo AI correction",

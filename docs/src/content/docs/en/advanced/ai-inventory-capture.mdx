@@ -2,7 +2,7 @@
 title: AI inventory capture
 ---
 
-HomeBox can send item photos to a vision-capable OpenAI-compatible API, turn the response into an editable draft, and create the approved items with their photos attached. Users can select a location from the tree or search, scan a HomeBox location QR code, take or upload multiple photos, correct the AI draft, and submit only after review.
+HomeBox can send item photos to a vision-capable OpenAI-compatible API, turn the response into an editable draft, and create the approved items with their photos attached. Users first select a location from the tree, search, or scan a HomeBox location QR code. They can then take or upload multiple photos, correct the AI draft, and submit only after review.
 
 ## Configure a provider
 
@@ -31,4 +31,6 @@ AI analysis can take longer than ordinary API calls. When using a local model, s
 
 Photos are sent to the provider configured by the server administrator. The capture screen tells users this before analysis. No inventory records are created during detection or correction: users must review and submit the draft first.
 
-The server supplies only entity types and tags from the user's active collection, removes unknown IDs from model output, caps item and photo counts, and requires the normal authenticated collection middleware. AI suggestions should still be treated as untrusted drafts; quantities, names, photo assignments, and metadata remain editable before submission.
+The AI draft is intentionally limited to visual fields the model can reasonably identify: item name, visible quantity, description, manufacturer, a clearly legible model number, item type, relevant existing tags, and photo grouping. Serial numbers, purchase information, warranty, insurance, asset IDs, sold details, and custom fields remain manual fields on the item page.
+
+The server validates the selected location and supplies only entity types and tags from the user's active collection. It removes unknown IDs from model output, caps item and photo counts, and requires the normal authenticated collection middleware. AI suggestions should still be treated as untrusted drafts; every generated field remains editable before submission.
