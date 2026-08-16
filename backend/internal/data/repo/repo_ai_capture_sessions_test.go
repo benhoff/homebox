@@ -36,7 +36,7 @@ func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
 	groupB := uuid.New()
 	photoID, path, hash := tRepos.AICaptureSessions.NewPhotoStorage([]byte("image"), tGroup.ID, session.ID)
 	photo, existing, err := tRepos.AICaptureSessions.CreatePhoto(
-		ctx, tGroup.ID, tUser.ID, session.ID, photoID, clientPhotoID, 0, 8,
+		ctx, tGroup.ID, tUser.ID, session.ID, photoID, clientPhotoID, 0, 8, 1,
 		&groupA, "photo.jpg", "image/jpeg", path, 5, hash,
 	)
 	require.NoError(t, err)
@@ -44,18 +44,23 @@ func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
 	assert.Equal(t, photoID, photo.ID, "the persisted id must match its temporary blob path")
 
 	duplicate, existing, err := tRepos.AICaptureSessions.CreatePhoto(
-		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), clientPhotoID, 0, 8,
+		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), clientPhotoID, 0, 8, 1,
 		&groupB, "photo.jpg", "image/jpeg", path, 5, hash,
 	)
 	require.NoError(t, err)
 	assert.True(t, existing)
 	assert.Equal(t, photo.ID, duplicate.ID, "replaying a client photo id must be idempotent")
 	assert.Equal(t, &groupA, duplicate.CaptureGroupID, "a replay must not silently move an existing photo")
+	_, _, err = tRepos.AICaptureSessions.CreatePhoto(
+		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), uuid.New(), 1, 8, 1,
+		&groupA, "second-view.jpg", "image/jpeg", "unused", 5, "second-hash",
+	)
+	assert.ErrorIs(t, err, ErrAICaptureGroupLimit)
 
 	afterUpload, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
 	require.NoError(t, err)
 	assert.Equal(t, 1, afterUpload.CaptureRevision)
-	regrouped, err := tRepos.AICaptureSessions.UpdatePhotoGroup(ctx, tGroup.ID, tUser.ID, session.ID, photo.ID, &groupB)
+	regrouped, err := tRepos.AICaptureSessions.UpdatePhotoGroup(ctx, tGroup.ID, tUser.ID, session.ID, photo.ID, 1, &groupB)
 	require.NoError(t, err)
 	assert.Equal(t, &groupB, regrouped.CaptureGroupID)
 	afterRegroup, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
@@ -116,7 +121,7 @@ func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
 	assert.Equal(t, aicapturesession.StatusReadyForReview.String(), ready.Status)
 
 	_, _, err = tRepos.AICaptureSessions.CreatePhoto(
-		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), uuid.New(), 1, 8,
+		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), uuid.New(), 1, 8, 8,
 		nil, "late.jpg", "image/jpeg", "late", 1, "hash",
 	)
 	assert.True(t, errors.Is(err, ErrAICaptureInvalidState))

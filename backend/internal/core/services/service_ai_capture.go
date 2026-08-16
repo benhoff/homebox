@@ -199,6 +199,13 @@ func (svc *AICaptureService) MaxPhotos() int {
 	return svc.config.MaxPhotos
 }
 
+func (svc *AICaptureService) MaxSessionPhotos() int {
+	if svc == nil || svc.config.MaxSessionPhotos <= 0 {
+		return 24
+	}
+	return max(svc.config.MaxSessionPhotos, svc.MaxPhotos())
+}
+
 type chatMessage struct {
 	Role    string `json:"role"`
 	Content any    `json:"content"`

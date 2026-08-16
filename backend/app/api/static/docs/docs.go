@@ -937,6 +937,51 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/ai/capture/sessions/{sessionId}/submit-items": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Create selected reviewed items from an AI capture session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Expected draft revision and selected item IDs",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionItemsSubmit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/assets/{id}": {
             "get": {
                 "security": [
@@ -7402,6 +7447,9 @@ const docTemplate = `{
         "services.AICaptureCreatedItem": {
             "type": "object",
             "properties": {
+                "clientId": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -7485,6 +7533,24 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "services.AICaptureItemSubmission": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "entityId": {
+                    "type": "string",
+                    "x-nullable": true
+                },
+                "errorCode": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
@@ -7655,6 +7721,12 @@ const docTemplate = `{
                 "status": {
                     "type": "string"
                 },
+                "submissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureItemSubmission"
+                    }
+                },
                 "updatedAt": {
                     "type": "string"
                 },
@@ -7756,6 +7828,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "maxPhotos": {
+                    "type": "integer"
+                },
+                "maxSessionPhotos": {
                     "type": "integer"
                 },
                 "model": {
@@ -8098,6 +8173,20 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "expectedPhotoCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.aiCaptureSessionItemsSubmit": {
+            "type": "object",
+            "properties": {
+                "clientIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "revision": {
                     "type": "integer"
                 }
             }

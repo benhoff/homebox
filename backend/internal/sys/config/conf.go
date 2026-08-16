@@ -69,16 +69,20 @@ type Config struct {
 // the assisted inventory capture flow. BaseURL may point at OpenAI, LiteLLM,
 // llama.cpp, or another server implementing chat completions.
 type AIConfig struct {
-	Enabled         bool             `yaml:"enabled"          conf:"default:false"`
-	ProviderName    string           `yaml:"provider_name"    conf:"default:Primary AI"`
-	BaseURL         string           `yaml:"base_url"         conf:"default:https://api.openai.com/v1"`
-	APIKey          string           `yaml:"api_key"          conf:"mask"`
-	Model           string           `yaml:"model"            conf:"default:gpt-4.1-mini"`
-	ReasoningEffort string           `yaml:"reasoning_effort"`
-	Timeout         time.Duration    `yaml:"timeout"          conf:"default:2m"`
-	MaxPhotos       int              `yaml:"max_photos"       conf:"default:8"`
-	MaxItems        int              `yaml:"max_items"        conf:"default:25"`
-	Gemini          AIProviderConfig `yaml:"gemini"`
+	Enabled         bool          `yaml:"enabled"          conf:"default:false"`
+	ProviderName    string        `yaml:"provider_name"    conf:"default:Primary AI"`
+	BaseURL         string        `yaml:"base_url"         conf:"default:https://api.openai.com/v1"`
+	APIKey          string        `yaml:"api_key"          conf:"mask"`
+	Model           string        `yaml:"model"            conf:"default:gpt-4.1-mini"`
+	ReasoningEffort string        `yaml:"reasoning_effort"`
+	Timeout         time.Duration `yaml:"timeout"          conf:"default:2m"`
+	// MaxPhotos is the maximum number of photos sent in one provider request.
+	MaxPhotos int `yaml:"max_photos"         conf:"default:8"`
+	// MaxSessionPhotos is the durable capture limit. Larger sessions are split
+	// into provider-sized analysis batches before review.
+	MaxSessionPhotos int              `yaml:"max_session_photos" conf:"default:24"`
+	MaxItems         int              `yaml:"max_items"        conf:"default:25"`
+	Gemini           AIProviderConfig `yaml:"gemini"`
 }
 
 // AIProviderConfig defines an optional secondary OpenAI-compatible provider.

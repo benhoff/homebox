@@ -20,6 +20,7 @@ import (
 var (
 	ErrAICaptureInvalidState     = errors.New("capture session is not in the required state")
 	ErrAICapturePhotoLimit       = errors.New("capture session photo limit reached")
+	ErrAICaptureGroupLimit       = errors.New("capture same-item group photo limit reached")
 	ErrAICapturePhotoCount       = errors.New("capture session photo count does not match")
 	ErrAICaptureRevision         = errors.New("capture session photo grouping was changed elsewhere")
 	ErrAICaptureDraftConflict    = errors.New("capture session draft was changed elsewhere")
@@ -258,7 +259,7 @@ func incrementCaptureRevisionWhileCapturing(ctx context.Context, tx *ent.Tx, ses
 	return nil
 }
 
-func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, sessionID, photoID, clientPhotoID uuid.UUID, position, maxPhotos int, captureGroupID *uuid.UUID, name, mimeType, blobPath string, size int64, hash string) (AICapturePhotoRecord, bool, error) {
+func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, sessionID, photoID, clientPhotoID uuid.UUID, position, maxPhotos, maxGroupPhotos int, captureGroupID *uuid.UUID, name, mimeType, blobPath string, size int64, hash string) (AICapturePhotoRecord, bool, error) {
 	tx, err := r.db.Tx(ctx)
 	if err != nil {
 		return AICapturePhotoRecord{}, false, err
@@ -292,6 +293,17 @@ func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, 
 	}
 	if count >= maxPhotos {
 		return AICapturePhotoRecord{}, false, ErrAICapturePhotoLimit
+	}
+	if captureGroupID != nil {
+		groupCount, err := tx.AICapturePhoto.Query().Where(
+			aicapturephoto.SessionID(sessionID), aicapturephoto.CaptureGroupID(*captureGroupID),
+		).Count(ctx)
+		if err != nil {
+			return AICapturePhotoRecord{}, false, err
+		}
+		if groupCount >= maxGroupPhotos {
+			return AICapturePhotoRecord{}, false, ErrAICaptureGroupLimit
+		}
 	}
 	row, err := tx.AICapturePhoto.Create().
 		SetID(photoID).
@@ -354,7 +366,7 @@ func sameCaptureGroup(left, right *uuid.UUID) bool {
 	return left == nil && right == nil || left != nil && right != nil && *left == *right
 }
 
-func (r *AICaptureSessionRepository) UpdatePhotoGroup(ctx context.Context, gid, uid, sessionID, photoID uuid.UUID, captureGroupID *uuid.UUID) (AICapturePhotoRecord, error) {
+func (r *AICaptureSessionRepository) UpdatePhotoGroup(ctx context.Context, gid, uid, sessionID, photoID uuid.UUID, maxGroupPhotos int, captureGroupID *uuid.UUID) (AICapturePhotoRecord, error) {
 	tx, err := r.db.Tx(ctx)
 	if err != nil {
 		return AICapturePhotoRecord{}, err
@@ -380,6 +392,17 @@ func (r *AICaptureSessionRepository) UpdatePhotoGroup(ctx context.Context, gid, 
 			return AICapturePhotoRecord{}, err
 		}
 		return mapAICapturePhoto(row), nil
+	}
+	if captureGroupID != nil {
+		groupCount, err := tx.AICapturePhoto.Query().Where(
+			aicapturephoto.SessionID(sessionID), aicapturephoto.CaptureGroupID(*captureGroupID),
+		).Count(ctx)
+		if err != nil {
+			return AICapturePhotoRecord{}, err
+		}
+		if groupCount >= maxGroupPhotos {
+			return AICapturePhotoRecord{}, ErrAICaptureGroupLimit
+		}
 	}
 	update := tx.AICapturePhoto.UpdateOneID(photoID)
 	if captureGroupID == nil {
@@ -773,6 +796,15 @@ func (r *AICaptureSessionRepository) SetSubmitFailed(ctx context.Context, id uui
 		Where(aicapturesession.StatusEQ(aicapturesession.StatusSubmitting)).
 		SetStatus(aicapturesession.StatusReadyForReview).
 		SetErrorCode(code).SetErrorMessage(message).
+		Exec(ctx)
+}
+
+func (r *AICaptureSessionRepository) SetReadyAfterPartialSubmit(ctx context.Context, id uuid.UUID) error {
+	return r.db.AICaptureSession.UpdateOneID(id).
+		Where(aicapturesession.StatusEQ(aicapturesession.StatusSubmitting)).
+		SetStatus(aicapturesession.StatusReadyForReview).
+		SetExpiresAt(time.Now().Add(30 * 24 * time.Hour)).
+		ClearErrorCode().ClearErrorMessage().
 		Exec(ctx)
 }
 

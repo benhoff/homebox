@@ -23,6 +23,7 @@ import (
 const (
 	AICaptureErrorInvalidState     = "INVALID_STATE"
 	AICaptureErrorSessionFull      = "SESSION_FULL"
+	AICaptureErrorGroupFull        = "CAPTURE_GROUP_FULL"
 	AICaptureErrorPhotoMismatch    = "PHOTO_COUNT_MISMATCH"
 	AICaptureErrorRevisionMismatch = "CAPTURE_REVISION_MISMATCH"
 	AICaptureErrorLocationMissing  = "LOCATION_MISSING"
@@ -43,8 +44,16 @@ type AICaptureSessionPhoto struct {
 }
 
 type AICaptureCreatedItem struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID       string `json:"id"`
+	ClientID string `json:"clientId"`
+	Name     string `json:"name"`
+}
+
+type AICaptureItemSubmission struct {
+	ClientID  string  `json:"clientId"`
+	Status    string  `json:"status"`
+	EntityID  *string `json:"entityId,omitempty" extensions:"x-nullable"`
+	ErrorCode string  `json:"errorCode,omitempty"`
 }
 
 type AICaptureSessionOut struct {
@@ -60,6 +69,7 @@ type AICaptureSessionOut struct {
 	CaptureRevision       int                          `json:"captureRevision"`
 	Draft                 *AICaptureDraft              `json:"draft,omitempty"`
 	CreatedItems          []AICaptureCreatedItem       `json:"createdItems"`
+	Submissions           []AICaptureItemSubmission    `json:"submissions"`
 	ErrorCode             string                       `json:"errorCode,omitempty"`
 	ErrorMessage          string                       `json:"errorMessage,omitempty"`
 	CreatedAt             time.Time                    `json:"createdAt"`
@@ -131,6 +141,7 @@ func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (
 		DraftRevision:         record.DraftRevision,
 		CaptureRevision:       record.CaptureRevision,
 		CreatedItems:          []AICaptureCreatedItem{},
+		Submissions:           []AICaptureItemSubmission{},
 		ErrorCode:             record.ErrorCode,
 		ErrorMessage:          record.ErrorMessage,
 		CreatedAt:             record.CreatedAt,
@@ -202,8 +213,18 @@ func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (
 		}
 	}
 	for _, item := range record.Items {
+		var entityID *string
 		if item.EntityID != nil {
-			out.CreatedItems = append(out.CreatedItems, AICaptureCreatedItem{ID: item.EntityID.String(), Name: names[item.ClientID]})
+			value := item.EntityID.String()
+			entityID = &value
+		}
+		out.Submissions = append(out.Submissions, AICaptureItemSubmission{
+			ClientID: item.ClientID, Status: item.Status, EntityID: entityID, ErrorCode: item.ErrorCode,
+		})
+		if item.EntityID != nil {
+			out.CreatedItems = append(out.CreatedItems, AICaptureCreatedItem{
+				ID: item.EntityID.String(), ClientID: item.ClientID, Name: names[item.ClientID],
+			})
 		}
 	}
 	return out, nil
@@ -276,7 +297,8 @@ func cleanCaptureFilename(name string) string {
 func (svc *AICaptureSessionService) AddPhoto(ctx Context, sessionID, clientPhotoID uuid.UUID, position int, captureGroupID *uuid.UUID, name, mimeType string, data []byte) (AICaptureSessionPhoto, error) {
 	photoID, blobPath, hash := svc.repos.AICaptureSessions.NewPhotoStorage(data, ctx.GID, sessionID)
 	record, existing, err := svc.repos.AICaptureSessions.CreatePhoto(
-		ctx, ctx.GID, ctx.UID, sessionID, photoID, clientPhotoID, position, svc.ai.MaxPhotos(), captureGroupID,
+		ctx, ctx.GID, ctx.UID, sessionID, photoID, clientPhotoID, position,
+		svc.ai.MaxSessionPhotos(), svc.ai.MaxPhotos(), captureGroupID,
 		cleanCaptureFilename(name), mimeType, blobPath, int64(len(data)), hash,
 	)
 	if err != nil {
@@ -301,7 +323,9 @@ func (svc *AICaptureSessionService) AddPhoto(ctx Context, sessionID, clientPhoto
 }
 
 func (svc *AICaptureSessionService) UpdatePhotoGroup(ctx Context, sessionID, photoID uuid.UUID, captureGroupID *uuid.UUID) (AICaptureSessionPhoto, error) {
-	record, err := svc.repos.AICaptureSessions.UpdatePhotoGroup(ctx, ctx.GID, ctx.UID, sessionID, photoID, captureGroupID)
+	record, err := svc.repos.AICaptureSessions.UpdatePhotoGroup(
+		ctx, ctx.GID, ctx.UID, sessionID, photoID, svc.ai.MaxPhotos(), captureGroupID,
+	)
 	if err != nil {
 		return AICaptureSessionPhoto{}, err
 	}
@@ -404,13 +428,25 @@ type aiCaptureAnalysisBatch struct {
 	Photos         []repo.AICapturePhotoRecord
 }
 
-func partitionAICapturePhotos(photos []repo.AICapturePhotoRecord) []aiCaptureAnalysisBatch {
+func partitionAICapturePhotos(photos []repo.AICapturePhotoRecord, maxUngrouped int) []aiCaptureAnalysisBatch {
+	if maxUngrouped <= 0 {
+		maxUngrouped = 8
+	}
 	batches := make([]aiCaptureAnalysisBatch, 0)
 	batchByGroup := make(map[string]int)
+	ungroupedBatch := -1
 	for _, photo := range photos {
 		groupID := ""
 		if photo.CaptureGroupID != nil {
 			groupID = photo.CaptureGroupID.String()
+		}
+		if groupID == "" {
+			if ungroupedBatch < 0 || len(batches[ungroupedBatch].Photos) >= maxUngrouped {
+				ungroupedBatch = len(batches)
+				batches = append(batches, aiCaptureAnalysisBatch{})
+			}
+			batches[ungroupedBatch].Photos = append(batches[ungroupedBatch].Photos, photo)
+			continue
 		}
 		batchIndex, exists := batchByGroup[groupID]
 		if !exists {
@@ -465,7 +501,7 @@ func sortAICaptureItemsByFirstPhoto(items []AICaptureItem, photos []repo.AICaptu
 
 func (svc *AICaptureSessionService) analyzeSession(ctx context.Context, record repo.AICaptureSessionRecord, metadata AICaptureContext) (AICaptureDraft, error) {
 	out := AICaptureDraft{Items: []AICaptureItem{}, Warnings: []string{}}
-	for _, batch := range partitionAICapturePhotos(record.Photos) {
+	for _, batch := range partitionAICapturePhotos(record.Photos, svc.ai.MaxPhotos()) {
 		photos, err := svc.analysisPhotosFor(ctx, batch.Photos)
 		if err != nil {
 			return AICaptureDraft{}, err
@@ -486,16 +522,23 @@ func (svc *AICaptureSessionService) analyzeSession(ctx context.Context, record r
 		out.Items = append(out.Items, draft.Items...)
 		out.Warnings = append(out.Warnings, draft.Warnings...)
 	}
-	maxItems := svc.config.MaxItems
-	if maxItems <= 0 {
-		maxItems = 25
-	}
+	maxItems := svc.maxSessionItems()
 	if len(out.Items) > maxItems {
 		return AICaptureDraft{}, fmt.Errorf("%w: grouped analysis returned %d items, maximum is %d", ErrAIUpstream, len(out.Items), maxItems)
 	}
 	sortAICaptureItemsByFirstPhoto(out.Items, record.Photos)
 	ensureUniqueAICaptureClientIDs(&out)
 	return out, nil
+}
+
+func (svc *AICaptureSessionService) maxSessionItems() int {
+	maxItems := svc.config.MaxItems
+	if maxItems <= 0 {
+		maxItems = 25
+	}
+	providerBatchSize := max(1, svc.ai.MaxPhotos())
+	maxAnalysisBatches := max(1, (svc.ai.MaxSessionPhotos()+providerBatchSize-1)/providerBatchSize)
+	return maxItems * maxAnalysisBatches
 }
 
 func mapDraftPhotoIDs(draft *AICaptureDraft, photos []repo.AICapturePhotoRecord) {
@@ -627,7 +670,7 @@ func (svc *AICaptureSessionService) validateSessionDraft(ctx context.Context, re
 		return AICaptureDraft{}, err
 	}
 	mapDraftPhotoIndexes(&draft, record.Photos)
-	draft, err = sanitizeAICaptureDraft(draft, metadata, len(record.Photos), svc.config.MaxItems)
+	draft, err = sanitizeAICaptureDraft(draft, metadata, len(record.Photos), svc.maxSessionItems())
 	if err != nil {
 		return AICaptureDraft{}, err
 	}
@@ -636,8 +679,57 @@ func (svc *AICaptureSessionService) validateSessionDraft(ctx context.Context, re
 	return draft, nil
 }
 
+func completedAICaptureClientIDs(items []repo.AICaptureSessionItemRecord) map[string]struct{} {
+	completed := make(map[string]struct{})
+	for _, item := range items {
+		if item.Status == aicapturesessionitem.StatusCompleted.String() {
+			completed[item.ClientID] = struct{}{}
+		}
+	}
+	return completed
+}
+
+func preserveCompletedAICaptureItems(record repo.AICaptureSessionRecord, incoming AICaptureDraft) (AICaptureDraft, error) {
+	completed := completedAICaptureClientIDs(record.Items)
+	if len(completed) == 0 {
+		return incoming, nil
+	}
+	var saved AICaptureDraft
+	if err := json.Unmarshal([]byte(record.DraftJSON), &saved); err != nil {
+		return AICaptureDraft{}, err
+	}
+	incomingByID := make(map[string]AICaptureItem, len(incoming.Items))
+	for _, item := range incoming.Items {
+		incomingByID[item.ClientID] = item
+	}
+	merged := make([]AICaptureItem, 0, len(incoming.Items)+len(completed))
+	used := make(map[string]struct{}, len(incoming.Items)+len(completed))
+	for _, item := range saved.Items {
+		if _, done := completed[item.ClientID]; done {
+			merged = append(merged, item)
+			used[item.ClientID] = struct{}{}
+			continue
+		}
+		if updated, exists := incomingByID[item.ClientID]; exists {
+			merged = append(merged, updated)
+			used[item.ClientID] = struct{}{}
+		}
+	}
+	for _, item := range incoming.Items {
+		if _, exists := used[item.ClientID]; !exists {
+			merged = append(merged, item)
+		}
+	}
+	incoming.Items = merged
+	return incoming, nil
+}
+
 func (svc *AICaptureSessionService) SaveDraft(ctx Context, id uuid.UUID, expectedRevision int, draft AICaptureDraft) (AICaptureSessionOut, error) {
 	record, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	draft, err = preserveCompletedAICaptureItems(record, draft)
 	if err != nil {
 		return AICaptureSessionOut{}, err
 	}
@@ -760,10 +852,7 @@ func (svc *AICaptureSessionService) QueueReanalysis(
 	if _, err := svc.ai.provider(providerID); err != nil {
 		return AICaptureSessionOut{}, err
 	}
-	maxItems := svc.config.MaxItems
-	if maxItems <= 0 {
-		maxItems = 25
-	}
+	maxItems := svc.maxSessionItems()
 	if len(clientIDs) == 0 || len(clientIDs) > maxItems {
 		return AICaptureSessionOut{}, fmt.Errorf("%w: select between 1 and %d reviewed items", ErrAIInvalidRequest, maxItems)
 	}
@@ -791,6 +880,12 @@ func (svc *AICaptureSessionService) QueueReanalysis(
 		}
 		if len(draft.Items[itemIndex].PhotoIDs) == 0 {
 			return AICaptureSessionOut{}, fmt.Errorf("%w: reviewed item %s has no assigned photos", ErrAIInvalidRequest, clientID)
+		}
+		if len(draft.Items[itemIndex].PhotoIDs) > svc.ai.MaxPhotos() {
+			return AICaptureSessionOut{}, fmt.Errorf(
+				"%w: reviewed item %s has %d assigned photos; reduce it to %d before reanalysis",
+				ErrAIInvalidRequest, clientID, len(draft.Items[itemIndex].PhotoIDs), svc.ai.MaxPhotos(),
+			)
 		}
 		items = append(items, draft.Items[itemIndex])
 	}
@@ -1001,6 +1096,10 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 		}
 	}
 	mapDraftPhotoIDs(&corrected, record.Photos)
+	corrected, err = preserveCompletedAICaptureItems(record, corrected)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
 	validateDraftCaptureGroups(&corrected, record.Photos)
 	encoded, err := json.Marshal(corrected)
 	if err != nil {
@@ -1121,7 +1220,7 @@ func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptu
 	return svc.repos.AICaptureSessions.SetSubmissionItemStatus(ctx, session.ID, item.ClientID, aicapturesessionitem.StatusCompleted, "")
 }
 
-func (svc *AICaptureSessionService) Submit(ctx Context, id uuid.UUID, expectedRevision int) (AICaptureSessionOut, error) {
+func (svc *AICaptureSessionService) SubmitItems(ctx Context, id uuid.UUID, expectedRevision int, clientIDs []string) (AICaptureSessionOut, error) {
 	session, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
 	if err != nil {
 		return AICaptureSessionOut{}, err
@@ -1134,32 +1233,84 @@ func (svc *AICaptureSessionService) Submit(ctx Context, id uuid.UUID, expectedRe
 		session.ReanalysisStatus == repo.AICaptureReanalysisWaiting {
 		return AICaptureSessionOut{}, repo.ErrAICaptureReanalysisActive
 	}
+	var draft AICaptureDraft
+	if err := json.Unmarshal([]byte(session.DraftJSON), &draft); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	requested := make(map[string]struct{}, len(clientIDs))
+	for _, clientID := range clientIDs {
+		if value := strings.TrimSpace(clientID); value != "" {
+			requested[value] = struct{}{}
+		}
+	}
+	if len(requested) == 0 {
+		return AICaptureSessionOut{}, fmt.Errorf("%w: select at least one reviewed item", ErrAIInvalidRequest)
+	}
+	selected := make([]AICaptureItem, 0, len(requested))
+	for _, item := range draft.Items {
+		if _, ok := requested[item.ClientID]; ok {
+			selected = append(selected, item)
+			delete(requested, item.ClientID)
+		}
+	}
+	if len(requested) > 0 {
+		return AICaptureSessionOut{}, fmt.Errorf("%w: a selected reviewed item was not found", ErrAIInvalidRequest)
+	}
 	if err := svc.repos.AICaptureSessions.StartSubmitting(ctx, ctx.GID, ctx.UID, id, expectedRevision); err != nil {
 		return AICaptureSessionOut{}, err
 	}
-	var draft AICaptureDraft
-	if err := json.Unmarshal([]byte(session.DraftJSON), &draft); err != nil {
-		_ = svc.repos.AICaptureSessions.SetSubmitFailed(ctx, id, AICaptureErrorSubmitFailed, "The saved draft could not be read.")
-		return AICaptureSessionOut{}, err
-	}
-	for _, item := range draft.Items {
+	for _, item := range selected {
 		if err := svc.submitItem(ctx, session, item); err != nil {
 			_ = svc.repos.AICaptureSessions.SetSubmissionItemStatus(ctx, session.ID, item.ClientID, aicapturesessionitem.StatusFailed, AICaptureErrorSubmitFailed)
 			_ = svc.repos.AICaptureSessions.SetSubmitFailed(ctx, id, AICaptureErrorSubmitFailed, "Some items or photos could not be saved. Retry is safe.")
 			return svc.Get(ctx, id)
 		}
 	}
-	if err := svc.repos.AICaptureSessions.SetCompleted(ctx, id); err != nil {
-		return AICaptureSessionOut{}, err
-	}
-	completed, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	updated, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
 	if err != nil {
 		return AICaptureSessionOut{}, err
 	}
-	if err := svc.repos.AICaptureSessions.PurgeSessionPhotos(ctx, completed); err != nil {
+	completedClientIDs := completedAICaptureClientIDs(updated.Items)
+	allCompleted := len(draft.Items) > 0
+	for _, item := range draft.Items {
+		if _, ok := completedClientIDs[item.ClientID]; !ok {
+			allCompleted = false
+			break
+		}
+	}
+	if !allCompleted {
+		if err := svc.repos.AICaptureSessions.SetReadyAfterPartialSubmit(ctx, id); err != nil {
+			return AICaptureSessionOut{}, err
+		}
+		return svc.Get(ctx, id)
+	}
+	if err := svc.repos.AICaptureSessions.SetCompleted(ctx, id); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	completedSession, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	if err := svc.repos.AICaptureSessions.PurgeSessionPhotos(ctx, completedSession); err != nil {
 		log.Warn().Err(err).Str("session_id", id.String()).Msg("failed to purge completed capture photos")
 	}
 	return svc.Get(ctx, id)
+}
+
+func (svc *AICaptureSessionService) Submit(ctx Context, id uuid.UUID, expectedRevision int) (AICaptureSessionOut, error) {
+	session, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	var draft AICaptureDraft
+	if err := json.Unmarshal([]byte(session.DraftJSON), &draft); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	clientIDs := make([]string, 0, len(draft.Items))
+	for _, item := range draft.Items {
+		clientIDs = append(clientIDs, item.ClientID)
+	}
+	return svc.SubmitItems(ctx, id, expectedRevision, clientIDs)
 }
 
 func (svc *AICaptureSessionService) Delete(ctx Context, id uuid.UUID) error {

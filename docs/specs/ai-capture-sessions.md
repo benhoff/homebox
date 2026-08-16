@@ -5,6 +5,7 @@
 | Durable capture sessions | Implemented | 2026-08-16 |
 | Multiple views of the same item | Implemented | 2026-08-16 |
 | Manual pre-move disposition planning | Implemented | 2026-08-16 |
+| Unified pending-item review | Implemented | 2026-08-16 |
 
 ## Summary
 
@@ -37,7 +38,7 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 5. **Finish Capturing** seals the photo set and queues AI analysis immediately.
 6. Analysis runs on the server and survives browser navigation or closure.
 7. Review is always explicit. AI analysis never creates inventory items by itself.
-8. The first release keeps the existing `HBOX_AI_MAX_PHOTOS` limit for one session. Supporting larger sessions requires a separate cross-batch grouping and deduplication design.
+8. `HBOX_AI_MAX_PHOTOS` limits one provider request, not the visible capture run. A session accepts up to `HBOX_AI_MAX_SESSION_PHOTOS`; HomeBox splits ungrouped evidence into provider-sized batches and combines their draft items for review.
 9. Capture sessions are private to the user who created them, even within a shared collection.
 10. The existing visual-metadata boundary remains unchanged: AI suggests only names, visible quantities, descriptions, manufacturers, clearly legible model numbers, item types, existing tags, and photo assignments.
 11. Multiple-view grouping is opt-in. With grouping off, the existing free-detection behavior remains unchanged and one photo may still contain several detectable items.
@@ -48,6 +49,8 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 16. Every draft item has a manual pre-move disposition: **Undecided** (default), **Keep for move**, **Sell**, **Give away**, **Donate**, **Recycle**, or **Trash**.
 17. Disposition is a human decision. AI analysis, correction, and provider reanalysis cannot suggest or overwrite it.
 18. One same-item group has one disposition regardless of how many photographs are attached to it. Splitting a draft copies the current plan to both resulting items so the user can revise either; merging keeps the destination item's plan.
+19. Review is item-centric across capture sessions. Sessions remain the durability, retry, and photo-ownership boundary but are shown primarily as background activity.
+20. Reviewed items may be created individually or as a selection. A session remains reviewable until every draft item is created, and partial submission never duplicates completed items.
 
 ## Goals
 
@@ -79,9 +82,11 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 
 ## User experience
 
-### Entry point and session list
+### Entry point, review queue, and activity
 
-Opening AI Capture shows a **Capture Sessions** page rather than immediately entering the wizard. The primary action is **New Capture**. Each session card shows:
+Opening AI Capture shows a **Review** queue and an **Activity** tab. The primary action is **New Capture**. Review cards represent pending draft items across every ready session; multiple views of one physical object remain one card. Activity cards expose the underlying capture sessions only when the user needs to resume capture, inspect processing, retry a failure, or view history.
+
+Each activity card shows:
 
 - Location name
 - Creation time and last activity time
@@ -117,7 +122,7 @@ The live camera is a full-screen, capture-focused interface:
 |                                                |
 | [last photo]       [ SHUTTER ]     [switch]    |
 | Item group 2 • 3 views          [ Next Item ]  |
-| 5 of 8      4 uploaded, 1 uploading            |
+| 5 photos       4 uploaded, 1 uploading          |
 |             [ Finish Capturing ]                |
 +------------------------------------------------+
 ```
@@ -125,14 +130,16 @@ The live camera is a full-screen, capture-focused interface:
 Required behaviors:
 
 - Pressing the shutter never navigates away from the camera.
-- The shutter remains usable while previous photos upload, unless local storage is full or the configured session limit has been reached.
+- The shutter remains usable while previous photos upload, unless local storage is full or an active same-item group has reached the provider request limit.
 - Each photo produces a brief visual confirmation and, where supported and enabled, light haptic feedback.
 - The most recent thumbnail, total count, and upload state are visible but do not obscure the preview.
 - Tapping the recent thumbnail opens an optional tray where photos can be inspected or deleted. Closing the tray returns to the same live camera stream.
 - Camera controls include rear/front switching when multiple cameras exist and torch control only when the browser reports support.
 - Navigating away or hiding the page stops the media tracks. Resuming the session asks for the camera again.
 - **Finish Capturing** is disabled until at least one photo exists.
-- Reaching the photo limit disables the shutter and explains that the session is full.
+- Reaching the internal session limit rolls into a new background session at the same location before accepting the next ungrouped photo.
+- An active same-item group is never split by rollover. At the hard session boundary, the user taps **Next Item** before capture continues in the new background session.
+- A same-item group is limited to the configured per-provider request size (eight views by default), because all of its views must be analyzed together. This does not limit the overall capture run.
 
 #### Multiple-view capture mode
 
@@ -151,7 +158,7 @@ When the toggle is on:
 - **Next Item** closes the current group, keeps the toggle on, and makes the next shutter press start another group.
 - The UI shows the active group number and view count. A short live-region announcement confirms both after each shutter press.
 - Turning the toggle off closes the active group. Turning it back on starts a new group on the next shutter press; it does not resume a closed group automatically.
-- The photo limit continues to count photographs, not groups.
+- The internal session limit continues to count photographs, not groups.
 
 The photo tray displays grouped photos together using a number and text label in addition to color. While the session is still `capturing`, the user can move a photo to another same-item group, make it ungrouped, or start a new group. Deleting the last photo in a group removes the empty group. Grouping edits never delete the underlying photo.
 
@@ -182,15 +189,15 @@ When the user taps **Finish Capturing**:
 3. Outstanding local uploads and grouping updates continue with progress and retry controls.
 4. Once all expected photos and group assignments are confirmed by the server, the client seals the session.
 5. The server changes the session to `queued` and returns immediately.
-6. The user may go to the session list, start another capture, or wait on the progress screen.
+6. The user may go to Activity, start another capture, or wait on the progress screen.
 7. A server worker analyzes the session and persists the resulting draft.
 8. The session becomes `ready_for_review`, or `analysis_failed` with a user-safe explanation and retry action.
 
 Sealing is idempotent and includes the client's expected photo count and latest capture revision. The server rejects the transition if either value disagrees so that a photo or grouping change cannot be silently omitted.
 
-### Later review
+### Pending-item review
 
-Opening a `ready_for_review` session uses the existing editable item cards and photo-assignment controls. Changes are autosaved to the session with optimistic revision checking. The page makes the AI scope explicit and keeps manual-only metadata out of the AI correction prompt.
+The Review tab flattens pending items from every `ready_for_review` session into one queue. Each card shows its location, quantity, disposition, warnings, and assigned photo views. The reviewer can select across sessions for bulk disposition or creation. Opening a card uses the full editable item form and photo-assignment controls. Changes are autosaved to the owning session with optimistic revision checking.
 
 Each explicit same-item group initially produces exactly one item card with all of the group's photos assigned. The card shows a **Multiple views** badge and keeps the stable `captureGroupId` in the draft. Ungrouped photos use the existing free-detection behavior and may produce zero, one, or several draft items.
 
@@ -210,6 +217,7 @@ The user can:
 - Undo the most recent AI correction
 - Leave and resume review later
 - Submit the reviewed draft
+- Create one reviewed item or a selected set without creating unselected items from the same session
 
 Submitting is performed by the server so that the browser does not need to download and re-upload session photos. Repeating a submit request must not create duplicate items.
 
@@ -293,6 +301,7 @@ stateDiagram-v2
 
 - **CAP-030:** Finishing queues analysis and responds without waiting for the AI provider.
 - **CAP-031:** Analysis runs from server-stored photos and uses the existing `AICaptureService` prompt and sanitization.
+- **CAP-031A:** Ungrouped session photos are divided into provider requests of at most `HBOX_AI_MAX_PHOTOS`; an explicit same-item group is capped at that size so all its views remain in one request. Combined results retain stable photo IDs and capture order.
 - **CAP-032:** Only one worker may analyze a session at a time.
 - **CAP-033:** Transient upstream failures remain durably queued and retry with bounded exponential backoff until the provider recovers. Retry activity extends temporary-data retention so an offline provider cannot expire pending work. Invalid requests and permanent provider errors fail without automatic retry.
 - **CAP-034:** A successful result and warnings are persisted as the session draft before the state becomes `ready_for_review`.
@@ -306,7 +315,7 @@ stateDiagram-v2
 
 - **CAP-040:** Every draft edit is explicitly saved or autosaved before the UI reports it saved.
 - **CAP-041:** Draft updates include an expected revision and reject stale writes with HTTP 409.
-- **CAP-042:** AI corrections operate on server-stored photos and the latest persisted draft.
+- **CAP-042:** AI corrections operate on server-stored photos and the latest persisted draft. When a session exceeds one provider request, the same correction is queued as durable per-item reanalysis so the provider photo limit is preserved.
 - **CAP-042A:** Initial analysis and ordinary corrections use the configured primary provider. A secondary provider is used only when the reviewer explicitly selects it.
 - **CAP-042B:** Item reanalysis sends every photo currently assigned to that reviewed item in one provider request and enforces exactly one returned item. Multiple views never imply quantity.
 - **CAP-042C:** Bulk reanalysis is a durable server-side batch that processes selected items independently and serially, preserving progress and successful suggestions across navigation, browser closure, and server restart.
@@ -319,6 +328,7 @@ stateDiagram-v2
 - **CAP-047:** The session becomes `completed` only after every draft item and assigned attachment succeeds.
 - **CAP-048:** No item is created during capture, upload, analysis, or correction.
 - **CAP-049:** Review initially preserves explicit group photo assignments but permits the user to split, merge, or reassign draft items before submission.
+- **CAP-049A:** Review lists pending items across ready sessions and supports individual or selected partial submission. Completed draft rows are immutable and omitted from the pending queue.
 
 ## API design
 
@@ -496,7 +506,7 @@ This feature does not change the configured model, OpenAI-compatible API default
 
 For an explicit group, the provider instruction states that all supplied images are different views of one physical inventory item and requests exactly one item result. The instruction includes the opaque `captureGroupId`, and the structured response schema requires that same ID. The model should reconcile evidence across views—for example, using one image for the product shape and another for a legible brand or model number—without treating the number of photographs as quantity.
 
-The first implementation should make one provider call per explicit same-item group, processed serially by the session worker. This is intentionally simple and is expected to be more reliable for the configured local Qwen model than asking one prompt to maintain many cross-image identity constraints. All ungrouped photos, if any, use one additional call through the existing multi-item detector. The session-level photo and item limits still apply after results are merged.
+The first implementation should make one provider call per explicit same-item group, processed serially by the session worker. This is intentionally simple and is expected to be more reliable for the configured local Qwen model than asking one prompt to maintain many cross-image identity constraints. Ungrouped photos use one or more provider-sized calls through the existing multi-item detector. The session-level photo and item limits still apply after results are merged.
 
 Sanitization enforces the contract independently of the model:
 

@@ -158,4 +158,23 @@ describe("AICaptureAPI", () => {
       captureGroupId: null,
     });
   });
+
+  test("submits only the selected reviewed items", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "session-1", status: "ready_for_review" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const api = new AICaptureAPI(new Requests("http://homebox.test", "Bearer token"));
+
+    await api.submitItems("session-1", 4, ["item-2", "item-4"]);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://homebox.test/api/v1/ai/capture/sessions/session-1/submit-items");
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      revision: 4,
+      clientIds: ["item-2", "item-4"],
+    });
+  });
 });

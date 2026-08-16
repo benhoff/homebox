@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
 )
@@ -60,7 +62,7 @@ func TestRunNextReanalysisWaitsForProviderAndResumesBatch(t *testing.T) {
 	photoID, path, hash := tRepos.AICaptureSessions.NewPhotoStorage([]byte("photo"), tGroup.ID, session.ID)
 	require.NoError(t, tRepos.AICaptureSessions.WriteBlob(ctx, path, "image/jpeg", []byte("photo")))
 	_, _, err = tRepos.AICaptureSessions.CreatePhoto(
-		ctx, tGroup.ID, tUser.ID, session.ID, photoID, uuid.New(), 0, 4, nil,
+		ctx, tGroup.ID, tUser.ID, session.ID, photoID, uuid.New(), 0, 4, 4, nil,
 		"photo.jpg", "image/jpeg", path, 5, hash,
 	)
 	require.NoError(t, err)
@@ -114,6 +116,70 @@ func TestAICaptureMoveFieldsPersistDispositionAndOptionalNotes(t *testing.T) {
 	assert.Equal(t, "Undecided", fields[0].TextValue)
 }
 
+func TestSubmitItemsCreatesSelectedItemsAndPreservesCompletedDraftRows(t *testing.T) {
+	ctx := tCtx
+	locationType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, true)
+	require.NoError(t, err)
+	itemType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, false)
+	require.NoError(t, err)
+	location, err := tRepos.Entities.Create(ctx, tGroup.ID, repo.EntityCreate{
+		Name: "Partial review test", EntityTypeID: locationType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, location.ID) })
+
+	cfg := config.AIConfig{Enabled: true, MaxPhotos: 8, MaxSessionPhotos: 24, MaxItems: 25}
+	svc := NewAICaptureSessionService(tRepos, NewAICaptureService(cfg), tSvc.Entities, cfg)
+	session, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 5)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, session.ID)
+	})
+	draft := AICaptureDraft{Items: []AICaptureItem{
+		{ClientID: "item-1", Name: "Drill", Quantity: 1, EntityTypeID: itemType.ID.String(), MoveDisposition: AICaptureMoveDispositionKeep},
+		{ClientID: "item-2", Name: "Saw", Quantity: 1, EntityTypeID: itemType.ID.String(), MoveDisposition: AICaptureMoveDispositionSell},
+	}, Warnings: []string{}}
+	encoded, err := json.Marshal(draft)
+	require.NoError(t, err)
+	_, err = tClient.AICaptureSession.UpdateOneID(session.ID).
+		SetStatus(aicapturesession.StatusReadyForReview).
+		SetDraftJSON(string(encoded)).
+		SetDraftRevision(1).
+		Save(ctx)
+	require.NoError(t, err)
+
+	partial, err := svc.SubmitItems(ctx, session.ID, 1, []string{"item-1"})
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusReadyForReview.String(), partial.Status)
+	require.Len(t, partial.CreatedItems, 1)
+	assert.Equal(t, "item-1", partial.CreatedItems[0].ClientID)
+	t.Cleanup(func() {
+		if id, parseErr := uuid.Parse(partial.CreatedItems[0].ID); parseErr == nil {
+			_ = tRepos.Entities.Delete(ctx, id)
+		}
+	})
+
+	partial.Draft.Items[0].Name = "Changed after creation"
+	partial.Draft.Items[1].Name = "Updated saw"
+	saved, err := svc.SaveDraft(ctx, session.ID, partial.DraftRevision, *partial.Draft)
+	require.NoError(t, err)
+	assert.Equal(t, "Drill", saved.Draft.Items[0].Name)
+	assert.Equal(t, "Updated saw", saved.Draft.Items[1].Name)
+
+	completed, err := svc.SubmitItems(ctx, session.ID, saved.DraftRevision, []string{"item-2"})
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusCompleted.String(), completed.Status)
+	require.Len(t, completed.CreatedItems, 2)
+	for _, item := range completed.CreatedItems {
+		if item.ClientID == "item-1" {
+			continue
+		}
+		itemID, parseErr := uuid.Parse(item.ID)
+		require.NoError(t, parseErr)
+		t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, itemID) })
+	}
+}
+
 func TestPartitionAICapturePhotosKeepsGroupsAndUngroupedBatchInFirstPhotoOrder(t *testing.T) {
 	groupA := uuid.New()
 	groupB := uuid.New()
@@ -125,13 +191,26 @@ func TestPartitionAICapturePhotosKeepsGroupsAndUngroupedBatchInFirstPhotoOrder(t
 		{ID: uuid.New(), Position: 4},
 	}
 
-	batches := partitionAICapturePhotos(photos)
+	batches := partitionAICapturePhotos(photos, 8)
 	require.Len(t, batches, 3)
 	assert.Equal(t, groupA.String(), batches[0].CaptureGroupID)
 	assert.Equal(t, []int{0, 2}, []int{batches[0].Photos[0].Position, batches[0].Photos[1].Position})
 	assert.Empty(t, batches[1].CaptureGroupID)
 	assert.Equal(t, []int{1, 4}, []int{batches[1].Photos[0].Position, batches[1].Photos[1].Position})
 	assert.Equal(t, groupB.String(), batches[2].CaptureGroupID)
+}
+
+func TestPartitionAICapturePhotosChunksUngroupedProviderRequests(t *testing.T) {
+	photos := make([]repo.AICapturePhotoRecord, 0, 5)
+	for position := range 5 {
+		photos = append(photos, repo.AICapturePhotoRecord{ID: uuid.New(), Position: position})
+	}
+
+	batches := partitionAICapturePhotos(photos, 2)
+	require.Len(t, batches, 3)
+	assert.Equal(t, []int{0, 1}, []int{batches[0].Photos[0].Position, batches[0].Photos[1].Position})
+	assert.Equal(t, []int{2, 3}, []int{batches[1].Photos[0].Position, batches[1].Photos[1].Position})
+	assert.Equal(t, 4, batches[2].Photos[0].Position)
 }
 
 func TestValidateDraftCaptureGroupsClearsChangedOrDuplicateAssignments(t *testing.T) {

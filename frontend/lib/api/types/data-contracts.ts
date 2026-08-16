@@ -1588,6 +1588,7 @@ export interface UserRegistration {
 export interface AIStatus {
   enabled: boolean;
   maxPhotos: number;
+  maxSessionPhotos: number;
   model: string;
   providers: AICaptureProviderStatus[];
 }

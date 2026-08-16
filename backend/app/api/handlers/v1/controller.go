@@ -145,10 +145,11 @@ type (
 	}
 
 	AIStatus struct {
-		Enabled   bool                               `json:"enabled"`
-		Model     string                             `json:"model,omitempty"`
-		MaxPhotos int                                `json:"maxPhotos"`
-		Providers []services.AICaptureProviderStatus `json:"providers"`
+		Enabled          bool                               `json:"enabled"`
+		Model            string                             `json:"model,omitempty"`
+		MaxPhotos        int                                `json:"maxPhotos"`
+		MaxSessionPhotos int                                `json:"maxSessionPhotos"`
+		Providers        []services.AICaptureProviderStatus `json:"providers"`
 	}
 )
 
@@ -210,10 +211,11 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				Enabled: ctrl.config.Otel.Enabled,
 			},
 			AI: AIStatus{
-				Enabled:   ctrl.svc.AICapture.IsEnabled(),
-				Model:     ctrl.svc.AICapture.Model(),
-				MaxPhotos: ctrl.svc.AICapture.MaxPhotos(),
-				Providers: ctrl.svc.AICapture.Providers(),
+				Enabled:          ctrl.svc.AICapture.IsEnabled(),
+				Model:            ctrl.svc.AICapture.Model(),
+				MaxPhotos:        ctrl.svc.AICapture.MaxPhotos(),
+				MaxSessionPhotos: ctrl.svc.AICapture.MaxSessionPhotos(),
+				Providers:        ctrl.svc.AICapture.Providers(),
 			},
 		})
 	}

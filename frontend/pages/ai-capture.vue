@@ -55,7 +55,14 @@
   useHead({ title: `HomeBox | ${t("ai_capture.title")}` });
 
   type CaptureView = "sessions" | "location" | "camera" | "processing" | "review" | "done";
+  type CaptureLandingTab = "review" | "activity";
   type CaptureLocation = { id: string; name: string };
+  type PendingReviewEntry = {
+    key: string;
+    session: AICaptureSession;
+    item: AICaptureItem;
+    itemIndex: number;
+  };
   type ReanalysisFieldKey =
     "name" | "quantity" | "entityTypeId" | "manufacturer" | "modelNumber" | "description" | "tagIds";
 
@@ -85,6 +92,7 @@
   const locationStore = useLocationStore();
 
   const view = ref<CaptureView>("sessions");
+  const landingTab = ref<CaptureLandingTab>("review");
   const status = ref<APISummary | null>(null);
   const sessions = ref<AICaptureSession[]>([]);
   const activeSession = ref<AICaptureSession | null>(null);
@@ -96,6 +104,8 @@
   const reanalysisProvider = ref("default");
   const bulkMoveDisposition = ref<AICaptureMoveDisposition>("undecided");
   const selectedReviewItemIds = ref<string[]>([]);
+  const selectedPendingItemKeys = ref<string[]>([]);
+  const pendingBulkMoveDisposition = ref<AICaptureMoveDisposition>("undecided");
   const reanalyzingItemIds = ref<string[]>([]);
   const reanalysisSuggestions = ref<Record<string, AICaptureReanalysis>>({});
   const reanalysisErrors = ref<Record<string, string>>({});
@@ -103,6 +113,7 @@
   const loading = ref(false);
   const saving = ref(false);
   const submitting = ref(false);
+  const rollingOver = ref(false);
   const nextPosition = ref(0);
   const sameItemMode = ref(false);
   const activeCaptureGroupId = ref<string>();
@@ -115,12 +126,58 @@
 
   const itemTypes = computed(() => entityTypeStore.itemTypes);
   const tags = computed(() => tagStore.tags);
-  const maxPhotos = computed(() => status.value?.ai?.maxPhotos || 8);
+  const maxProviderPhotos = computed(() => status.value?.ai?.maxPhotos || 8);
+  const maxSessionPhotos = computed(() => status.value?.ai?.maxSessionPhotos || maxProviderPhotos.value || 24);
   const aiEnabled = computed(() => status.value?.ai?.enabled !== false);
   const failedUploads = computed(() => queue.value.filter(photo => photo.status === "failed"));
   const queuedUploads = computed(() => queue.value.filter(photo => photo.status !== "failed").length);
   const capturedCount = computed(() => (activeSession.value?.photos.length || 0) + queue.value.length);
   const draft = computed(() => activeSession.value?.draft);
+  const completedReviewItemIDs = computed(
+    () =>
+      new Set(
+        (activeSession.value?.submissions || [])
+          .filter(submission => submission.status === "completed")
+          .map(submission => submission.clientId)
+      )
+  );
+  const reviewItems = computed(() =>
+    (draft.value?.items || [])
+      .map((item, itemIndex) => ({ item, itemIndex }))
+      .filter(entry => !completedReviewItemIDs.value.has(entry.item.clientId))
+  );
+  const pendingReviewItems = computed<PendingReviewEntry[]>(() =>
+    sessions.value.flatMap(session => {
+      if (session.status !== "ready_for_review" || !session.draft) return [];
+      const completed = new Set(
+        (session.submissions || [])
+          .filter(submission => submission.status === "completed")
+          .map(submission => submission.clientId)
+      );
+      return session.draft.items
+        .map((item, itemIndex) => ({ key: `${session.id}:${item.clientId}`, session, item, itemIndex }))
+        .filter(entry => !completed.has(entry.item.clientId));
+    })
+  );
+  const selectedPendingItems = computed(() => {
+    const selected = new Set(selectedPendingItemKeys.value);
+    return pendingReviewItems.value.filter(entry => selected.has(entry.key));
+  });
+  const allPendingItemsSelected = computed(
+    () => pendingReviewItems.value.length > 0 && selectedPendingItems.value.length === pendingReviewItems.value.length
+  );
+  const activitySessions = computed(() =>
+    sessions.value.filter(
+      session =>
+        session.status !== "ready_for_review" ||
+        !session.draft?.items.some(
+          item =>
+            !(session.submissions || []).some(
+              submission => submission.clientId === item.clientId && submission.status === "completed"
+            )
+        )
+    )
+  );
   const sessionPhotos = computed(() => activeSession.value?.photos || []);
   const activeStatus = computed(() => activeSession.value?.status || "capturing");
   const reanalysisActive = computed(() =>
@@ -141,8 +198,8 @@
   });
   const allReviewItemsSelected = computed(
     () =>
-      !!draft.value?.items.length &&
-      draft.value.items.every(item => selectedReviewItemIds.value.includes(item.clientId))
+      !!reviewItems.value.length &&
+      reviewItems.value.every(({ item }) => selectedReviewItemIds.value.includes(item.clientId))
   );
   const captureGroups = computed(() => {
     const firstPositions = new Map<string, number>();
@@ -219,13 +276,17 @@
     }).format(new Date(value));
   }
 
+  function storeSession(session: AICaptureSession) {
+    const index = sessions.value.findIndex(candidate => candidate.id === session.id);
+    if (index >= 0) sessions.value[index] = session;
+    else sessions.value.unshift(session);
+  }
+
   function replaceSession(session: AICaptureSession) {
     activeSession.value = session;
     syncReanalysis(session);
     selectedLocation.value = session.location || null;
-    const index = sessions.value.findIndex(candidate => candidate.id === session.id);
-    if (index >= 0) sessions.value[index] = session;
-    else sessions.value.unshift(session);
+    storeSession(session);
   }
 
   function syncReanalysis(session: AICaptureSession) {
@@ -251,7 +312,7 @@
   }
 
   function toggleAllReviewItems(checked: boolean) {
-    selectedReviewItemIds.value = checked ? draft.value?.items.map(item => item.clientId) || [] : [];
+    selectedReviewItemIds.value = checked ? reviewItems.value.map(({ item }) => item.clientId) : [];
   }
 
   function moveDispositionLabel(value: AICaptureMoveDisposition) {
@@ -293,6 +354,109 @@
   async function loadSessions() {
     const response = await api.aiCapture.listSessions();
     if (!response.error) sessions.value = response.data.items || [];
+  }
+
+  function pendingItemPhotos(entry: PendingReviewEntry) {
+    const selected = new Set(entry.item.photoIds || []);
+    return entry.session.photos.filter(photo => selected.has(photo.id));
+  }
+
+  function togglePendingItem(key: string, checked: boolean) {
+    selectedPendingItemKeys.value = checked
+      ? [...new Set([...selectedPendingItemKeys.value, key])]
+      : selectedPendingItemKeys.value.filter(value => value !== key);
+  }
+
+  function toggleAllPendingItems(checked: boolean) {
+    selectedPendingItemKeys.value = checked ? pendingReviewItems.value.map(entry => entry.key) : [];
+  }
+
+  function groupPendingItemsBySession(entries: PendingReviewEntry[]) {
+    const grouped = new Map<string, PendingReviewEntry[]>();
+    for (const entry of entries) {
+      const existing = grouped.get(entry.session.id) || [];
+      existing.push(entry);
+      grouped.set(entry.session.id, existing);
+    }
+    return grouped;
+  }
+
+  async function openPendingItem(entry: PendingReviewEntry) {
+    await openSession(entry.session);
+    if (view.value !== "review") return;
+    await nextTick();
+    document.getElementById(`review-item-${entry.item.clientId}`)?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  async function applyPendingBulkMoveDisposition() {
+    if (selectedPendingItems.value.length === 0 || saving.value) return;
+    const bySession = groupPendingItemsBySession(selectedPendingItems.value);
+    saving.value = true;
+    let updated = 0;
+    try {
+      for (const entries of bySession.values()) {
+        const session = entries[0]!.session;
+        if (!session.draft) continue;
+        const draft = cloneDraft(session.draft);
+        const selected = new Set(entries.map(entry => entry.item.clientId));
+        for (const item of draft.items) {
+          if (selected.has(item.clientId)) item.moveDisposition = pendingBulkMoveDisposition.value;
+        }
+        const response = await api.aiCapture.saveDraft(session.id, session.draftRevision, draft);
+        if (response.error) throw new Error(responseMessage(response));
+        storeSession(response.data);
+        updated += entries.length;
+      }
+      toast.success(
+        t("ai_capture.review.move_bulk_applied", {
+          count: updated,
+          disposition: moveDispositionLabel(pendingBulkMoveDisposition.value),
+        })
+      );
+    } catch (error) {
+      console.error(error);
+      toast.error(t("ai_capture.errors.save_draft"));
+    } finally {
+      saving.value = false;
+    }
+  }
+
+  async function submitPendingItems(entries: PendingReviewEntry[]) {
+    if (entries.length === 0 || submitting.value) return;
+    if (entries.some(entry => !entry.item.name.trim() || !entry.item.entityTypeId || entry.item.quantity <= 0)) {
+      toast.error(t("ai_capture.errors.review_required"));
+      return;
+    }
+    const bySession = groupPendingItemsBySession(entries);
+    submitting.value = true;
+    let created = 0;
+    let failed = 0;
+    try {
+      for (const sessionEntries of bySession.values()) {
+        const session = sessionEntries[0]!.session;
+        const clientIds = sessionEntries.map(entry => entry.item.clientId);
+        const response = await api.aiCapture.submitItems(session.id, session.draftRevision, clientIds);
+        if (response.error || response.data.errorCode) {
+          failed += sessionEntries.length;
+          if (!response.error) storeSession(response.data);
+          continue;
+        }
+        storeSession(response.data);
+        created += sessionEntries.length;
+        if (response.data.status === "completed") await clearCaptureQueueSession(response.data.id);
+      }
+      await locationStore.refreshChildren();
+      await loadSessions();
+      const remainingKeys = new Set(pendingReviewItems.value.map(entry => entry.key));
+      selectedPendingItemKeys.value = selectedPendingItemKeys.value.filter(key => remainingKeys.has(key));
+    } catch (error) {
+      console.error(error);
+      failed += Math.max(0, entries.length - created - failed);
+    } finally {
+      submitting.value = false;
+    }
+    if (created) toast.success(t("ai_capture.review.items_created", { count: created }));
+    if (failed) toast.error(t("ai_capture.errors.partial_submit"));
   }
 
   function revokePreviews() {
@@ -389,8 +553,19 @@
   }
 
   async function storeCapture(file: File) {
-    if (!activeSession.value || capturedCount.value >= maxPhotos.value) {
-      toast.error(t("ai_capture.errors.too_many_photos", { count: maxPhotos.value }));
+    if (!activeSession.value) return;
+    if (activeCaptureGroupId.value && activeGroupViewCount.value >= maxProviderPhotos.value) {
+      toast.error(t("ai_capture.errors.item_group_full", { count: maxProviderPhotos.value }));
+      return;
+    }
+    if (capturedCount.value >= maxSessionPhotos.value) {
+      if (activeCaptureGroupId.value) {
+        toast.error(t("ai_capture.errors.item_group_full", { count: maxProviderPhotos.value }));
+        return;
+      }
+      if (!(await rolloverCaptureBatch())) return;
+    }
+    if (!activeSession.value) {
       return;
     }
     const position = nextPosition.value++;
@@ -430,6 +605,48 @@
 
   function capturePhoto(file: File) {
     captureChain = captureChain.then(() => storeCapture(file));
+  }
+
+  async function rolloverCaptureBatch() {
+    if (!activeSession.value || rollingOver.value || activeCaptureGroupId.value) return false;
+    rollingOver.value = true;
+    const previousSession = activeSession.value;
+    const locationId = previousSession.location?.id;
+    try {
+      pumpUploads();
+      while (inFlight.size > 0) await Promise.all([...inFlight.values()]);
+      if (queue.value.length > 0) {
+        toast.error(t("ai_capture.errors.uploads_pending"));
+        return false;
+      }
+      const latestResponse = await api.aiCapture.getSession(previousSession.id);
+      if (latestResponse.error) throw new Error(responseMessage(latestResponse));
+      const finishedResponse = await api.aiCapture.finishSession(
+        previousSession.id,
+        latestResponse.data.photos.length,
+        latestResponse.data.captureRevision
+      );
+      if (finishedResponse.error) throw new Error(responseMessage(finishedResponse));
+      storeSession(finishedResponse.data);
+      await clearCaptureQueueSession(previousSession.id);
+      if (!locationId) throw new Error("The capture location is unavailable");
+      const nextResponse = await api.aiCapture.createSession(locationId);
+      if (nextResponse.error) throw new Error(responseMessage(nextResponse));
+      revokePreviews();
+      queue.value = [];
+      nextPosition.value = 0;
+      activeCaptureGroupId.value = undefined;
+      replaceSession(nextResponse.data);
+      await persistCaptureState();
+      toast.success(t("ai_capture.camera.batch_continued"));
+      return true;
+    } catch (error) {
+      console.error(error);
+      toast.error(t("ai_capture.errors.rollover_failed"));
+      return false;
+    } finally {
+      rollingOver.value = false;
+    }
   }
 
   async function uploadPhoto(photo: CaptureQueuePhoto) {
@@ -530,11 +747,13 @@
     sameItemMode.value = value;
     activeCaptureGroupId.value = undefined;
     await persistCaptureState();
+    if (capturedCount.value >= maxSessionPhotos.value) await rolloverCaptureBatch();
   }
 
   async function nextItem() {
     activeCaptureGroupId.value = undefined;
     await persistCaptureState();
+    if (capturedCount.value >= maxSessionPhotos.value) await rolloverCaptureBatch();
   }
 
   function selectedCaptureGroup(value: string) {
@@ -865,6 +1084,13 @@
 
   async function askAI() {
     if (!activeSession.value || !correction.value.trim()) return;
+    if (sessionPhotos.value.length > maxProviderPhotos.value) {
+      reanalysisProvider.value = "default";
+      reanalysisInstruction.value = correction.value.trim();
+      const queued = await reanalyzeItems(reviewItems.value.map(({ item }) => item.clientId));
+      if (queued) correction.value = "";
+      return;
+    }
     if (!(await saveDraft())) return;
     const previousDraft = activeSession.value.draft ? cloneDraft(activeSession.value.draft) : null;
     saving.value = true;
@@ -888,7 +1114,7 @@
 
   async function reanalyzeItems(clientIds: string[]) {
     const uniqueIds = [...new Set(clientIds)];
-    if (!activeSession.value || uniqueIds.length === 0 || reanalysisActive.value || !(await saveDraft())) return;
+    if (!activeSession.value || uniqueIds.length === 0 || reanalysisActive.value || !(await saveDraft())) return false;
     const sessionId = activeSession.value.id;
     const revision = activeSession.value.draftRevision;
     const provider = reanalysisProvider.value;
@@ -904,20 +1130,28 @@
     );
     if (response.error) {
       toast.error(responseMessage(response));
-      return;
+      return false;
     }
     replaceSession(response.data);
     toast.success(t("ai_capture.review.reanalysis_queued", { count: selected.length }));
+    return true;
   }
 
   function reanalyzeItem(item: AICaptureItem) {
     return reanalyzeItems([item.clientId]);
   }
 
-  async function submitSession() {
-    if (!activeSession.value || reanalysisActive.value || !(await saveDraft())) return;
+  async function submitReviewItems(clientIds: string[]) {
+    const selected = [...new Set(clientIds)].filter(clientId =>
+      reviewItems.value.some(({ item }) => item.clientId === clientId)
+    );
+    if (!activeSession.value || selected.length === 0 || reanalysisActive.value || !(await saveDraft())) return;
     submitting.value = true;
-    const response = await api.aiCapture.submitSession(activeSession.value.id, activeSession.value.draftRevision);
+    const response = await api.aiCapture.submitItems(
+      activeSession.value.id,
+      activeSession.value.draftRevision,
+      selected
+    );
     submitting.value = false;
     if (response.error || response.data.errorCode) {
       if (!response.error) replaceSession(response.data);
@@ -925,14 +1159,13 @@
       return;
     }
     replaceSession(response.data);
-    await clearCaptureQueueSession(response.data.id);
     await locationStore.refreshChildren();
-    view.value = "done";
-    toast.success(
-      t("ai_capture.submit_complete", {
-        count: response.data.createdItems.length,
-      })
-    );
+    selectedReviewItemIds.value = selectedReviewItemIds.value.filter(clientId => !selected.includes(clientId));
+    if (response.data.status === "completed") {
+      await clearCaptureQueueSession(response.data.id);
+      view.value = "done";
+    }
+    toast.success(t("ai_capture.review.items_created", { count: selected.length }));
   }
 
   async function deleteSession(session: AICaptureSession) {
@@ -1033,68 +1266,174 @@
       <Card>
         <CardContent class="flex flex-wrap items-center justify-between gap-4 py-5">
           <div>
-            <h2 class="font-semibold">
-              {{ $t("ai_capture.sessions.new_title") }}
-            </h2>
-            <p class="text-sm text-muted-foreground">
-              {{ $t("ai_capture.sessions.new_description") }}
-            </p>
+            <h2 class="font-semibold">{{ $t("ai_capture.sessions.new_title") }}</h2>
+            <p class="text-sm text-muted-foreground">{{ $t("ai_capture.sessions.new_description") }}</p>
           </div>
-          <Button :disabled="!aiEnabled" @click="newSession"
-            ><MdiPlus class="mr-2" /> {{ $t("ai_capture.sessions.new") }}</Button
-          >
+          <Button :disabled="!aiEnabled" @click="newSession">
+            <MdiPlus class="mr-2" /> {{ $t("ai_capture.sessions.new") }}
+          </Button>
         </CardContent>
       </Card>
 
-      <div v-if="sessions.length" class="grid gap-3 md:grid-cols-2">
-        <Card v-for="session in sessions" :key="session.id" class="overflow-hidden">
-          <CardHeader class="pb-3">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <CardTitle class="truncate text-lg">{{
-                  session.location?.name || $t("ai_capture.sessions.location_removed")
-                }}</CardTitle>
-                <CardDescription>{{ sessionTime(session.updatedAt) }}</CardDescription>
-              </div>
-              <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClass(session.status)">
-                {{ statusLabel(session.status) }}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent class="space-y-3">
-            <div class="flex items-center justify-between text-sm text-muted-foreground">
-              <span
-                ><MdiImageMultiple class="mr-1 inline" />
-                {{
-                  $t("ai_capture.sessions.photos", {
-                    count: session.photoCount,
-                  })
-                }}</span
+      <div class="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
+        <Button :variant="landingTab === 'review' ? 'default' : 'ghost'" @click="landingTab = 'review'">
+          <MdiPackageVariant class="mr-2" />
+          {{ $t("ai_capture.pending.title", { count: pendingReviewItems.length }) }}
+        </Button>
+        <Button :variant="landingTab === 'activity' ? 'default' : 'ghost'" @click="landingTab = 'activity'">
+          <MdiClockOutline class="mr-2" /> {{ $t("ai_capture.activity.title") }}
+        </Button>
+      </div>
+
+      <template v-if="landingTab === 'review'">
+        <Card v-if="pendingReviewItems.length">
+          <CardContent class="space-y-3 py-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <label class="flex items-center gap-2 text-sm font-medium">
+                <Checkbox
+                  :model-value="allPendingItemsSelected"
+                  @update:model-value="value => toggleAllPendingItems(value === true)"
+                />
+                {{ $t("ai_capture.pending.select_all") }}
+              </label>
+              <Button
+                :disabled="selectedPendingItems.length === 0 || submitting"
+                @click="submitPendingItems(selectedPendingItems)"
               >
-              <span v-if="session.draft">{{
-                $t("ai_capture.sessions.items", {
-                  count: session.draft.items.length,
-                })
-              }}</span>
-            </div>
-            <p v-if="session.errorMessage" class="text-sm text-destructive">
-              {{ session.errorMessage }}
-            </p>
-            <div class="flex justify-between gap-2">
-              <Button size="sm" variant="ghost" class="text-destructive" @click="deleteSession(session)">
-                <MdiDelete class="mr-1" /> {{ $t("global.delete") }}
+                <MdiLoading v-if="submitting" class="mr-2 animate-spin" />
+                <MdiCheckCircle v-else class="mr-2" />
+                {{ $t("ai_capture.pending.create_selected", { count: selectedPendingItems.length }) }}
               </Button>
-              <Button size="sm" :disabled="loading" @click="openSession(session)">
-                {{ session.status === "capturing" ? $t("ai_capture.sessions.resume") : $t("ai_capture.sessions.open") }}
+            </div>
+            <div class="grid gap-2 sm:grid-cols-[12rem_auto] sm:items-end">
+              <div class="space-y-1">
+                <Label for="pending-move-disposition">{{ $t("ai_capture.review.move_disposition") }}</Label>
+                <Select id="pending-move-disposition" v-model="pendingBulkMoveDisposition">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="disposition in moveDispositionOptions" :key="disposition" :value="disposition">
+                      {{ moveDispositionLabel(disposition) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                :disabled="selectedPendingItems.length === 0 || saving || submitting"
+                @click="applyPendingBulkMoveDisposition"
+              >
+                {{ $t("ai_capture.review.move_apply_selected", { count: selectedPendingItems.length }) }}
               </Button>
             </div>
           </CardContent>
         </Card>
-      </div>
-      <div v-else class="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
-        <MdiCamera class="mx-auto mb-3 size-12" />
-        <p>{{ $t("ai_capture.sessions.empty") }}</p>
-      </div>
+
+        <div v-if="pendingReviewItems.length" class="grid gap-3 md:grid-cols-2">
+          <Card v-for="entry in pendingReviewItems" :key="entry.key" class="overflow-hidden">
+            <CardHeader class="pb-3">
+              <div class="flex items-start gap-3">
+                <Checkbox
+                  class="mt-1"
+                  :model-value="selectedPendingItemKeys.includes(entry.key)"
+                  :aria-label="$t('ai_capture.review.select_item', { name: entry.item.name })"
+                  @update:model-value="value => togglePendingItem(entry.key, value === true)"
+                />
+                <div class="min-w-0 grow">
+                  <CardTitle class="truncate text-lg">{{
+                    entry.item.name || $t("ai_capture.review.unnamed")
+                  }}</CardTitle>
+                  <CardDescription class="flex items-center gap-1">
+                    <MdiMapMarker /> {{ entry.session.location?.name || $t("ai_capture.sessions.location_removed") }}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div v-if="pendingItemPhotos(entry).length" class="flex gap-2 overflow-x-auto">
+                <img
+                  v-for="photo in pendingItemPhotos(entry).slice(0, 4)"
+                  :key="photo.id"
+                  :src="api.aiCapture.photoURL(entry.session.id, photo.id)"
+                  :alt="photo.originalName"
+                  class="size-20 shrink-0 rounded-md object-cover"
+                />
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="rounded-full bg-muted px-2 py-1"
+                  >{{ $t("global.quantity") }}: {{ entry.item.quantity }}</span
+                >
+                <span class="rounded-full bg-muted px-2 py-1">
+                  {{ moveDispositionLabel(entry.item.moveDisposition) }}
+                </span>
+                <span v-if="entry.item.captureGroupId" class="rounded-full bg-primary/10 px-2 py-1 text-primary">
+                  <MdiImageMultiple class="mr-1 inline" /> {{ $t("ai_capture.pending.multiple_views") }}
+                </span>
+              </div>
+              <p v-if="entry.item.needsReview" class="text-sm text-amber-600">
+                {{ entry.item.reviewReason || $t("ai_capture.review.check_item") }}
+              </p>
+              <div class="flex justify-end gap-2">
+                <Button size="sm" variant="outline" @click="openPendingItem(entry)">
+                  {{ $t("ai_capture.pending.review_item") }}
+                </Button>
+                <Button size="sm" :disabled="submitting" @click="submitPendingItems([entry])">
+                  {{ $t("ai_capture.pending.create_item") }}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <div v-else class="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+          <MdiCheckCircle class="mx-auto mb-3 size-12" />
+          <p>{{ $t("ai_capture.pending.empty") }}</p>
+        </div>
+      </template>
+
+      <template v-else>
+        <div v-if="activitySessions.length" class="grid gap-3 md:grid-cols-2">
+          <Card v-for="session in activitySessions" :key="session.id" class="overflow-hidden">
+            <CardHeader class="pb-3">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <CardTitle class="truncate text-lg">{{
+                    session.location?.name || $t("ai_capture.sessions.location_removed")
+                  }}</CardTitle>
+                  <CardDescription>{{ sessionTime(session.updatedAt) }}</CardDescription>
+                </div>
+                <span class="rounded-full px-2.5 py-1 text-xs font-medium" :class="statusClass(session.status)">
+                  {{ statusLabel(session.status) }}
+                </span>
+              </div>
+            </CardHeader>
+            <CardContent class="space-y-3">
+              <div class="flex items-center justify-between text-sm text-muted-foreground">
+                <span
+                  ><MdiImageMultiple class="mr-1 inline" />
+                  {{ $t("ai_capture.sessions.photos", { count: session.photoCount }) }}</span
+                >
+                <span v-if="session.draft">{{
+                  $t("ai_capture.sessions.items", { count: session.draft.items.length })
+                }}</span>
+              </div>
+              <p v-if="session.errorMessage" class="text-sm text-destructive">{{ session.errorMessage }}</p>
+              <div class="flex justify-between gap-2">
+                <Button size="sm" variant="ghost" class="text-destructive" @click="deleteSession(session)">
+                  <MdiDelete class="mr-1" /> {{ $t("global.delete") }}
+                </Button>
+                <Button size="sm" :disabled="loading" @click="openSession(session)">
+                  {{
+                    session.status === "capturing" ? $t("ai_capture.sessions.resume") : $t("ai_capture.sessions.open")
+                  }}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        <div v-else class="rounded-xl border border-dashed p-10 text-center text-muted-foreground">
+          <MdiCamera class="mx-auto mb-3 size-12" />
+          <p>{{ $t("ai_capture.activity.empty") }}</p>
+        </div>
+      </template>
     </div>
 
     <Card v-else-if="view === 'location'">
@@ -1124,8 +1463,10 @@
       </div>
       <AICaptureCamera
         :count="capturedCount"
-        :max-photos="maxPhotos"
-        :busy="loading"
+        :limit-reached="
+          !!activeCaptureGroupId && (activeGroupViewCount >= maxProviderPhotos || capturedCount >= maxSessionPhotos)
+        "
+        :busy="loading || rollingOver"
         :same-item-mode="sameItemMode"
         :active-group-number="activeGroupNumber"
         :active-group-view-count="activeGroupViewCount"
@@ -1422,7 +1763,7 @@
         </CardContent>
       </Card>
 
-      <Card v-for="(item, itemIndex) in draft.items" :key="item.clientId">
+      <Card v-for="{ item, itemIndex } in reviewItems" :id="`review-item-${item.clientId}`" :key="item.clientId">
         <CardHeader class="pb-3">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
@@ -1453,6 +1794,13 @@
             <div class="flex flex-wrap justify-end gap-1">
               <Button
                 size="sm"
+                :disabled="saving || submitting || reanalysisActive"
+                @click="submitReviewItems([item.clientId])"
+              >
+                <MdiCheckCircle class="mr-1" /> {{ $t("ai_capture.pending.create_item") }}
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 :disabled="reanalysisActive || saving || !(item.photoIds?.length || 0)"
                 @click="reanalyzeItem(item)"
@@ -1473,7 +1821,12 @@
               >
                 {{ $t("ai_capture.review.split") }}
               </Button>
-              <Button v-if="itemIndex > 0" size="sm" variant="outline" @click="mergeWithPrevious(itemIndex)">
+              <Button
+                v-if="itemIndex > 0 && !completedReviewItemIDs.has(draft.items[itemIndex - 1]!.clientId)"
+                size="sm"
+                variant="outline"
+                @click="mergeWithPrevious(itemIndex)"
+              >
                 {{ $t("ai_capture.review.merge_previous") }}
               </Button>
               <Button variant="ghost" size="icon" @click="removeItem(itemIndex)"><MdiDelete /></Button>
@@ -1667,11 +2020,21 @@
             $t("ai_capture.review.save_later")
           }}</Button>
           <Button
-            :disabled="saving || submitting || reanalysisActive || draft.items.length === 0"
-            @click="submitSession"
+            :disabled="saving || submitting || reanalysisActive || reviewItems.length === 0"
+            @click="
+              submitReviewItems(
+                selectedReviewItemIds.length
+                  ? selectedReviewItemIds
+                  : reviewItems.map(({ item: reviewItem }) => reviewItem.clientId)
+              )
+            "
           >
             <MdiLoading v-if="submitting" class="mr-2 animate-spin" /><MdiCheckCircle v-else class="mr-2" />
-            {{ $t("ai_capture.review.submit", { count: draft.items.length }) }}
+            {{
+              $t("ai_capture.review.submit", {
+                count: selectedReviewItemIds.length || reviewItems.length,
+              })
+            }}
           </Button>
         </div>
       </div>

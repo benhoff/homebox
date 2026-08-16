@@ -2390,6 +2390,8 @@ definitions:
     type: object
   services.AICaptureCreatedItem:
     properties:
+      clientId:
+        type: string
       id:
         type: string
       name:
@@ -2446,6 +2448,18 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  services.AICaptureItemSubmission:
+    properties:
+      clientId:
+        type: string
+      entityId:
+        type: string
+        x-nullable: true
+      errorCode:
+        type: string
+      status:
+        type: string
     type: object
   services.AICaptureOption:
     properties:
@@ -2557,6 +2571,10 @@ definitions:
         $ref: '#/definitions/services.AICaptureReanalysisBatchOut'
       status:
         type: string
+      submissions:
+        items:
+          $ref: '#/definitions/services.AICaptureItemSubmission'
+        type: array
       updatedAt:
         type: string
       uploadedPhotoCount:
@@ -2627,6 +2645,8 @@ definitions:
       enabled:
         type: boolean
       maxPhotos:
+        type: integer
+      maxSessionPhotos:
         type: integer
       model:
         type: string
@@ -2854,6 +2874,15 @@ definitions:
       expectedCaptureRevision:
         type: integer
       expectedPhotoCount:
+        type: integer
+    type: object
+  v1.aiCaptureSessionItemsSubmit:
+    properties:
+      clientIds:
+        items:
+          type: string
+        type: array
+      revision:
         type: integer
     type: object
   v1.aiCaptureSessionLocationUpdate:
@@ -3491,6 +3520,34 @@ paths:
       security:
       - Bearer: []
       summary: Create reviewed items from an AI capture session
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/submit-items:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Expected draft revision and selected item IDs
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionItemsSubmit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Create selected reviewed items from an AI capture session
       tags:
       - AI Capture Sessions
   /v1/assets/{id}:

@@ -63,6 +63,11 @@ type aiCaptureSessionSubmit struct {
 	Revision int `json:"revision"`
 }
 
+type aiCaptureSessionItemsSubmit struct {
+	Revision  int      `json:"revision"`
+	ClientIDs []string `json:"clientIds"`
+}
+
 func aiCaptureSessionRequestError(err error) error {
 	switch {
 	case ent.IsNotFound(err):
@@ -73,6 +78,8 @@ func aiCaptureSessionRequestError(err error) error {
 		return validate.NewRequestError(fmt.Errorf("%s: finish or delete an existing session first", services.AICaptureErrorSessionFull), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICapturePhotoLimit):
 		return validate.NewRequestError(fmt.Errorf("%s: this session has reached its photo limit", services.AICaptureErrorSessionFull), http.StatusUnprocessableEntity)
+	case errors.Is(err, repo.ErrAICaptureGroupLimit):
+		return validate.NewRequestError(fmt.Errorf("%s: tap Next item before adding another view", services.AICaptureErrorGroupFull), http.StatusUnprocessableEntity)
 	case errors.Is(err, repo.ErrAICapturePhotoCount):
 		return validate.NewRequestError(fmt.Errorf("%s: wait for every photo to upload before finishing", services.AICaptureErrorPhotoMismatch), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICaptureRevision):
@@ -618,6 +625,37 @@ func (ctrl *V1Controller) HandleAICaptureSessionSubmit() errchain.HandlerFunc {
 			return err
 		}
 		out, err := ctrl.svc.AICaptureSessions.Submit(services.NewContext(r.Context()), id, body.Revision)
+		if err != nil {
+			return aiCaptureSessionRequestError(err)
+		}
+		return server.JSON(w, http.StatusOK, out)
+	}
+}
+
+// HandleAICaptureSessionItemsSubmit godoc
+//
+//	@Summary	Create selected reviewed items from an AI capture session
+//	@Tags		AI Capture Sessions
+//	@Accept		json
+//	@Produce	json
+//	@Param		sessionId	path		string					true	"Capture session ID"
+//	@Param		payload		body		aiCaptureSessionItemsSubmit	true	"Expected draft revision and selected item IDs"
+//	@Success	200			{object}	services.AICaptureSessionOut
+//	@Router		/v1/ai/capture/sessions/{sessionId}/submit-items [post]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleAICaptureSessionItemsSubmit() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := ctrl.routeUUID(r, "sessionId")
+		if err != nil {
+			return err
+		}
+		var body aiCaptureSessionItemsSubmit
+		if err := decodeAICaptureSessionBody(r, &body); err != nil {
+			return err
+		}
+		out, err := ctrl.svc.AICaptureSessions.SubmitItems(
+			services.NewContext(r.Context()), id, body.Revision, body.ClientIDs,
+		)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}

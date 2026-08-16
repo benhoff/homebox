@@ -10,7 +10,7 @@
 
   const props = defineProps<{
     count: number;
-    maxPhotos: number;
+    limitReached?: boolean;
     busy?: boolean;
     sameItemMode: boolean;
     activeGroupNumber?: number;
@@ -33,7 +33,7 @@
   const facingMode = ref<"environment" | "user">("environment");
   const torchAvailable = ref(false);
   const torchEnabled = ref(false);
-  const full = computed(() => props.count >= props.maxPhotos);
+  const full = computed(() => props.limitReached === true);
 
   function stopCamera() {
     stream.value?.getTracks().forEach(track => track.stop());
@@ -165,7 +165,7 @@
       </div>
 
       <div class="absolute left-3 top-3 rounded-full bg-black/60 px-3 py-1 text-sm backdrop-blur">
-        {{ $t("ai_capture.camera.photo_count", { count, max: maxPhotos }) }}
+        {{ $t("ai_capture.camera.photo_count", { count }) }}
       </div>
       <div v-if="stream" class="absolute right-3 top-3 flex gap-2">
         <Button v-if="torchAvailable" size="icon" variant="secondary" class="rounded-full" @click="toggleTorch">

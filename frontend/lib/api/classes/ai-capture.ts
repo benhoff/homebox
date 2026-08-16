@@ -71,7 +71,15 @@ export interface AICaptureSessionPhoto {
 
 export interface AICaptureCreatedItem {
   id: string;
+  clientId: string;
   name: string;
+}
+
+export interface AICaptureItemSubmission {
+  clientId: string;
+  status: "pending" | "creating" | "attaching" | "completed" | "failed";
+  entityId?: string;
+  errorCode?: string;
 }
 
 export interface AICaptureSession {
@@ -87,6 +95,7 @@ export interface AICaptureSession {
   captureRevision: number;
   draft?: AICaptureDraft;
   createdItems: AICaptureCreatedItem[];
+  submissions: AICaptureItemSubmission[];
   errorCode?: string;
   errorMessage?: string;
   createdAt: string;
@@ -259,6 +268,13 @@ export class AICaptureAPI extends BaseAPI {
     return this.http.post<{ revision: number }, AICaptureSession>({
       url: route(`/ai/capture/sessions/${sessionId}/submit`),
       body: { revision },
+    });
+  }
+
+  submitItems(sessionId: string, revision: number, clientIds: string[]) {
+    return this.http.post<{ revision: number; clientIds: string[] }, AICaptureSession>({
+      url: route(`/ai/capture/sessions/${sessionId}/submit-items`),
+      body: { revision, clientIds },
     });
   }
 }

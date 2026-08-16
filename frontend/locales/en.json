@@ -4,7 +4,12 @@
         "continue": "Continue",
         "correction_applied": "AI correction applied. Review the changes before submitting.",
         "disabled_help": "AI capture is not enabled on this HomeBox server. An administrator must configure an OpenAI-compatible vision provider.",
+        "activity": {
+            "empty": "No captures are uploading, processing, or waiting for attention.",
+            "title": "Activity"
+        },
         "camera": {
+            "batch_continued": "Capture continued in a new background batch.",
             "choose_photos": "Choose photos",
             "fallback_help": "You can still use your phone's system camera or choose existing photos.",
             "finish": "Finish",
@@ -18,7 +23,7 @@
             "new_item_group": "New item group",
             "next_item": "Next item",
             "photo_group": "Same-item group for this photo",
-            "photo_count": "{count} of {max} photos",
+            "photo_count": "{count} photos",
             "same_item_mode": "Multiple views of same item",
             "shutter": "Take photo",
             "switch": "Switch camera",
@@ -52,7 +57,9 @@
             "save_draft": "Your edits could not be saved. Reload the session and try again.",
             "finish_session": "The capture could not be finished. Your photos are still saved.",
             "group_photo": "The photo's item group could not be changed.",
+            "item_group_full": "This item already has {count} views. Tap Next item to continue without splitting it across AI batches.",
             "request_failed": "The request could not be completed.",
+            "rollover_failed": "A new capture batch could not be started. Your existing photos remain saved.",
             "too_many_photos": "You can analyze up to {count} photos at once. Extra photos were not added.",
             "uploads_pending": "One or more photos did not upload. Retry them before finishing."
         },
@@ -83,6 +90,15 @@
             "leave": "You can safely come back and review later.",
             "retry": "Retry analysis"
         },
+        "pending": {
+            "create_item": "Create item",
+            "create_selected": "Create {count} selected",
+            "empty": "No items are waiting for review.",
+            "multiple_views": "Multiple views",
+            "review_item": "Review details",
+            "select_all": "Select all pending items",
+            "title": "Review ({count})"
+        },
         "review": {
             "add_item": "Add missing item",
             "apply_all": "Apply all",
@@ -95,6 +111,7 @@
             "description_label": "Description",
             "dismiss": "Dismiss",
             "manufacturer": "Manufacturer",
+            "items_created": "Created {count} inventory item(s).",
             "merge_previous": "Merge with previous",
             "merge_reason": "Items were merged manually; confirm the combined details.",
             "model": "Model number",
@@ -173,7 +190,7 @@
             "open": "Open",
             "photos": "{count} photo(s)",
             "resume": "Resume camera",
-            "title": "Capture sessions"
+            "title": "Review & activity"
         },
         "status": {
             "analysis_failed": "Analysis failed",
@@ -192,7 +209,7 @@
         },
         "submit_complete": "Created {count} inventory items.",
         "subtitle": "Photograph a group of items, let vision AI draft the details, then approve every change.",
-        "subtitle_sessions": "Capture continuously now, then review the AI draft when it suits you.",
+        "subtitle_sessions": "Capture continuously, then review every pending item in one queue.",
         "title": "AI inventory capture"
     },
     "collection": {

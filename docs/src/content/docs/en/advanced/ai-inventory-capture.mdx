@@ -40,6 +40,8 @@ The configured provider must accept OpenAI-compatible `POST /chat/completions` r
 
 AI analysis can take longer than ordinary API calls. When using a local model, set `HBOX_WEB_WRITE_TIMEOUT` longer than `HBOX_AI_TIMEOUT`, for example `3m` and `2m` respectively.
 
+`HBOX_AI_MAX_PHOTOS` controls the images sent in one provider request (8 by default). Ungrouped photos are split automatically; a same-item group asks the user to tap **Next item** at that boundary because all views of one object must be analyzed together. A continuous capture may contain up to `HBOX_AI_MAX_SESSION_PHOTOS` images per background session (24 by default), then continues automatically in another session. HomeBox combines every resulting draft into one item-centric Review queue, where reviewed items can be created individually or in a selected set.
+
 ## Privacy and review
 
 Photos are sent to the provider configured by the server administrator. The capture screen tells users this before analysis. No inventory records are created during detection or correction: users must review and submit the draft first.
