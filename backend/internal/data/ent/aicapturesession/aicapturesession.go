@@ -34,6 +34,8 @@ const (
 	FieldDraftJSON = "draft_json"
 	// FieldDraftRevision holds the string denoting the draft_revision field in the database.
 	FieldDraftRevision = "draft_revision"
+	// FieldCaptureRevision holds the string denoting the capture_revision field in the database.
+	FieldCaptureRevision = "capture_revision"
 	// FieldAnalysisAttempts holds the string denoting the analysis_attempts field in the database.
 	FieldAnalysisAttempts = "analysis_attempts"
 	// FieldPhotoCount holds the string denoting the photo_count field in the database.
@@ -113,6 +115,7 @@ var Columns = []string{
 	FieldStatus,
 	FieldDraftJSON,
 	FieldDraftRevision,
+	FieldCaptureRevision,
 	FieldAnalysisAttempts,
 	FieldPhotoCount,
 	FieldWorkerLeaseUntil,
@@ -145,6 +148,8 @@ var (
 	LocationNameSnapshotValidator func(string) error
 	// DefaultDraftRevision holds the default value on creation for the "draft_revision" field.
 	DefaultDraftRevision int
+	// DefaultCaptureRevision holds the default value on creation for the "capture_revision" field.
+	DefaultCaptureRevision int
 	// DefaultAnalysisAttempts holds the default value on creation for the "analysis_attempts" field.
 	DefaultAnalysisAttempts int
 	// DefaultPhotoCount holds the default value on creation for the "photo_count" field.
@@ -241,6 +246,11 @@ func ByDraftJSON(opts ...sql.OrderTermOption) OrderOption {
 // ByDraftRevision orders the results by the draft_revision field.
 func ByDraftRevision(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDraftRevision, opts...).ToFunc()
+}
+
+// ByCaptureRevision orders the results by the capture_revision field.
+func ByCaptureRevision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaptureRevision, opts...).ToFunc()
 }
 
 // ByAnalysisAttempts orders the results by the analysis_attempts field.

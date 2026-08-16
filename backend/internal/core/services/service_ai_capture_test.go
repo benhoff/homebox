@@ -87,6 +87,56 @@ func TestAICaptureAnalyzeSanitizesUnsafeDraft(t *testing.T) {
 	assert.NotEmpty(t, item.ReviewReason)
 }
 
+func TestAICaptureAnalyzeEnforcesSameItemGroup(t *testing.T) {
+	const captureGroupID = "73586682-83c3-43f7-8764-6470e39bd5b5"
+	var got chatCompletionRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Cordless drill\",\"quantity\":1,\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"captureGroupId\":\"73586682-83c3-43f7-8764-6470e39bd5b5\",\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "vision-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{
+			{MIMEType: "image/jpeg", Data: []byte("front")},
+			{MIMEType: "image/jpeg", Data: []byte("label")},
+		},
+		Context:        AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+		CaptureGroupID: captureGroupID,
+	})
+	require.NoError(t, err)
+	require.Len(t, draft.Items, 1)
+	assert.Equal(t, captureGroupID, draft.Items[0].CaptureGroupID)
+	assert.Equal(t, []int{0, 1}, draft.Items[0].PhotoIndexes)
+	userContent, err := json.Marshal(got.Messages[1].Content)
+	require.NoError(t, err)
+	assert.Contains(t, string(userContent), "different view of one physical inventory item")
+	assert.Contains(t, string(userContent), captureGroupID)
+}
+
+func TestAICaptureAnalyzeRejectsDuplicateSameItemResults(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"name\":\"Drill\",\"quantity\":1},{\"name\":\"Drill\",\"quantity\":1}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "vision-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	_, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos:         []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("front")}},
+		Context:        AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+		CaptureGroupID: "73586682-83c3-43f7-8764-6470e39bd5b5",
+	})
+	assert.ErrorIs(t, err, ErrAIGroupContract)
+	assert.ErrorIs(t, err, ErrAIUpstream)
+}
+
 func TestAICaptureAnalyzeDisabled(t *testing.T) {
 	svc := NewAICaptureService(config.AIConfig{})
 	_, err := svc.Analyze(context.Background(), AICaptureRequest{})

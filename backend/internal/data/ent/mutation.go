@@ -71,26 +71,27 @@ const (
 // AICapturePhotoMutation represents an operation that mutates the AICapturePhoto nodes in the graph.
 type AICapturePhotoMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *uuid.UUID
-	created_at      *time.Time
-	updated_at      *time.Time
-	client_photo_id *uuid.UUID
-	position        *int
-	addposition     *int
-	original_name   *string
-	_path           *string
-	mime_type       *string
-	size_bytes      *int64
-	addsize_bytes   *int64
-	content_hash    *string
-	clearedFields   map[string]struct{}
-	session         *uuid.UUID
-	clearedsession  bool
-	done            bool
-	oldValue        func(context.Context) (*AICapturePhoto, error)
-	predicates      []predicate.AICapturePhoto
+	op               Op
+	typ              string
+	id               *uuid.UUID
+	created_at       *time.Time
+	updated_at       *time.Time
+	client_photo_id  *uuid.UUID
+	position         *int
+	addposition      *int
+	capture_group_id *uuid.UUID
+	original_name    *string
+	_path            *string
+	mime_type        *string
+	size_bytes       *int64
+	addsize_bytes    *int64
+	content_hash     *string
+	clearedFields    map[string]struct{}
+	session          *uuid.UUID
+	clearedsession   bool
+	done             bool
+	oldValue         func(context.Context) (*AICapturePhoto, error)
+	predicates       []predicate.AICapturePhoto
 }
 
 var _ ent.Mutation = (*AICapturePhotoMutation)(nil)
@@ -397,6 +398,55 @@ func (m *AICapturePhotoMutation) ResetPosition() {
 	m.addposition = nil
 }
 
+// SetCaptureGroupID sets the "capture_group_id" field.
+func (m *AICapturePhotoMutation) SetCaptureGroupID(u uuid.UUID) {
+	m.capture_group_id = &u
+}
+
+// CaptureGroupID returns the value of the "capture_group_id" field in the mutation.
+func (m *AICapturePhotoMutation) CaptureGroupID() (r uuid.UUID, exists bool) {
+	v := m.capture_group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCaptureGroupID returns the old "capture_group_id" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldCaptureGroupID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCaptureGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCaptureGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaptureGroupID: %w", err)
+	}
+	return oldValue.CaptureGroupID, nil
+}
+
+// ClearCaptureGroupID clears the value of the "capture_group_id" field.
+func (m *AICapturePhotoMutation) ClearCaptureGroupID() {
+	m.capture_group_id = nil
+	m.clearedFields[aicapturephoto.FieldCaptureGroupID] = struct{}{}
+}
+
+// CaptureGroupIDCleared returns if the "capture_group_id" field was cleared in this mutation.
+func (m *AICapturePhotoMutation) CaptureGroupIDCleared() bool {
+	_, ok := m.clearedFields[aicapturephoto.FieldCaptureGroupID]
+	return ok
+}
+
+// ResetCaptureGroupID resets all changes to the "capture_group_id" field.
+func (m *AICapturePhotoMutation) ResetCaptureGroupID() {
+	m.capture_group_id = nil
+	delete(m.clearedFields, aicapturephoto.FieldCaptureGroupID)
+}
+
 // SetOriginalName sets the "original_name" field.
 func (m *AICapturePhotoMutation) SetOriginalName(s string) {
 	m.original_name = &s
@@ -658,7 +708,7 @@ func (m *AICapturePhotoMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AICapturePhotoMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.created_at != nil {
 		fields = append(fields, aicapturephoto.FieldCreatedAt)
 	}
@@ -673,6 +723,9 @@ func (m *AICapturePhotoMutation) Fields() []string {
 	}
 	if m.position != nil {
 		fields = append(fields, aicapturephoto.FieldPosition)
+	}
+	if m.capture_group_id != nil {
+		fields = append(fields, aicapturephoto.FieldCaptureGroupID)
 	}
 	if m.original_name != nil {
 		fields = append(fields, aicapturephoto.FieldOriginalName)
@@ -707,6 +760,8 @@ func (m *AICapturePhotoMutation) Field(name string) (ent.Value, bool) {
 		return m.ClientPhotoID()
 	case aicapturephoto.FieldPosition:
 		return m.Position()
+	case aicapturephoto.FieldCaptureGroupID:
+		return m.CaptureGroupID()
 	case aicapturephoto.FieldOriginalName:
 		return m.OriginalName()
 	case aicapturephoto.FieldPath:
@@ -736,6 +791,8 @@ func (m *AICapturePhotoMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldClientPhotoID(ctx)
 	case aicapturephoto.FieldPosition:
 		return m.OldPosition(ctx)
+	case aicapturephoto.FieldCaptureGroupID:
+		return m.OldCaptureGroupID(ctx)
 	case aicapturephoto.FieldOriginalName:
 		return m.OldOriginalName(ctx)
 	case aicapturephoto.FieldPath:
@@ -789,6 +846,13 @@ func (m *AICapturePhotoMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPosition(v)
+		return nil
+	case aicapturephoto.FieldCaptureGroupID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCaptureGroupID(v)
 		return nil
 	case aicapturephoto.FieldOriginalName:
 		v, ok := value.(string)
@@ -881,7 +945,11 @@ func (m *AICapturePhotoMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *AICapturePhotoMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(aicapturephoto.FieldCaptureGroupID) {
+		fields = append(fields, aicapturephoto.FieldCaptureGroupID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -894,6 +962,11 @@ func (m *AICapturePhotoMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *AICapturePhotoMutation) ClearField(name string) error {
+	switch name {
+	case aicapturephoto.FieldCaptureGroupID:
+		m.ClearCaptureGroupID()
+		return nil
+	}
 	return fmt.Errorf("unknown AICapturePhoto nullable field %s", name)
 }
 
@@ -915,6 +988,9 @@ func (m *AICapturePhotoMutation) ResetField(name string) error {
 		return nil
 	case aicapturephoto.FieldPosition:
 		m.ResetPosition()
+		return nil
+	case aicapturephoto.FieldCaptureGroupID:
+		m.ResetCaptureGroupID()
 		return nil
 	case aicapturephoto.FieldOriginalName:
 		m.ResetOriginalName()
@@ -1022,6 +1098,8 @@ type AICaptureSessionMutation struct {
 	draft_json             *string
 	draft_revision         *int
 	adddraft_revision      *int
+	capture_revision       *int
+	addcapture_revision    *int
 	analysis_attempts      *int
 	addanalysis_attempts   *int
 	photo_count            *int
@@ -1523,6 +1601,62 @@ func (m *AICaptureSessionMutation) AddedDraftRevision() (r int, exists bool) {
 func (m *AICaptureSessionMutation) ResetDraftRevision() {
 	m.draft_revision = nil
 	m.adddraft_revision = nil
+}
+
+// SetCaptureRevision sets the "capture_revision" field.
+func (m *AICaptureSessionMutation) SetCaptureRevision(i int) {
+	m.capture_revision = &i
+	m.addcapture_revision = nil
+}
+
+// CaptureRevision returns the value of the "capture_revision" field in the mutation.
+func (m *AICaptureSessionMutation) CaptureRevision() (r int, exists bool) {
+	v := m.capture_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCaptureRevision returns the old "capture_revision" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldCaptureRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCaptureRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCaptureRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCaptureRevision: %w", err)
+	}
+	return oldValue.CaptureRevision, nil
+}
+
+// AddCaptureRevision adds i to the "capture_revision" field.
+func (m *AICaptureSessionMutation) AddCaptureRevision(i int) {
+	if m.addcapture_revision != nil {
+		*m.addcapture_revision += i
+	} else {
+		m.addcapture_revision = &i
+	}
+}
+
+// AddedCaptureRevision returns the value that was added to the "capture_revision" field in this mutation.
+func (m *AICaptureSessionMutation) AddedCaptureRevision() (r int, exists bool) {
+	v := m.addcapture_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCaptureRevision resets all changes to the "capture_revision" field.
+func (m *AICaptureSessionMutation) ResetCaptureRevision() {
+	m.capture_revision = nil
+	m.addcapture_revision = nil
 }
 
 // SetAnalysisAttempts sets the "analysis_attempts" field.
@@ -2190,7 +2324,7 @@ func (m *AICaptureSessionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AICaptureSessionMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, aicapturesession.FieldCreatedAt)
 	}
@@ -2217,6 +2351,9 @@ func (m *AICaptureSessionMutation) Fields() []string {
 	}
 	if m.draft_revision != nil {
 		fields = append(fields, aicapturesession.FieldDraftRevision)
+	}
+	if m.capture_revision != nil {
+		fields = append(fields, aicapturesession.FieldCaptureRevision)
 	}
 	if m.analysis_attempts != nil {
 		fields = append(fields, aicapturesession.FieldAnalysisAttempts)
@@ -2271,6 +2408,8 @@ func (m *AICaptureSessionMutation) Field(name string) (ent.Value, bool) {
 		return m.DraftJSON()
 	case aicapturesession.FieldDraftRevision:
 		return m.DraftRevision()
+	case aicapturesession.FieldCaptureRevision:
+		return m.CaptureRevision()
 	case aicapturesession.FieldAnalysisAttempts:
 		return m.AnalysisAttempts()
 	case aicapturesession.FieldPhotoCount:
@@ -2316,6 +2455,8 @@ func (m *AICaptureSessionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldDraftJSON(ctx)
 	case aicapturesession.FieldDraftRevision:
 		return m.OldDraftRevision(ctx)
+	case aicapturesession.FieldCaptureRevision:
+		return m.OldCaptureRevision(ctx)
 	case aicapturesession.FieldAnalysisAttempts:
 		return m.OldAnalysisAttempts(ctx)
 	case aicapturesession.FieldPhotoCount:
@@ -2406,6 +2547,13 @@ func (m *AICaptureSessionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetDraftRevision(v)
 		return nil
+	case aicapturesession.FieldCaptureRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCaptureRevision(v)
+		return nil
 	case aicapturesession.FieldAnalysisAttempts:
 		v, ok := value.(int)
 		if !ok {
@@ -2480,6 +2628,9 @@ func (m *AICaptureSessionMutation) AddedFields() []string {
 	if m.adddraft_revision != nil {
 		fields = append(fields, aicapturesession.FieldDraftRevision)
 	}
+	if m.addcapture_revision != nil {
+		fields = append(fields, aicapturesession.FieldCaptureRevision)
+	}
 	if m.addanalysis_attempts != nil {
 		fields = append(fields, aicapturesession.FieldAnalysisAttempts)
 	}
@@ -2496,6 +2647,8 @@ func (m *AICaptureSessionMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case aicapturesession.FieldDraftRevision:
 		return m.AddedDraftRevision()
+	case aicapturesession.FieldCaptureRevision:
+		return m.AddedCaptureRevision()
 	case aicapturesession.FieldAnalysisAttempts:
 		return m.AddedAnalysisAttempts()
 	case aicapturesession.FieldPhotoCount:
@@ -2515,6 +2668,13 @@ func (m *AICaptureSessionMutation) AddField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddDraftRevision(v)
+		return nil
+	case aicapturesession.FieldCaptureRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCaptureRevision(v)
 		return nil
 	case aicapturesession.FieldAnalysisAttempts:
 		v, ok := value.(int)
@@ -2634,6 +2794,9 @@ func (m *AICaptureSessionMutation) ResetField(name string) error {
 		return nil
 	case aicapturesession.FieldDraftRevision:
 		m.ResetDraftRevision()
+		return nil
+	case aicapturesession.FieldCaptureRevision:
+		m.ResetCaptureRevision()
 		return nil
 	case aicapturesession.FieldAnalysisAttempts:
 		m.ResetAnalysisAttempts()

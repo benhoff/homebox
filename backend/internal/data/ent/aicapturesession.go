@@ -39,6 +39,8 @@ type AICaptureSession struct {
 	DraftJSON string `json:"draft_json,omitempty"`
 	// DraftRevision holds the value of the "draft_revision" field.
 	DraftRevision int `json:"draft_revision,omitempty"`
+	// CaptureRevision holds the value of the "capture_revision" field.
+	CaptureRevision int `json:"capture_revision,omitempty"`
 	// AnalysisAttempts holds the value of the "analysis_attempts" field.
 	AnalysisAttempts int `json:"analysis_attempts,omitempty"`
 	// PhotoCount holds the value of the "photo_count" field.
@@ -138,7 +140,7 @@ func (*AICaptureSession) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case aicapturesession.FieldLocationID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case aicapturesession.FieldDraftRevision, aicapturesession.FieldAnalysisAttempts, aicapturesession.FieldPhotoCount:
+		case aicapturesession.FieldDraftRevision, aicapturesession.FieldCaptureRevision, aicapturesession.FieldAnalysisAttempts, aicapturesession.FieldPhotoCount:
 			values[i] = new(sql.NullInt64)
 		case aicapturesession.FieldLocationNameSnapshot, aicapturesession.FieldStatus, aicapturesession.FieldDraftJSON, aicapturesession.FieldErrorCode, aicapturesession.FieldErrorMessage:
 			values[i] = new(sql.NullString)
@@ -221,6 +223,12 @@ func (_m *AICaptureSession) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field draft_revision", values[i])
 			} else if value.Valid {
 				_m.DraftRevision = int(value.Int64)
+			}
+		case aicapturesession.FieldCaptureRevision:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field capture_revision", values[i])
+			} else if value.Valid {
+				_m.CaptureRevision = int(value.Int64)
 			}
 		case aicapturesession.FieldAnalysisAttempts:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -369,6 +377,9 @@ func (_m *AICaptureSession) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("draft_revision=")
 	builder.WriteString(fmt.Sprintf("%v", _m.DraftRevision))
+	builder.WriteString(", ")
+	builder.WriteString("capture_revision=")
+	builder.WriteString(fmt.Sprintf("%v", _m.CaptureRevision))
 	builder.WriteString(", ")
 	builder.WriteString("analysis_attempts=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AnalysisAttempts))

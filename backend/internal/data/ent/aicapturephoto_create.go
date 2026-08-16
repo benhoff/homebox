@@ -68,6 +68,20 @@ func (_c *AICapturePhotoCreate) SetPosition(v int) *AICapturePhotoCreate {
 	return _c
 }
 
+// SetCaptureGroupID sets the "capture_group_id" field.
+func (_c *AICapturePhotoCreate) SetCaptureGroupID(v uuid.UUID) *AICapturePhotoCreate {
+	_c.mutation.SetCaptureGroupID(v)
+	return _c
+}
+
+// SetNillableCaptureGroupID sets the "capture_group_id" field if the given value is not nil.
+func (_c *AICapturePhotoCreate) SetNillableCaptureGroupID(v *uuid.UUID) *AICapturePhotoCreate {
+	if v != nil {
+		_c.SetCaptureGroupID(*v)
+	}
+	return _c
+}
+
 // SetOriginalName sets the "original_name" field.
 func (_c *AICapturePhotoCreate) SetOriginalName(v string) *AICapturePhotoCreate {
 	_c.mutation.SetOriginalName(v)
@@ -276,6 +290,10 @@ func (_c *AICapturePhotoCreate) createSpec() (*AICapturePhoto, *sqlgraph.CreateS
 	if value, ok := _c.mutation.Position(); ok {
 		_spec.SetField(aicapturephoto.FieldPosition, field.TypeInt, value)
 		_node.Position = value
+	}
+	if value, ok := _c.mutation.CaptureGroupID(); ok {
+		_spec.SetField(aicapturephoto.FieldCaptureGroupID, field.TypeUUID, value)
+		_node.CaptureGroupID = &value
 	}
 	if value, ok := _c.mutation.OriginalName(); ok {
 		_spec.SetField(aicapturephoto.FieldOriginalName, field.TypeString, value)

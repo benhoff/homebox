@@ -16,6 +16,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "client_photo_id", Type: field.TypeUUID},
 		{Name: "position", Type: field.TypeInt},
+		{Name: "capture_group_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "original_name", Type: field.TypeString, Size: 255},
 		{Name: "path", Type: field.TypeString},
 		{Name: "mime_type", Type: field.TypeString, Size: 100},
@@ -31,7 +32,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ai_capture_photos_ai_capture_sessions_photos",
-				Columns:    []*schema.Column{AiCapturePhotosColumns[10]},
+				Columns:    []*schema.Column{AiCapturePhotosColumns[11]},
 				RefColumns: []*schema.Column{AiCaptureSessionsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -40,12 +41,12 @@ var (
 			{
 				Name:    "aicapturephoto_session_id_client_photo_id",
 				Unique:  true,
-				Columns: []*schema.Column{AiCapturePhotosColumns[10], AiCapturePhotosColumns[3]},
+				Columns: []*schema.Column{AiCapturePhotosColumns[11], AiCapturePhotosColumns[3]},
 			},
 			{
 				Name:    "aicapturephoto_session_id_position",
 				Unique:  true,
-				Columns: []*schema.Column{AiCapturePhotosColumns[10], AiCapturePhotosColumns[4]},
+				Columns: []*schema.Column{AiCapturePhotosColumns[11], AiCapturePhotosColumns[4]},
 			},
 		},
 	}
@@ -58,6 +59,7 @@ var (
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"capturing", "queued", "analyzing", "analysis_failed", "ready_for_review", "submitting", "completed"}, Default: "capturing"},
 		{Name: "draft_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
 		{Name: "draft_revision", Type: field.TypeInt, Default: 0},
+		{Name: "capture_revision", Type: field.TypeInt, Default: 0},
 		{Name: "analysis_attempts", Type: field.TypeInt, Default: 0},
 		{Name: "photo_count", Type: field.TypeInt, Default: 0},
 		{Name: "worker_lease_until", Type: field.TypeTime, Nullable: true},
@@ -79,19 +81,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ai_capture_sessions_entities_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[16]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[17]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "ai_capture_sessions_groups_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[17]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[18]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "ai_capture_sessions_users_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[18]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[19]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -100,17 +102,17 @@ var (
 			{
 				Name:    "aicapturesession_user_id_updated_at",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[2]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[19], AiCaptureSessionsColumns[2]},
 			},
 			{
 				Name:    "aicapturesession_group_id_user_id_status",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[17], AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[4]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[19], AiCaptureSessionsColumns[4]},
 			},
 			{
 				Name:    "aicapturesession_status_worker_lease_until",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[9]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[10]},
 			},
 		},
 	}

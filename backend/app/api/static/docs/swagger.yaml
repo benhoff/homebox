@@ -81,6 +81,9 @@ definitions:
     type: object
   ent.AICapturePhoto:
     properties:
+      capture_group_id:
+        description: CaptureGroupID holds the value of the "capture_group_id" field.
+        type: string
       client_photo_id:
         description: ClientPhotoID holds the value of the "client_photo_id" field.
         type: string
@@ -136,6 +139,9 @@ definitions:
       analyzed_at:
         description: AnalyzedAt holds the value of the "analyzed_at" field.
         type: string
+      capture_revision:
+        description: CaptureRevision holds the value of the "capture_revision" field.
+        type: integer
       completed_at:
         description: CompletedAt holds the value of the "completed_at" field.
         type: string
@@ -2384,6 +2390,10 @@ definitions:
     type: object
   services.AICaptureItem:
     properties:
+      captureGroupId:
+        type: string
+        x-nullable: true
+        x-omitempty: true
       clientId:
         type: string
       description:
@@ -2428,6 +2438,8 @@ definitions:
         type: integer
       analyzedAt:
         type: string
+      captureRevision:
+        type: integer
       completedAt:
         type: string
       createdAt:
@@ -2467,6 +2479,9 @@ definitions:
     type: object
   services.AICaptureSessionPhoto:
     properties:
+      captureGroupId:
+        type: string
+        x-nullable: true
       clientPhotoId:
         type: string
       createdAt:
@@ -2747,6 +2762,8 @@ definitions:
     type: object
   v1.aiCaptureSessionFinish:
     properties:
+      expectedCaptureRevision:
+        type: integer
       expectedPhotoCount:
         type: integer
     type: object
@@ -2754,6 +2771,12 @@ definitions:
     properties:
       locationId:
         type: string
+    type: object
+  v1.aiCaptureSessionPhotoUpdate:
+    properties:
+      captureGroupId:
+        type: string
+        x-nullable: true
     type: object
   v1.aiCaptureSessionSubmit:
     properties:
@@ -3132,6 +3155,10 @@ paths:
         name: position
         required: true
         type: integer
+      - description: Same-item group UUID
+        in: formData
+        name: captureGroupId
+        type: string
       produces:
       - application/json
       responses:
@@ -3190,6 +3217,38 @@ paths:
       security:
       - Bearer: []
       summary: Read an authorized AI capture session photo
+      tags:
+      - AI Capture Sessions
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Capture photo ID
+        in: path
+        name: photoId
+        required: true
+        type: string
+      - description: Nullable same-item group UUID
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionPhotoUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionPhoto'
+      security:
+      - Bearer: []
+      summary: Reassign or clear a photo's same-item group
       tags:
       - AI Capture Sessions
   /v1/ai/capture/sessions/{sessionId}/retry-analysis:

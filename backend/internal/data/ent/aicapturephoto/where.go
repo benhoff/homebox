@@ -81,6 +81,11 @@ func Position(v int) predicate.AICapturePhoto {
 	return predicate.AICapturePhoto(sql.FieldEQ(FieldPosition, v))
 }
 
+// CaptureGroupID applies equality check predicate on the "capture_group_id" field. It's identical to CaptureGroupIDEQ.
+func CaptureGroupID(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldEQ(FieldCaptureGroupID, v))
+}
+
 // OriginalName applies equality check predicate on the "original_name" field. It's identical to OriginalNameEQ.
 func OriginalName(v string) predicate.AICapturePhoto {
 	return predicate.AICapturePhoto(sql.FieldEQ(FieldOriginalName, v))
@@ -284,6 +289,56 @@ func PositionLT(v int) predicate.AICapturePhoto {
 // PositionLTE applies the LTE predicate on the "position" field.
 func PositionLTE(v int) predicate.AICapturePhoto {
 	return predicate.AICapturePhoto(sql.FieldLTE(FieldPosition, v))
+}
+
+// CaptureGroupIDEQ applies the EQ predicate on the "capture_group_id" field.
+func CaptureGroupIDEQ(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldEQ(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDNEQ applies the NEQ predicate on the "capture_group_id" field.
+func CaptureGroupIDNEQ(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldNEQ(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDIn applies the In predicate on the "capture_group_id" field.
+func CaptureGroupIDIn(vs ...uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldIn(FieldCaptureGroupID, vs...))
+}
+
+// CaptureGroupIDNotIn applies the NotIn predicate on the "capture_group_id" field.
+func CaptureGroupIDNotIn(vs ...uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldNotIn(FieldCaptureGroupID, vs...))
+}
+
+// CaptureGroupIDGT applies the GT predicate on the "capture_group_id" field.
+func CaptureGroupIDGT(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldGT(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDGTE applies the GTE predicate on the "capture_group_id" field.
+func CaptureGroupIDGTE(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldGTE(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDLT applies the LT predicate on the "capture_group_id" field.
+func CaptureGroupIDLT(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldLT(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDLTE applies the LTE predicate on the "capture_group_id" field.
+func CaptureGroupIDLTE(v uuid.UUID) predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldLTE(FieldCaptureGroupID, v))
+}
+
+// CaptureGroupIDIsNil applies the IsNil predicate on the "capture_group_id" field.
+func CaptureGroupIDIsNil() predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldIsNull(FieldCaptureGroupID))
+}
+
+// CaptureGroupIDNotNil applies the NotNil predicate on the "capture_group_id" field.
+func CaptureGroupIDNotNil() predicate.AICapturePhoto {
+	return predicate.AICapturePhoto(sql.FieldNotNull(FieldCaptureGroupID))
 }
 
 // OriginalNameEQ applies the EQ predicate on the "original_name" field.

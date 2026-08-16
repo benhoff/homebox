@@ -5,6 +5,7 @@ export interface CaptureQueuePhoto {
   sessionId: string;
   clientPhotoId: string;
   position: number;
+  captureGroupId: string | null;
   name: string;
   blob: Blob;
   status: CaptureQueueStatus;
@@ -13,18 +14,31 @@ export interface CaptureQueuePhoto {
   createdAt: number;
 }
 
+export interface CaptureQueueSessionState {
+  sessionId: string;
+  sameItemMode: boolean;
+  activeCaptureGroupId?: string;
+  updatedAt: number;
+}
+
 const databaseName = "homebox-ai-capture";
-const storeName = "photos";
-const version = 1;
+const photoStoreName = "photos";
+const stateStoreName = "session-state";
+const version = 2;
 
 function openCaptureDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, version);
     request.onupgradeneeded = () => {
       const database = request.result;
-      if (!database.objectStoreNames.contains(storeName)) {
-        const store = database.createObjectStore(storeName, { keyPath: "key" });
+      if (!database.objectStoreNames.contains(photoStoreName)) {
+        const store = database.createObjectStore(photoStoreName, {
+          keyPath: "key",
+        });
         store.createIndex("sessionId", "sessionId", { unique: false });
+      }
+      if (!database.objectStoreNames.contains(stateStoreName)) {
+        database.createObjectStore(stateStoreName, { keyPath: "sessionId" });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -33,14 +47,15 @@ function openCaptureDatabase(): Promise<IDBDatabase> {
 }
 
 function transactionRequest<T>(
+  objectStoreName: string,
   mode: IDBTransactionMode,
   operation: (store: IDBObjectStore) => IDBRequest<T>
 ): Promise<T> {
   return openCaptureDatabase().then(
     database =>
       new Promise<T>((resolve, reject) => {
-        const transaction = database.transaction(storeName, mode);
-        const request = operation(transaction.objectStore(storeName));
+        const transaction = database.transaction(objectStoreName, mode);
+        const request = operation(transaction.objectStore(objectStoreName));
         let result: T;
         request.onsuccess = () => {
           result = request.result;
@@ -60,18 +75,34 @@ export function captureQueueKey(sessionId: string, clientPhotoId: string) {
 }
 
 export async function putCaptureQueuePhoto(photo: CaptureQueuePhoto) {
-  await transactionRequest("readwrite", store => store.put(photo));
+  await transactionRequest(photoStoreName, "readwrite", store => store.put(photo));
+}
+
+export async function putCaptureQueuePhotoWithState(photo: CaptureQueuePhoto, state: CaptureQueueSessionState) {
+  const database = await openCaptureDatabase();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction([photoStoreName, stateStoreName], "readwrite");
+    transaction.objectStore(photoStoreName).put(photo);
+    transaction.objectStore(stateStoreName).put(state);
+    transaction.oncomplete = () => {
+      database.close();
+      resolve();
+    };
+    transaction.onerror = () => reject(transaction.error || new Error("Could not save the captured photo"));
+  });
 }
 
 export async function deleteCaptureQueuePhoto(sessionId: string, clientPhotoId: string) {
-  await transactionRequest("readwrite", store => store.delete(captureQueueKey(sessionId, clientPhotoId)));
+  await transactionRequest(photoStoreName, "readwrite", store =>
+    store.delete(captureQueueKey(sessionId, clientPhotoId))
+  );
 }
 
 export async function listCaptureQueuePhotos(sessionId: string): Promise<CaptureQueuePhoto[]> {
   const database = await openCaptureDatabase();
   return await new Promise((resolve, reject) => {
-    const transaction = database.transaction(storeName, "readonly");
-    const request = transaction.objectStore(storeName).index("sessionId").getAll(sessionId);
+    const transaction = database.transaction(photoStoreName, "readonly");
+    const request = transaction.objectStore(photoStoreName).index("sessionId").getAll(sessionId);
     request.onsuccess = () =>
       resolve((request.result as CaptureQueuePhoto[]).sort((left, right) => left.position - right.position));
     request.onerror = () => reject(request.error || new Error("Could not restore captured photos"));
@@ -79,9 +110,22 @@ export async function listCaptureQueuePhotos(sessionId: string): Promise<Capture
   });
 }
 
+export async function getCaptureQueueSessionState(sessionId: string): Promise<CaptureQueueSessionState | undefined> {
+  return await transactionRequest(stateStoreName, "readonly", store => store.get(sessionId));
+}
+
+export async function putCaptureQueueSessionState(state: CaptureQueueSessionState) {
+  await transactionRequest(stateStoreName, "readwrite", store => store.put(state));
+}
+
+export async function deleteCaptureQueueSessionState(sessionId: string) {
+  await transactionRequest(stateStoreName, "readwrite", store => store.delete(sessionId));
+}
+
 export async function clearCaptureQueueSession(sessionId: string) {
   const photos = await listCaptureQueuePhotos(sessionId);
   await Promise.all(photos.map(photo => deleteCaptureQueuePhoto(sessionId, photo.clientPhotoId)));
+  await deleteCaptureQueueSessionState(sessionId);
 }
 
 export async function normalizeCaptureImage(file: File | Blob, name = "capture.jpg"): Promise<File> {

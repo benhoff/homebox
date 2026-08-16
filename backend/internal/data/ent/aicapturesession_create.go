@@ -128,6 +128,20 @@ func (_c *AICaptureSessionCreate) SetNillableDraftRevision(v *int) *AICaptureSes
 	return _c
 }
 
+// SetCaptureRevision sets the "capture_revision" field.
+func (_c *AICaptureSessionCreate) SetCaptureRevision(v int) *AICaptureSessionCreate {
+	_c.mutation.SetCaptureRevision(v)
+	return _c
+}
+
+// SetNillableCaptureRevision sets the "capture_revision" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableCaptureRevision(v *int) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetCaptureRevision(*v)
+	}
+	return _c
+}
+
 // SetAnalysisAttempts sets the "analysis_attempts" field.
 func (_c *AICaptureSessionCreate) SetAnalysisAttempts(v int) *AICaptureSessionCreate {
 	_c.mutation.SetAnalysisAttempts(v)
@@ -364,6 +378,10 @@ func (_c *AICaptureSessionCreate) defaults() {
 		v := aicapturesession.DefaultDraftRevision
 		_c.mutation.SetDraftRevision(v)
 	}
+	if _, ok := _c.mutation.CaptureRevision(); !ok {
+		v := aicapturesession.DefaultCaptureRevision
+		_c.mutation.SetCaptureRevision(v)
+	}
 	if _, ok := _c.mutation.AnalysisAttempts(); !ok {
 		v := aicapturesession.DefaultAnalysisAttempts
 		_c.mutation.SetAnalysisAttempts(v)
@@ -414,6 +432,9 @@ func (_c *AICaptureSessionCreate) check() error {
 	}
 	if _, ok := _c.mutation.DraftRevision(); !ok {
 		return &ValidationError{Name: "draft_revision", err: errors.New(`ent: missing required field "AICaptureSession.draft_revision"`)}
+	}
+	if _, ok := _c.mutation.CaptureRevision(); !ok {
+		return &ValidationError{Name: "capture_revision", err: errors.New(`ent: missing required field "AICaptureSession.capture_revision"`)}
 	}
 	if _, ok := _c.mutation.AnalysisAttempts(); !ok {
 		return &ValidationError{Name: "analysis_attempts", err: errors.New(`ent: missing required field "AICaptureSession.analysis_attempts"`)}
@@ -498,6 +519,10 @@ func (_c *AICaptureSessionCreate) createSpec() (*AICaptureSession, *sqlgraph.Cre
 	if value, ok := _c.mutation.DraftRevision(); ok {
 		_spec.SetField(aicapturesession.FieldDraftRevision, field.TypeInt, value)
 		_node.DraftRevision = value
+	}
+	if value, ok := _c.mutation.CaptureRevision(); ok {
+		_spec.SetField(aicapturesession.FieldCaptureRevision, field.TypeInt, value)
+		_node.CaptureRevision = value
 	}
 	if value, ok := _c.mutation.AnalysisAttempts(); ok {
 		_spec.SetField(aicapturesession.FieldAnalysisAttempts, field.TypeInt, value)

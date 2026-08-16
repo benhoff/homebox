@@ -12,6 +12,7 @@ export interface AICaptureItem {
   tagIds: string[];
   photoIndexes: number[];
   photoIds?: string[];
+  captureGroupId?: string;
   needsReview: boolean;
   reviewReason?: string;
 }
@@ -33,6 +34,7 @@ export interface AICaptureSessionPhoto {
   id: string;
   clientPhotoId: string;
   position: number;
+  captureGroupId: string | null;
   originalName: string;
   mimeType: string;
   sizeBytes: number;
@@ -53,6 +55,7 @@ export interface AICaptureSession {
   photos: AICaptureSessionPhoto[];
   analysisAttempts: number;
   draftRevision: number;
+  captureRevision: number;
   draft?: AICaptureDraft;
   createdItems: AICaptureCreatedItem[];
   errorCode?: string;
@@ -121,11 +124,19 @@ export class AICaptureAPI extends BaseAPI {
     });
   }
 
-  uploadSessionPhoto(sessionId: string, clientPhotoId: string, position: number, file: File | Blob, name: string) {
+  uploadSessionPhoto(
+    sessionId: string,
+    clientPhotoId: string,
+    position: number,
+    file: File | Blob,
+    name: string,
+    captureGroupId?: string
+  ) {
     const formData = new FormData();
     formData.append("file", file, name);
     formData.append("clientPhotoId", clientPhotoId);
     formData.append("position", position.toString());
+    if (captureGroupId) formData.append("captureGroupId", captureGroupId);
     return this.http.post<FormData, AICaptureSessionPhoto>({
       url: route(`/ai/capture/sessions/${sessionId}/photos`),
       data: formData,
@@ -143,10 +154,17 @@ export class AICaptureAPI extends BaseAPI {
     });
   }
 
-  finishSession(sessionId: string, expectedPhotoCount: number) {
-    return this.http.post<{ expectedPhotoCount: number }, AICaptureSession>({
+  updateSessionPhotoGroup(sessionId: string, photoId: string, captureGroupId: string | null) {
+    return this.http.patch<{ captureGroupId: string | null }, AICaptureSessionPhoto>({
+      url: route(`/ai/capture/sessions/${sessionId}/photos/${photoId}`),
+      body: { captureGroupId },
+    });
+  }
+
+  finishSession(sessionId: string, expectedPhotoCount: number, expectedCaptureRevision: number) {
+    return this.http.post<{ expectedPhotoCount: number; expectedCaptureRevision: number }, AICaptureSession>({
       url: route(`/ai/capture/sessions/${sessionId}/finish`),
-      body: { expectedPhotoCount },
+      body: { expectedPhotoCount, expectedCaptureRevision },
     });
   }
 

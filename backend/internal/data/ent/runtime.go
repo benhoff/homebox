@@ -52,19 +52,19 @@ func init() {
 	// aicapturephoto.PositionValidator is a validator for the "position" field. It is called by the builders before save.
 	aicapturephoto.PositionValidator = aicapturephotoDescPosition.Validators[0].(func(int) error)
 	// aicapturephotoDescOriginalName is the schema descriptor for original_name field.
-	aicapturephotoDescOriginalName := aicapturephotoFields[3].Descriptor()
+	aicapturephotoDescOriginalName := aicapturephotoFields[4].Descriptor()
 	// aicapturephoto.OriginalNameValidator is a validator for the "original_name" field. It is called by the builders before save.
 	aicapturephoto.OriginalNameValidator = aicapturephotoDescOriginalName.Validators[0].(func(string) error)
 	// aicapturephotoDescMimeType is the schema descriptor for mime_type field.
-	aicapturephotoDescMimeType := aicapturephotoFields[5].Descriptor()
+	aicapturephotoDescMimeType := aicapturephotoFields[6].Descriptor()
 	// aicapturephoto.MimeTypeValidator is a validator for the "mime_type" field. It is called by the builders before save.
 	aicapturephoto.MimeTypeValidator = aicapturephotoDescMimeType.Validators[0].(func(string) error)
 	// aicapturephotoDescSizeBytes is the schema descriptor for size_bytes field.
-	aicapturephotoDescSizeBytes := aicapturephotoFields[6].Descriptor()
+	aicapturephotoDescSizeBytes := aicapturephotoFields[7].Descriptor()
 	// aicapturephoto.SizeBytesValidator is a validator for the "size_bytes" field. It is called by the builders before save.
 	aicapturephoto.SizeBytesValidator = aicapturephotoDescSizeBytes.Validators[0].(func(int64) error)
 	// aicapturephotoDescContentHash is the schema descriptor for content_hash field.
-	aicapturephotoDescContentHash := aicapturephotoFields[7].Descriptor()
+	aicapturephotoDescContentHash := aicapturephotoFields[8].Descriptor()
 	// aicapturephoto.ContentHashValidator is a validator for the "content_hash" field. It is called by the builders before save.
 	aicapturephoto.ContentHashValidator = aicapturephotoDescContentHash.Validators[0].(func(string) error)
 	// aicapturephotoDescID is the schema descriptor for id field.
@@ -94,24 +94,28 @@ func init() {
 	aicapturesessionDescDraftRevision := aicapturesessionFields[4].Descriptor()
 	// aicapturesession.DefaultDraftRevision holds the default value on creation for the draft_revision field.
 	aicapturesession.DefaultDraftRevision = aicapturesessionDescDraftRevision.Default.(int)
+	// aicapturesessionDescCaptureRevision is the schema descriptor for capture_revision field.
+	aicapturesessionDescCaptureRevision := aicapturesessionFields[5].Descriptor()
+	// aicapturesession.DefaultCaptureRevision holds the default value on creation for the capture_revision field.
+	aicapturesession.DefaultCaptureRevision = aicapturesessionDescCaptureRevision.Default.(int)
 	// aicapturesessionDescAnalysisAttempts is the schema descriptor for analysis_attempts field.
-	aicapturesessionDescAnalysisAttempts := aicapturesessionFields[5].Descriptor()
+	aicapturesessionDescAnalysisAttempts := aicapturesessionFields[6].Descriptor()
 	// aicapturesession.DefaultAnalysisAttempts holds the default value on creation for the analysis_attempts field.
 	aicapturesession.DefaultAnalysisAttempts = aicapturesessionDescAnalysisAttempts.Default.(int)
 	// aicapturesessionDescPhotoCount is the schema descriptor for photo_count field.
-	aicapturesessionDescPhotoCount := aicapturesessionFields[6].Descriptor()
+	aicapturesessionDescPhotoCount := aicapturesessionFields[7].Descriptor()
 	// aicapturesession.DefaultPhotoCount holds the default value on creation for the photo_count field.
 	aicapturesession.DefaultPhotoCount = aicapturesessionDescPhotoCount.Default.(int)
 	// aicapturesessionDescErrorCode is the schema descriptor for error_code field.
-	aicapturesessionDescErrorCode := aicapturesessionFields[8].Descriptor()
+	aicapturesessionDescErrorCode := aicapturesessionFields[9].Descriptor()
 	// aicapturesession.ErrorCodeValidator is a validator for the "error_code" field. It is called by the builders before save.
 	aicapturesession.ErrorCodeValidator = aicapturesessionDescErrorCode.Validators[0].(func(string) error)
 	// aicapturesessionDescErrorMessage is the schema descriptor for error_message field.
-	aicapturesessionDescErrorMessage := aicapturesessionFields[9].Descriptor()
+	aicapturesessionDescErrorMessage := aicapturesessionFields[10].Descriptor()
 	// aicapturesession.ErrorMessageValidator is a validator for the "error_message" field. It is called by the builders before save.
 	aicapturesession.ErrorMessageValidator = aicapturesessionDescErrorMessage.Validators[0].(func(string) error)
 	// aicapturesessionDescExpiresAt is the schema descriptor for expires_at field.
-	aicapturesessionDescExpiresAt := aicapturesessionFields[13].Descriptor()
+	aicapturesessionDescExpiresAt := aicapturesessionFields[14].Descriptor()
 	// aicapturesession.DefaultExpiresAt holds the default value on creation for the expires_at field.
 	aicapturesession.DefaultExpiresAt = aicapturesessionDescExpiresAt.Default.(func() time.Time)
 	// aicapturesessionDescID is the schema descriptor for id field.

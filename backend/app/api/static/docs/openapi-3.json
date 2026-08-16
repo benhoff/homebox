@@ -12,11 +12,6 @@
     "paths": {
         "/v1/actions/create-missing-thumbnails": {
             "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "description": "Creates thumbnails for items that are missing them",
                 "tags": [
                     "Actions"
@@ -33,16 +28,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/actions/ensure-asset-ids": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/actions/ensure-asset-ids": {
+            "post": {
                 "description": "Ensures all items in the database have an asset ID",
                 "tags": [
                     "Actions"
@@ -59,16 +54,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/actions/ensure-import-refs": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/actions/ensure-import-refs": {
+            "post": {
                 "description": "Ensures all items in the database have an import ref",
                 "tags": [
                     "Actions"
@@ -85,16 +80,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/actions/set-primary-photos": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/actions/set-primary-photos": {
+            "post": {
                 "description": "Sets the first photo of each item as the primary photo",
                 "tags": [
                     "Actions"
@@ -111,16 +106,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/actions/wipe-inventory": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/actions/wipe-inventory": {
+            "post": {
                 "description": "Deletes all items in the inventory",
                 "tags": [
                     "Actions"
@@ -147,16 +142,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/actions/zero-item-time-fields": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/actions/zero-item-time-fields": {
+            "post": {
                 "description": "Resets all item date fields to the beginning of the day",
                 "tags": [
                     "Actions"
@@ -173,16 +168,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/analyze": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/analyze": {
+            "post": {
                 "tags": [
                     "AI Capture"
                 ],
@@ -251,16 +246,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions": {
+            "get": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -276,14 +271,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -310,16 +305,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}": {
+            "get": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -346,14 +341,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -373,14 +368,14 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            },
-            "patch": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "patch": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -418,16 +413,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/corrections": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/corrections": {
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -465,16 +460,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/draft": {
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/draft": {
+            "put": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -512,16 +507,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/finish": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/finish": {
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -559,16 +554,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/photos": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/photos": {
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -602,6 +597,10 @@
                                     "position": {
                                         "description": "Capture order",
                                         "type": "integer"
+                                    },
+                                    "captureGroupId": {
+                                        "description": "Same-item group UUID",
+                                        "type": "string"
                                     }
                                 },
                                 "required": [
@@ -625,16 +624,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}": {
+            "get": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -689,14 +688,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -725,16 +724,70 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/retry-analysis": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "AI Capture Sessions"
                 ],
+                "summary": "Reassign or clear a photo's same-item group",
+                "parameters": [
+                    {
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Capture photo ID",
+                        "name": "photoId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/v1.aiCaptureSessionPhotoUpdate"
+                            }
+                        }
+                    },
+                    "description": "Nullable same-item group UUID",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/services.AICaptureSessionPhoto"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/retry-analysis": {
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -761,16 +814,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/ai/capture/sessions/{sessionId}/submit": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/submit": {
+            "post": {
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -808,16 +861,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/assets/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/assets/{id}": {
+            "get": {
                 "tags": [
                     "Items"
                 ],
@@ -844,7 +897,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/v1/currencies": {
@@ -869,11 +927,6 @@
         },
         "/v1/entities": {
             "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "tags": [
                     "Entities"
                 ],
@@ -939,14 +992,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Entities"
                 ],
@@ -973,16 +1026,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/export": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/export": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -998,16 +1051,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/fields": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/fields": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -1026,16 +1079,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/fields/values": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/fields/values": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -1065,16 +1118,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/import": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/import": {
+            "post": {
                 "tags": [
                     "Entities"
                 ],
@@ -1103,16 +1156,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/entities/tree": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/tree": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -1141,16 +1194,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -1177,14 +1230,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "Entities"
                 ],
@@ -1222,14 +1275,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Entities"
                 ],
@@ -1249,14 +1302,14 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            },
-            "patch": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "patch": {
                 "tags": [
                     "Entities"
                 ],
@@ -1294,16 +1347,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/attachments": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/attachments": {
+            "post": {
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1373,16 +1426,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/attachments/external": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/attachments/external": {
+            "post": {
                 "description": "Links an entity to a document or URL in an external system without copying",
                 "tags": [
                     "Entities Attachments"
@@ -1431,16 +1484,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/attachments/{attachment_id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/attachments/{attachment_id}": {
+            "get": {
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1477,14 +1530,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1531,14 +1584,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1567,16 +1620,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/duplicate": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/duplicate": {
+            "post": {
                 "tags": [
                     "Entities"
                 ],
@@ -1614,16 +1667,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/maintenance": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/maintenance": {
+            "get": {
                 "tags": [
                     "Item Maintenance"
                 ],
@@ -1670,14 +1723,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Item Maintenance"
                 ],
@@ -1715,16 +1768,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entities/{id}/path": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entities/{id}/path": {
+            "get": {
                 "tags": [
                     "Entities"
                 ],
@@ -1754,16 +1807,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entity-types": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entity-types": {
+            "get": {
                 "tags": [
                     "Entity Types"
                 ],
@@ -1782,14 +1835,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Entity Types"
                 ],
@@ -1816,16 +1869,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/entity-types/{id}": {
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/entity-types/{id}": {
+            "put": {
                 "tags": [
                     "Entity Types"
                 ],
@@ -1863,14 +1916,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Entity Types"
                 ],
@@ -1890,16 +1943,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/group/exports": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/group/exports": {
+            "get": {
                 "description": "Returns export job rows for the caller's group, newest first.",
                 "tags": [
                     "Group"
@@ -1916,14 +1969,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "description": "Creates a pending export row and enqueues the build job. Poll the listing endpoint or watch the WebSocket for completion.",
                 "tags": [
                     "Group"
@@ -1940,16 +1993,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/group/exports/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/group/exports/{id}": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -1976,14 +2029,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "description": "Deletes the export row and its blob artifact.",
                 "tags": [
                     "Group"
@@ -2004,16 +2057,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/group/exports/{id}/download": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/group/exports/{id}/download": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -2041,16 +2094,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/group/import": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/group/import": {
+            "post": {
                 "description": "Uploads a collection-export zip and enqueues the import job. The destination group must be empty. Returns the tracked import row so clients can poll for progress.",
                 "tags": [
                     "Group"
@@ -2087,16 +2140,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -2112,14 +2165,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "Group"
                 ],
@@ -2146,14 +2199,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Group"
                 ],
@@ -2180,14 +2233,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Group"
                 ],
@@ -2196,16 +2249,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/groups/all": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/all": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -2224,16 +2277,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/invitations": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/invitations": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -2252,14 +2305,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Group"
                 ],
@@ -2287,16 +2340,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/invitations/{id}": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/invitations/{id}": {
+            "post": {
                 "tags": [
                     "Group"
                 ],
@@ -2324,14 +2377,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Group"
                 ],
@@ -2351,16 +2404,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/groups/members": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/members": {
+            "get": {
                 "tags": [
                     "Group"
                 ],
@@ -2379,16 +2432,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/members/{user_id}": {
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/members/{user_id}": {
+            "delete": {
                 "tags": [
                     "Group"
                 ],
@@ -2408,16 +2461,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/groups/statistics": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/statistics": {
+            "get": {
                 "tags": [
                     "Statistics"
                 ],
@@ -2433,16 +2486,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/statistics/locations": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/statistics/locations": {
+            "get": {
                 "tags": [
                     "Statistics"
                 ],
@@ -2461,16 +2514,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/statistics/purchase-price": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/statistics/purchase-price": {
+            "get": {
                 "tags": [
                     "Statistics"
                 ],
@@ -2504,16 +2557,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/groups/statistics/tags": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/groups/statistics/tags": {
+            "get": {
                 "tags": [
                     "Statistics"
                 ],
@@ -2532,16 +2585,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/labelmaker/asset/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/labelmaker/asset/{id}": {
+            "get": {
                 "tags": [
                     "Items"
                 ],
@@ -2576,16 +2629,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/labelmaker/item/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/labelmaker/item/{id}": {
+            "get": {
                 "tags": [
                     "Items"
                 ],
@@ -2620,16 +2673,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/labelmaker/location/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/labelmaker/location/{id}": {
+            "get": {
                 "tags": [
                     "Locations"
                 ],
@@ -2664,16 +2717,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/maintenance": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/maintenance": {
+            "get": {
                 "tags": [
                     "Maintenance"
                 ],
@@ -2711,16 +2764,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/maintenance/{id}": {
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/maintenance/{id}": {
+            "put": {
                 "tags": [
                     "Maintenance"
                 ],
@@ -2758,14 +2811,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Maintenance"
                 ],
@@ -2785,16 +2838,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/notifiers": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/notifiers": {
+            "get": {
                 "tags": [
                     "Notifiers"
                 ],
@@ -2813,14 +2866,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Notifiers"
                 ],
@@ -2847,16 +2900,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/notifiers/test": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/notifiers/test": {
+            "post": {
                 "tags": [
                     "Notifiers"
                 ],
@@ -2876,16 +2929,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/notifiers/{id}": {
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/notifiers/{id}": {
+            "put": {
                 "tags": [
                     "Notifiers"
                 ],
@@ -2923,14 +2976,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Notifiers"
                 ],
@@ -2950,16 +3003,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/products/search-from-barcode": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/products/search-from-barcode": {
+            "get": {
                 "tags": [
                     "Items"
                 ],
@@ -2988,16 +3041,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/qrcode": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/qrcode": {
+            "get": {
                 "tags": [
                     "Items"
                 ],
@@ -3023,16 +3076,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/reporting/bill-of-materials": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/reporting/bill-of-materials": {
+            "get": {
                 "tags": [
                     "Reporting"
                 ],
@@ -3048,7 +3101,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/v1/status": {
@@ -3073,11 +3131,6 @@
         },
         "/v1/tags": {
             "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "tags": [
                     "Tags"
                 ],
@@ -3096,14 +3149,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Tags"
                 ],
@@ -3130,16 +3183,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/tags/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/tags/{id}": {
+            "get": {
                 "tags": [
                     "Tags"
                 ],
@@ -3166,14 +3219,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "Tags"
                 ],
@@ -3211,14 +3264,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Tags"
                 ],
@@ -3238,16 +3291,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/templates": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/templates": {
+            "get": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3266,14 +3319,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3300,16 +3353,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/templates/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/templates/{id}": {
+            "get": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3336,14 +3389,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3381,14 +3434,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3408,16 +3461,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/templates/{id}/create-item": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/templates/{id}/create-item": {
+            "post": {
                 "tags": [
                     "Entity Templates"
                 ],
@@ -3455,16 +3508,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/users/change-password": {
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/change-password": {
+            "put": {
                 "tags": [
                     "User"
                 ],
@@ -3484,7 +3537,12 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/v1/users/forgot-password": {
@@ -3636,11 +3694,6 @@
         },
         "/v1/users/logout": {
             "post": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "tags": [
                     "Authentication"
                 ],
@@ -3649,16 +3702,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/users/logout/all": {
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/logout/all": {
+            "post": {
                 "description": "Revokes every session token for the authenticated user across all\ndevices, including the current one. Use this to invalidate a session\ntoken that may have been leaked or stolen. API keys are stored\nseparately and are not affected; revoke them from the API keys page.",
                 "tags": [
                     "Authentication"
@@ -3668,16 +3721,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/users/refresh": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/refresh": {
+            "get": {
                 "description": "handleAuthRefresh returns a handler that will issue a new token from an existing token.\nThis does not validate that the user still exists within the database.",
                 "tags": [
                     "Authentication"
@@ -3687,7 +3740,12 @@
                     "200": {
                         "description": "OK"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         },
         "/v1/users/register": {
@@ -3781,11 +3839,6 @@
         },
         "/v1/users/self": {
             "get": {
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ],
                 "tags": [
                     "User"
                 ],
@@ -3813,14 +3866,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "User"
                 ],
@@ -3859,14 +3912,14 @@
                             }
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "tags": [
                     "User"
                 ],
@@ -3875,16 +3928,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/users/self/api-keys": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/self/api-keys": {
+            "get": {
                 "tags": [
                     "User"
                 ],
@@ -3903,14 +3956,14 @@
                             }
                         }
                     }
-                }
-            },
-            "post": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "post": {
                 "tags": [
                     "User"
                 ],
@@ -3937,16 +3990,16 @@
                             }
                         }
                     }
-                }
-            }
-        },
-        "/v1/users/self/api-keys/{id}": {
-            "delete": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/self/api-keys/{id}": {
+            "delete": {
                 "tags": [
                     "User"
                 ],
@@ -3966,16 +4019,16 @@
                     "204": {
                         "description": "No Content"
                     }
-                }
-            }
-        },
-        "/v1/users/self/settings": {
-            "get": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            }
+        },
+        "/v1/users/self/settings": {
+            "get": {
                 "tags": [
                     "User"
                 ],
@@ -4004,14 +4057,14 @@
                             }
                         }
                     }
-                }
-            },
-            "put": {
+                },
                 "security": [
                     {
                         "Bearer": []
                     }
-                ],
+                ]
+            },
+            "put": {
                 "tags": [
                     "User"
                 ],
@@ -4052,7 +4105,12 @@
                             }
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ]
             }
         }
     },
@@ -4172,6 +4230,10 @@
             "ent.AICapturePhoto": {
                 "type": "object",
                 "properties": {
+                    "capture_group_id": {
+                        "description": "CaptureGroupID holds the value of the \"capture_group_id\" field.",
+                        "type": "string"
+                    },
                     "client_photo_id": {
                         "description": "ClientPhotoID holds the value of the \"client_photo_id\" field.",
                         "type": "string"
@@ -4249,6 +4311,10 @@
                     "analyzed_at": {
                         "description": "AnalyzedAt holds the value of the \"analyzed_at\" field.",
                         "type": "string"
+                    },
+                    "capture_revision": {
+                        "description": "CaptureRevision holds the value of the \"capture_revision\" field.",
+                        "type": "integer"
                     },
                     "completed_at": {
                         "description": "CompletedAt holds the value of the \"completed_at\" field.",
@@ -7517,6 +7583,11 @@
             "services.AICaptureItem": {
                 "type": "object",
                 "properties": {
+                    "captureGroupId": {
+                        "type": "string",
+                        "x-omitempty": true,
+                        "nullable": true
+                    },
                     "clientId": {
                         "type": "string"
                     },
@@ -7584,6 +7655,9 @@
                     "analyzedAt": {
                         "type": "string"
                     },
+                    "captureRevision": {
+                        "type": "integer"
+                    },
                     "completedAt": {
                         "type": "string"
                     },
@@ -7643,6 +7717,10 @@
             "services.AICaptureSessionPhoto": {
                 "type": "object",
                 "properties": {
+                    "captureGroupId": {
+                        "type": "string",
+                        "nullable": true
+                    },
                     "clientPhotoId": {
                         "type": "string"
                     },
@@ -8061,6 +8139,9 @@
             "v1.aiCaptureSessionFinish": {
                 "type": "object",
                 "properties": {
+                    "expectedCaptureRevision": {
+                        "type": "integer"
+                    },
                     "expectedPhotoCount": {
                         "type": "integer"
                     }
@@ -8071,6 +8152,15 @@
                 "properties": {
                     "locationId": {
                         "type": "string"
+                    }
+                }
+            },
+            "v1.aiCaptureSessionPhotoUpdate": {
+                "type": "object",
+                "properties": {
+                    "captureGroupId": {
+                        "type": "string",
+                        "nullable": true
                     }
                 }
             },

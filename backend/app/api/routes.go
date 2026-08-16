@@ -178,6 +178,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Delete("/ai/capture/sessions/{sessionId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionDelete(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/photos", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoCreate(), userMW...))
 		r.Get("/ai/capture/sessions/{sessionId}/photos/{photoId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoGet(), userMW...))
+		r.Patch("/ai/capture/sessions/{sessionId}/photos/{photoId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoUpdate(), userMW...))
 		r.Delete("/ai/capture/sessions/{sessionId}/photos/{photoId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoDelete(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/finish", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionFinish(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/retry-analysis", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionRetryAnalysis(), userMW...))

@@ -26,7 +26,12 @@ type aiCaptureSessionLocationUpdate struct {
 }
 
 type aiCaptureSessionFinish struct {
-	ExpectedPhotoCount int `json:"expectedPhotoCount"`
+	ExpectedPhotoCount      int `json:"expectedPhotoCount"`
+	ExpectedCaptureRevision int `json:"expectedCaptureRevision"`
+}
+
+type aiCaptureSessionPhotoUpdate struct {
+	CaptureGroupID *uuid.UUID `json:"captureGroupId" extensions:"x-nullable"`
 }
 
 type aiCaptureSessionDraftUpdate struct {
@@ -55,6 +60,8 @@ func aiCaptureSessionRequestError(err error) error {
 		return validate.NewRequestError(fmt.Errorf("%s: this session has reached its photo limit", services.AICaptureErrorSessionFull), http.StatusUnprocessableEntity)
 	case errors.Is(err, repo.ErrAICapturePhotoCount):
 		return validate.NewRequestError(fmt.Errorf("%s: wait for every photo to upload before finishing", services.AICaptureErrorPhotoMismatch), http.StatusConflict)
+	case errors.Is(err, repo.ErrAICaptureRevision):
+		return validate.NewRequestError(fmt.Errorf("%s: reload the latest photo grouping before finishing", services.AICaptureErrorRevisionMismatch), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICaptureDraftConflict):
 		return validate.NewRequestError(fmt.Errorf("%s: reload the latest draft before saving", services.AICaptureErrorDraftConflict), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICaptureInvalidState):
@@ -207,6 +214,7 @@ func (ctrl *V1Controller) HandleAICaptureSessionDelete() errchain.HandlerFunc {
 //	@Param		file			formData	file	true	"Normalized image"
 //	@Param		clientPhotoId	formData	string	true	"Client idempotency UUID"
 //	@Param		position		formData	int		true	"Capture order"
+//	@Param		captureGroupId	formData	string	false	"Same-item group UUID"
 //	@Success	201				{object}	services.AICaptureSessionPhoto
 //	@Router		/v1/ai/capture/sessions/{sessionId}/photos [POST]
 //	@Security	Bearer
@@ -239,13 +247,58 @@ func (ctrl *V1Controller) HandleAICaptureSessionPhotoCreate() errchain.HandlerFu
 		if err != nil || position < 0 {
 			return validate.NewRequestError(errors.New("position must be non-negative"), http.StatusUnprocessableEntity)
 		}
+		var captureGroupID *uuid.UUID
+		if rawGroupID := strings.TrimSpace(r.FormValue("captureGroupId")); rawGroupID != "" {
+			parsed, err := uuid.Parse(rawGroupID)
+			if err != nil {
+				return validate.NewRequestError(errors.New("captureGroupId must be a UUID"), http.StatusUnprocessableEntity)
+			}
+			captureGroupID = &parsed
+		}
 		out, err := ctrl.svc.AICaptureSessions.AddPhoto(
-			services.NewContext(r.Context()), sessionID, clientPhotoID, position, header.Filename, photo.MIMEType, photo.Data,
+			services.NewContext(r.Context()), sessionID, clientPhotoID, position, captureGroupID,
+			header.Filename, photo.MIMEType, photo.Data,
 		)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}
 		return server.JSON(w, http.StatusCreated, out)
+	}
+}
+
+// HandleAICaptureSessionPhotoUpdate godoc
+//
+//	@Summary	Reassign or clear a photo's same-item group
+//	@Tags		AI Capture Sessions
+//	@Accept		json
+//	@Produce	json
+//	@Param		sessionId	path		string					true	"Capture session ID"
+//	@Param		photoId		path		string					true	"Capture photo ID"
+//	@Param		payload		body		aiCaptureSessionPhotoUpdate	true	"Nullable same-item group UUID"
+//	@Success	200			{object}	services.AICaptureSessionPhoto
+//	@Router		/v1/ai/capture/sessions/{sessionId}/photos/{photoId} [PATCH]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleAICaptureSessionPhotoUpdate() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		sessionID, err := ctrl.routeUUID(r, "sessionId")
+		if err != nil {
+			return err
+		}
+		photoID, err := ctrl.routeUUID(r, "photoId")
+		if err != nil {
+			return err
+		}
+		var body aiCaptureSessionPhotoUpdate
+		if err := decodeAICaptureSessionBody(r, &body); err != nil {
+			return err
+		}
+		out, err := ctrl.svc.AICaptureSessions.UpdatePhotoGroup(
+			services.NewContext(r.Context()), sessionID, photoID, body.CaptureGroupID,
+		)
+		if err != nil {
+			return aiCaptureSessionRequestError(err)
+		}
+		return server.JSON(w, http.StatusOK, out)
 	}
 }
 
@@ -328,7 +381,9 @@ func (ctrl *V1Controller) HandleAICaptureSessionFinish() errchain.HandlerFunc {
 		if err := decodeAICaptureSessionBody(r, &body); err != nil {
 			return err
 		}
-		out, err := ctrl.svc.AICaptureSessions.Finish(services.NewContext(r.Context()), id, body.ExpectedPhotoCount)
+		out, err := ctrl.svc.AICaptureSessions.Finish(
+			services.NewContext(r.Context()), id, body.ExpectedPhotoCount, body.ExpectedCaptureRevision,
+		)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}

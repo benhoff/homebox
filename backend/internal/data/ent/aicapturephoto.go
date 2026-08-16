@@ -29,6 +29,8 @@ type AICapturePhoto struct {
 	ClientPhotoID uuid.UUID `json:"client_photo_id,omitempty"`
 	// Position holds the value of the "position" field.
 	Position int `json:"position,omitempty"`
+	// CaptureGroupID holds the value of the "capture_group_id" field.
+	CaptureGroupID *uuid.UUID `json:"capture_group_id,omitempty"`
 	// OriginalName holds the value of the "original_name" field.
 	OriginalName string `json:"original_name,omitempty"`
 	// Path holds the value of the "path" field.
@@ -70,6 +72,8 @@ func (*AICapturePhoto) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case aicapturephoto.FieldCaptureGroupID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case aicapturephoto.FieldPosition, aicapturephoto.FieldSizeBytes:
 			values[i] = new(sql.NullInt64)
 		case aicapturephoto.FieldOriginalName, aicapturephoto.FieldPath, aicapturephoto.FieldMimeType, aicapturephoto.FieldContentHash:
@@ -128,6 +132,13 @@ func (_m *AICapturePhoto) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field position", values[i])
 			} else if value.Valid {
 				_m.Position = int(value.Int64)
+			}
+		case aicapturephoto.FieldCaptureGroupID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field capture_group_id", values[i])
+			} else if value.Valid {
+				_m.CaptureGroupID = new(uuid.UUID)
+				*_m.CaptureGroupID = *value.S.(*uuid.UUID)
 			}
 		case aicapturephoto.FieldOriginalName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -214,6 +225,11 @@ func (_m *AICapturePhoto) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("position=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Position))
+	builder.WriteString(", ")
+	if v := _m.CaptureGroupID; v != nil {
+		builder.WriteString("capture_group_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("original_name=")
 	builder.WriteString(_m.OriginalName)

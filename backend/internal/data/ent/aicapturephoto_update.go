@@ -85,6 +85,26 @@ func (_u *AICapturePhotoUpdate) AddPosition(v int) *AICapturePhotoUpdate {
 	return _u
 }
 
+// SetCaptureGroupID sets the "capture_group_id" field.
+func (_u *AICapturePhotoUpdate) SetCaptureGroupID(v uuid.UUID) *AICapturePhotoUpdate {
+	_u.mutation.SetCaptureGroupID(v)
+	return _u
+}
+
+// SetNillableCaptureGroupID sets the "capture_group_id" field if the given value is not nil.
+func (_u *AICapturePhotoUpdate) SetNillableCaptureGroupID(v *uuid.UUID) *AICapturePhotoUpdate {
+	if v != nil {
+		_u.SetCaptureGroupID(*v)
+	}
+	return _u
+}
+
+// ClearCaptureGroupID clears the value of the "capture_group_id" field.
+func (_u *AICapturePhotoUpdate) ClearCaptureGroupID() *AICapturePhotoUpdate {
+	_u.mutation.ClearCaptureGroupID()
+	return _u
+}
+
 // SetOriginalName sets the "original_name" field.
 func (_u *AICapturePhotoUpdate) SetOriginalName(v string) *AICapturePhotoUpdate {
 	_u.mutation.SetOriginalName(v)
@@ -271,6 +291,12 @@ func (_u *AICapturePhotoUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.AddedPosition(); ok {
 		_spec.AddField(aicapturephoto.FieldPosition, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.CaptureGroupID(); ok {
+		_spec.SetField(aicapturephoto.FieldCaptureGroupID, field.TypeUUID, value)
+	}
+	if _u.mutation.CaptureGroupIDCleared() {
+		_spec.ClearField(aicapturephoto.FieldCaptureGroupID, field.TypeUUID)
+	}
 	if value, ok := _u.mutation.OriginalName(); ok {
 		_spec.SetField(aicapturephoto.FieldOriginalName, field.TypeString, value)
 	}
@@ -390,6 +416,26 @@ func (_u *AICapturePhotoUpdateOne) SetNillablePosition(v *int) *AICapturePhotoUp
 // AddPosition adds value to the "position" field.
 func (_u *AICapturePhotoUpdateOne) AddPosition(v int) *AICapturePhotoUpdateOne {
 	_u.mutation.AddPosition(v)
+	return _u
+}
+
+// SetCaptureGroupID sets the "capture_group_id" field.
+func (_u *AICapturePhotoUpdateOne) SetCaptureGroupID(v uuid.UUID) *AICapturePhotoUpdateOne {
+	_u.mutation.SetCaptureGroupID(v)
+	return _u
+}
+
+// SetNillableCaptureGroupID sets the "capture_group_id" field if the given value is not nil.
+func (_u *AICapturePhotoUpdateOne) SetNillableCaptureGroupID(v *uuid.UUID) *AICapturePhotoUpdateOne {
+	if v != nil {
+		_u.SetCaptureGroupID(*v)
+	}
+	return _u
+}
+
+// ClearCaptureGroupID clears the value of the "capture_group_id" field.
+func (_u *AICapturePhotoUpdateOne) ClearCaptureGroupID() *AICapturePhotoUpdateOne {
+	_u.mutation.ClearCaptureGroupID()
 	return _u
 }
 
@@ -608,6 +654,12 @@ func (_u *AICapturePhotoUpdateOne) sqlSave(ctx context.Context) (_node *AICaptur
 	}
 	if value, ok := _u.mutation.AddedPosition(); ok {
 		_spec.AddField(aicapturephoto.FieldPosition, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CaptureGroupID(); ok {
+		_spec.SetField(aicapturephoto.FieldCaptureGroupID, field.TypeUUID, value)
+	}
+	if _u.mutation.CaptureGroupIDCleared() {
+		_spec.ClearField(aicapturephoto.FieldCaptureGroupID, field.TypeUUID)
 	}
 	if value, ok := _u.mutation.OriginalName(); ok {
 		_spec.SetField(aicapturephoto.FieldOriginalName, field.TypeString, value)

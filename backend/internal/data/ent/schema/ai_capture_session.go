@@ -34,6 +34,7 @@ func (AICaptureSession) Fields() []ent.Field {
 			Default("capturing"),
 		field.Text("draft_json").Optional(),
 		field.Int("draft_revision").Default(0),
+		field.Int("capture_revision").Default(0),
 		field.Int("analysis_attempts").Default(0),
 		field.Int("photo_count").Default(0),
 		field.Time("worker_lease_until").Optional().Nillable(),

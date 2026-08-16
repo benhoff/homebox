@@ -96,6 +96,11 @@ func DraftRevision(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldDraftRevision, v))
 }
 
+// CaptureRevision applies equality check predicate on the "capture_revision" field. It's identical to CaptureRevisionEQ.
+func CaptureRevision(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldCaptureRevision, v))
+}
+
 // AnalysisAttempts applies equality check predicate on the "analysis_attempts" field. It's identical to AnalysisAttemptsEQ.
 func AnalysisAttempts(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldAnalysisAttempts, v))
@@ -489,6 +494,46 @@ func DraftRevisionLT(v int) predicate.AICaptureSession {
 // DraftRevisionLTE applies the LTE predicate on the "draft_revision" field.
 func DraftRevisionLTE(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldLTE(FieldDraftRevision, v))
+}
+
+// CaptureRevisionEQ applies the EQ predicate on the "capture_revision" field.
+func CaptureRevisionEQ(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldCaptureRevision, v))
+}
+
+// CaptureRevisionNEQ applies the NEQ predicate on the "capture_revision" field.
+func CaptureRevisionNEQ(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldCaptureRevision, v))
+}
+
+// CaptureRevisionIn applies the In predicate on the "capture_revision" field.
+func CaptureRevisionIn(vs ...int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldCaptureRevision, vs...))
+}
+
+// CaptureRevisionNotIn applies the NotIn predicate on the "capture_revision" field.
+func CaptureRevisionNotIn(vs ...int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldCaptureRevision, vs...))
+}
+
+// CaptureRevisionGT applies the GT predicate on the "capture_revision" field.
+func CaptureRevisionGT(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldCaptureRevision, v))
+}
+
+// CaptureRevisionGTE applies the GTE predicate on the "capture_revision" field.
+func CaptureRevisionGTE(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldCaptureRevision, v))
+}
+
+// CaptureRevisionLT applies the LT predicate on the "capture_revision" field.
+func CaptureRevisionLT(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldCaptureRevision, v))
+}
+
+// CaptureRevisionLTE applies the LTE predicate on the "capture_revision" field.
+func CaptureRevisionLTE(v int) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldCaptureRevision, v))
 }
 
 // AnalysisAttemptsEQ applies the EQ predicate on the "analysis_attempts" field.

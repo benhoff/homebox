@@ -157,6 +157,27 @@ func (_u *AICaptureSessionUpdate) AddDraftRevision(v int) *AICaptureSessionUpdat
 	return _u
 }
 
+// SetCaptureRevision sets the "capture_revision" field.
+func (_u *AICaptureSessionUpdate) SetCaptureRevision(v int) *AICaptureSessionUpdate {
+	_u.mutation.ResetCaptureRevision()
+	_u.mutation.SetCaptureRevision(v)
+	return _u
+}
+
+// SetNillableCaptureRevision sets the "capture_revision" field if the given value is not nil.
+func (_u *AICaptureSessionUpdate) SetNillableCaptureRevision(v *int) *AICaptureSessionUpdate {
+	if v != nil {
+		_u.SetCaptureRevision(*v)
+	}
+	return _u
+}
+
+// AddCaptureRevision adds value to the "capture_revision" field.
+func (_u *AICaptureSessionUpdate) AddCaptureRevision(v int) *AICaptureSessionUpdate {
+	_u.mutation.AddCaptureRevision(v)
+	return _u
+}
+
 // SetAnalysisAttempts sets the "analysis_attempts" field.
 func (_u *AICaptureSessionUpdate) SetAnalysisAttempts(v int) *AICaptureSessionUpdate {
 	_u.mutation.ResetAnalysisAttempts()
@@ -543,6 +564,12 @@ func (_u *AICaptureSessionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.AddedDraftRevision(); ok {
 		_spec.AddField(aicapturesession.FieldDraftRevision, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.CaptureRevision(); ok {
+		_spec.SetField(aicapturesession.FieldCaptureRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCaptureRevision(); ok {
+		_spec.AddField(aicapturesession.FieldCaptureRevision, field.TypeInt, value)
+	}
 	if value, ok := _u.mutation.AnalysisAttempts(); ok {
 		_spec.SetField(aicapturesession.FieldAnalysisAttempts, field.TypeInt, value)
 	}
@@ -911,6 +938,27 @@ func (_u *AICaptureSessionUpdateOne) SetNillableDraftRevision(v *int) *AICapture
 // AddDraftRevision adds value to the "draft_revision" field.
 func (_u *AICaptureSessionUpdateOne) AddDraftRevision(v int) *AICaptureSessionUpdateOne {
 	_u.mutation.AddDraftRevision(v)
+	return _u
+}
+
+// SetCaptureRevision sets the "capture_revision" field.
+func (_u *AICaptureSessionUpdateOne) SetCaptureRevision(v int) *AICaptureSessionUpdateOne {
+	_u.mutation.ResetCaptureRevision()
+	_u.mutation.SetCaptureRevision(v)
+	return _u
+}
+
+// SetNillableCaptureRevision sets the "capture_revision" field if the given value is not nil.
+func (_u *AICaptureSessionUpdateOne) SetNillableCaptureRevision(v *int) *AICaptureSessionUpdateOne {
+	if v != nil {
+		_u.SetCaptureRevision(*v)
+	}
+	return _u
+}
+
+// AddCaptureRevision adds value to the "capture_revision" field.
+func (_u *AICaptureSessionUpdateOne) AddCaptureRevision(v int) *AICaptureSessionUpdateOne {
+	_u.mutation.AddCaptureRevision(v)
 	return _u
 }
 
@@ -1329,6 +1377,12 @@ func (_u *AICaptureSessionUpdateOne) sqlSave(ctx context.Context) (_node *AICapt
 	}
 	if value, ok := _u.mutation.AddedDraftRevision(); ok {
 		_spec.AddField(aicapturesession.FieldDraftRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.CaptureRevision(); ok {
+		_spec.SetField(aicapturesession.FieldCaptureRevision, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedCaptureRevision(); ok {
+		_spec.AddField(aicapturesession.FieldCaptureRevision, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.AnalysisAttempts(); ok {
 		_spec.SetField(aicapturesession.FieldAnalysisAttempts, field.TypeInt, value)

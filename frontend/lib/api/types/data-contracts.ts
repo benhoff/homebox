@@ -102,6 +102,8 @@ export interface CurrenciesCurrency {
 }
 
 export interface EntAICapturePhoto {
+  /** CaptureGroupID holds the value of the "capture_group_id" field. */
+  capture_group_id: string;
   /** ClientPhotoID holds the value of the "client_photo_id" field. */
   client_photo_id: string;
   /** ContentHash holds the value of the "content_hash" field. */
@@ -141,6 +143,8 @@ export interface EntAICaptureSession {
   analysis_attempts: number;
   /** AnalyzedAt holds the value of the "analyzed_at" field. */
   analyzed_at: string;
+  /** CaptureRevision holds the value of the "capture_revision" field. */
+  capture_revision: number;
   /** CompletedAt holds the value of the "completed_at" field. */
   completed_at: string;
   /** CreatedAt holds the value of the "created_at" field. */
@@ -1473,6 +1477,7 @@ export interface AICaptureDraft {
 }
 
 export interface AICaptureItem {
+  captureGroupId?: string | null;
   clientId: string;
   description: string;
   entityTypeId: string;
@@ -1495,6 +1500,7 @@ export interface AICaptureOption {
 export interface AICaptureSessionOut {
   analysisAttempts: number;
   analyzedAt: string;
+  captureRevision: number;
   completedAt: string;
   createdAt: Date | string;
   createdItems: AICaptureCreatedItem[];
@@ -1514,6 +1520,7 @@ export interface AICaptureSessionOut {
 }
 
 export interface AICaptureSessionPhoto {
+  captureGroupId?: string | null;
   clientPhotoId: string;
   createdAt: Date | string;
   id: string;
@@ -1684,11 +1691,16 @@ export interface AiCaptureSessionDraftUpdate {
 }
 
 export interface AiCaptureSessionFinish {
+  expectedCaptureRevision: number;
   expectedPhotoCount: number;
 }
 
 export interface AiCaptureSessionLocationUpdate {
   locationId: string;
+}
+
+export interface AiCaptureSessionPhotoUpdate {
+  captureGroupId?: string | null;
 }
 
 export interface AiCaptureSessionSubmit {

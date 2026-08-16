@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { Button } from "~/components/ui/button";
+  import { Switch } from "~/components/ui/switch";
   import MdiCamera from "~icons/mdi/camera";
   import MdiCameraFlip from "~icons/mdi/camera-flip";
   import MdiFlash from "~icons/mdi/flash";
@@ -11,11 +12,16 @@
     count: number;
     maxPhotos: number;
     busy?: boolean;
+    sameItemMode: boolean;
+    activeGroupNumber?: number;
+    activeGroupViewCount: number;
   }>();
 
   const emit = defineEmits<{
     captured: [file: File];
     finish: [];
+    nextItem: [];
+    "update:sameItemMode": [value: boolean];
   }>();
 
   const video = ref<HTMLVideoElement>();
@@ -172,6 +178,51 @@
           <span class="sr-only">{{ $t("ai_capture.camera.switch") }}</span>
         </Button>
       </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 bg-black/90 px-4 py-3">
+      <div class="flex items-center gap-3">
+        <Switch
+          id="same-item-mode"
+          :model-value="sameItemMode"
+          :disabled="busy || full"
+          @update:model-value="emit('update:sameItemMode', $event)"
+        />
+        <label for="same-item-mode" class="cursor-pointer text-sm font-medium">
+          {{ $t("ai_capture.camera.same_item_mode") }}
+        </label>
+      </div>
+      <div v-if="sameItemMode" class="flex items-center gap-3">
+        <span class="text-sm text-white/75">
+          {{
+            activeGroupNumber
+              ? $t("ai_capture.camera.group_views", {
+                  group: activeGroupNumber,
+                  count: activeGroupViewCount,
+                })
+              : $t("ai_capture.camera.group_ready")
+          }}
+        </span>
+        <Button
+          size="sm"
+          variant="secondary"
+          :disabled="busy || !activeGroupNumber || activeGroupViewCount === 0"
+          :aria-describedby="activeGroupNumber ? 'same-item-group-status' : undefined"
+          @click="emit('nextItem')"
+        >
+          {{ $t("ai_capture.camera.next_item") }}
+        </Button>
+      </div>
+      <p id="same-item-group-status" class="sr-only" aria-live="polite">
+        <template v-if="sameItemMode && activeGroupNumber">
+          {{
+            $t("ai_capture.camera.group_views", {
+              group: activeGroupNumber,
+              count: activeGroupViewCount,
+            })
+          }}
+        </template>
+      </p>
     </div>
 
     <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 bg-black/90 px-4 py-5">

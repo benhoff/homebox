@@ -23,6 +23,7 @@ func (AICapturePhoto) Fields() []ent.Field {
 		field.UUID("session_id", uuid.UUID{}),
 		field.UUID("client_photo_id", uuid.UUID{}),
 		field.Int("position").NonNegative(),
+		field.UUID("capture_group_id", uuid.UUID{}).Optional().Nillable(),
 		field.String("original_name").MaxLen(255),
 		field.String("path"),
 		field.String("mime_type").MaxLen(100),

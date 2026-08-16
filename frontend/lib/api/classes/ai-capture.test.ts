@@ -65,6 +65,7 @@ describe("AICaptureAPI", () => {
       photos: [],
       analysisAttempts: 0,
       draftRevision: 0,
+      captureRevision: 0,
       createdItems: [],
       createdAt: "2026-08-16T00:00:00Z",
       updatedAt: "2026-08-16T00:00:00Z",
@@ -74,6 +75,7 @@ describe("AICaptureAPI", () => {
       id: "photo-1",
       clientPhotoId: "43fe45a5-c245-45a3-865d-7c89d50dcd6c",
       position: 0,
+      captureGroupId: "b3d0d6b3-bda4-4c26-8d27-55f1d4653de3",
       originalName: "capture.jpg",
       mimeType: "image/jpeg",
       sizeBytes: 5,
@@ -82,10 +84,16 @@ describe("AICaptureAPI", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
-        new Response(JSON.stringify(session), { status: 201, headers: { "Content-Type": "application/json" } })
+        new Response(JSON.stringify(session), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
       )
       .mockResolvedValueOnce(
-        new Response(JSON.stringify(photo), { status: 201, headers: { "Content-Type": "application/json" } })
+        new Response(JSON.stringify(photo), {
+          status: 201,
+          headers: { "Content-Type": "application/json" },
+        })
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ ...session, status: "queued", photoCount: 1 }), {
@@ -101,16 +109,53 @@ describe("AICaptureAPI", () => {
       photo.clientPhotoId,
       0,
       new File(["image"], "capture.jpg", { type: "image/jpeg" }),
-      "capture.jpg"
+      "capture.jpg",
+      photo.captureGroupId
     );
-    await api.finishSession("session-1", 1);
+    await api.finishSession("session-1", 1, 1);
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe("http://homebox.test/api/v1/ai/capture/sessions");
-    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({ locationId: "location-1" });
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      locationId: "location-1",
+    });
     const upload = fetchMock.mock.calls[1]?.[1]?.body as FormData;
     expect(upload.get("clientPhotoId")).toBe(photo.clientPhotoId);
     expect(upload.get("position")).toBe("0");
+    expect(upload.get("captureGroupId")).toBe(photo.captureGroupId);
     expect(upload.get("file")).toBeInstanceOf(File);
-    expect(JSON.parse(fetchMock.mock.calls[2]?.[1]?.body as string)).toEqual({ expectedPhotoCount: 1 });
+    expect(JSON.parse(fetchMock.mock.calls[2]?.[1]?.body as string)).toEqual({
+      expectedPhotoCount: 1,
+      expectedCaptureRevision: 1,
+    });
+  });
+
+  test("reassigns and clears an uploaded photo group explicitly", async () => {
+    const photo = {
+      id: "photo-1",
+      clientPhotoId: "43fe45a5-c245-45a3-865d-7c89d50dcd6c",
+      position: 0,
+      captureGroupId: null,
+      originalName: "capture.jpg",
+      mimeType: "image/jpeg",
+      sizeBytes: 5,
+      createdAt: "2026-08-16T00:00:00Z",
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(photo), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const api = new AICaptureAPI(new Requests("http://homebox.test", "Bearer token"));
+
+    await api.updateSessionPhotoGroup("session-1", "photo-1", null);
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      "http://homebox.test/api/v1/ai/capture/sessions/session-1/photos/photo-1"
+    );
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("PATCH");
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      captureGroupId: null,
+    });
   });
 });

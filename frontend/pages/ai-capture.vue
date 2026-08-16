@@ -21,10 +21,14 @@
   import {
     clearCaptureQueueSession,
     deleteCaptureQueuePhoto,
+    getCaptureQueueSessionState,
     listCaptureQueuePhotos,
     normalizeCaptureImage,
     putCaptureQueuePhoto,
+    putCaptureQueuePhotoWithState,
+    putCaptureQueueSessionState,
     type CaptureQueuePhoto,
+    type CaptureQueueSessionState,
   } from "~/lib/ai-capture-queue";
   import MdiAlertCircleOutline from "~icons/mdi/alert-circle-outline";
   import MdiArrowLeft from "~icons/mdi/arrow-left";
@@ -67,6 +71,9 @@
   const saving = ref(false);
   const submitting = ref(false);
   const nextPosition = ref(0);
+  const sameItemMode = ref(false);
+  const activeCaptureGroupId = ref<string>();
+  const regroupingPhotoIds = ref<string[]>([]);
   const inFlight = new Map<string, Promise<void>>();
   let captureChain = Promise.resolve();
   let pollTimer: ReturnType<typeof setInterval> | undefined;
@@ -82,6 +89,57 @@
   const draft = computed(() => activeSession.value?.draft);
   const sessionPhotos = computed(() => activeSession.value?.photos || []);
   const activeStatus = computed(() => activeSession.value?.status || "capturing");
+  const captureGroups = computed(() => {
+    const firstPositions = new Map<string, number>();
+    const photos = [
+      ...(activeSession.value?.photos || []).map(photo => ({
+        position: photo.position,
+        captureGroupId: photo.captureGroupId,
+      })),
+      ...queue.value.map(photo => ({
+        position: photo.position,
+        captureGroupId: photo.captureGroupId,
+      })),
+    ];
+    for (const photo of photos) {
+      if (!photo.captureGroupId) continue;
+      const existing = firstPositions.get(photo.captureGroupId);
+      if (existing === undefined || photo.position < existing) firstPositions.set(photo.captureGroupId, photo.position);
+    }
+    return [...firstPositions.entries()]
+      .sort((left, right) => left[1] - right[1])
+      .map(([id], index) => ({ id, number: index + 1 }));
+  });
+  const activeGroupNumber = computed(
+    () => captureGroups.value.find(group => group.id === activeCaptureGroupId.value)?.number
+  );
+  const activeGroupViewCount = computed(() => {
+    if (!activeCaptureGroupId.value) return 0;
+    return (
+      (activeSession.value?.photos.filter(photo => photo.captureGroupId === activeCaptureGroupId.value).length || 0) +
+      queue.value.filter(photo => photo.captureGroupId === activeCaptureGroupId.value).length
+    );
+  });
+
+  function captureSessionState(sessionId: string): CaptureQueueSessionState {
+    return {
+      sessionId,
+      sameItemMode: sameItemMode.value,
+      activeCaptureGroupId: activeCaptureGroupId.value,
+      updatedAt: Date.now(),
+    };
+  }
+
+  async function persistCaptureState() {
+    if (!activeSession.value) return;
+    await putCaptureQueueSessionState(captureSessionState(activeSession.value.id));
+  }
+
+  function groupLabel(groupId?: string | null) {
+    if (!groupId) return t("ai_capture.camera.ungrouped");
+    const number = captureGroups.value.find(group => group.id === groupId)?.number;
+    return number ? t("ai_capture.camera.item_group", { group: number }) : t("ai_capture.camera.item_group_unknown");
+  }
 
   function responseMessage(response: { data?: unknown }) {
     const data = response.data as { error?: string; message?: string } | undefined;
@@ -127,6 +185,15 @@
   async function restoreQueue(sessionId: string) {
     revokePreviews();
     queue.value = await listCaptureQueuePhotos(sessionId);
+    for (const photo of queue.value) {
+      if (photo.captureGroupId === undefined) {
+        photo.captureGroupId = null;
+        await putCaptureQueuePhoto(photo);
+      }
+    }
+    const savedState = await getCaptureQueueSessionState(sessionId);
+    sameItemMode.value = savedState?.sameItemMode || false;
+    activeCaptureGroupId.value = savedState?.activeCaptureGroupId;
     const urls: Record<string, string> = {};
     for (const photo of queue.value) urls[photo.clientPhotoId] = URL.createObjectURL(photo.blob);
     previewURLs.value = urls;
@@ -140,6 +207,10 @@
         photo.status = "pending";
         await putCaptureQueuePhoto(photo);
       }
+    }
+    if (activeCaptureGroupId.value && activeGroupViewCount.value === 0) {
+      activeCaptureGroupId.value = undefined;
+      await persistCaptureState();
     }
     pumpUploads();
   }
@@ -172,6 +243,8 @@
     activeSession.value = null;
     selectedLocation.value = null;
     queue.value = [];
+    sameItemMode.value = false;
+    activeCaptureGroupId.value = undefined;
     revokePreviews();
     view.value = "location";
   }
@@ -204,18 +277,27 @@
     try {
       const normalized = await normalizeCaptureImage(file, file.name);
       const clientPhotoId = crypto.randomUUID();
+      const captureGroupId = sameItemMode.value ? activeCaptureGroupId.value || crypto.randomUUID() : null;
       const photo: CaptureQueuePhoto = {
         key: `${activeSession.value.id}:${clientPhotoId}`,
         sessionId: activeSession.value.id,
         clientPhotoId,
         position,
+        captureGroupId,
         name: normalized.name,
         blob: normalized,
         status: "pending",
         attempts: 0,
         createdAt: Date.now(),
       };
-      await putCaptureQueuePhoto(photo);
+      const nextState: CaptureQueueSessionState = {
+        sessionId: activeSession.value.id,
+        sameItemMode: sameItemMode.value,
+        activeCaptureGroupId: captureGroupId || undefined,
+        updatedAt: Date.now(),
+      };
+      await putCaptureQueuePhotoWithState(photo, nextState);
+      activeCaptureGroupId.value = nextState.activeCaptureGroupId;
       queue.value.push(photo);
       queue.value.sort((left, right) => left.position - right.position);
       previewURLs.value[clientPhotoId] = URL.createObjectURL(normalized);
@@ -243,7 +325,8 @@
           photo.clientPhotoId,
           photo.position,
           photo.blob,
-          photo.name
+          photo.name,
+          photo.captureGroupId || undefined
         );
         if (response.error) throw new Error(responseMessage(response));
         await deleteCaptureQueuePhoto(photo.sessionId, photo.clientPhotoId);
@@ -301,6 +384,7 @@
     const preview = previewURLs.value[photo.clientPhotoId];
     if (preview) URL.revokeObjectURL(preview);
     Reflect.deleteProperty(previewURLs.value, photo.clientPhotoId);
+    await clearEmptyActiveGroup();
   }
 
   async function removeServerPhoto(photo: AICaptureSessionPhoto) {
@@ -313,6 +397,57 @@
     activeSession.value.photos = activeSession.value.photos.filter(candidate => candidate.id !== photo.id);
     activeSession.value.uploadedPhotoCount = activeSession.value.photos.length;
     activeSession.value.photoCount = activeSession.value.photos.length;
+    await clearEmptyActiveGroup();
+  }
+
+  async function clearEmptyActiveGroup() {
+    if (!activeCaptureGroupId.value || activeGroupViewCount.value > 0) return;
+    activeCaptureGroupId.value = undefined;
+    await persistCaptureState();
+  }
+
+  async function updateSameItemMode(value: boolean) {
+    sameItemMode.value = value;
+    activeCaptureGroupId.value = undefined;
+    await persistCaptureState();
+  }
+
+  async function nextItem() {
+    activeCaptureGroupId.value = undefined;
+    await persistCaptureState();
+  }
+
+  function selectedCaptureGroup(value: string) {
+    if (value === "__new__") return crypto.randomUUID();
+    return value || null;
+  }
+
+  async function regroupQueuedPhoto(photo: CaptureQueuePhoto, value: string) {
+    if (photo.status === "uploading") return;
+    photo.captureGroupId = selectedCaptureGroup(value);
+    await putCaptureQueuePhoto(photo);
+    await clearEmptyActiveGroup();
+  }
+
+  async function regroupServerPhoto(photo: AICaptureSessionPhoto, value: string) {
+    if (!activeSession.value || regroupingPhotoIds.value.includes(photo.id)) return;
+    regroupingPhotoIds.value.push(photo.id);
+    try {
+      const response = await api.aiCapture.updateSessionPhotoGroup(
+        activeSession.value.id,
+        photo.id,
+        selectedCaptureGroup(value)
+      );
+      if (response.error) throw new Error(responseMessage(response));
+      const index = activeSession.value.photos.findIndex(candidate => candidate.id === photo.id);
+      if (index >= 0) activeSession.value.photos[index] = response.data;
+      await clearEmptyActiveGroup();
+    } catch (error) {
+      console.error(error);
+      toast.error(t("ai_capture.errors.group_photo"));
+    } finally {
+      regroupingPhotoIds.value = regroupingPhotoIds.value.filter(id => id !== photo.id);
+    }
   }
 
   async function finishCapture() {
@@ -321,6 +456,7 @@
     view.value = "processing";
     try {
       await captureChain;
+      await nextItem();
       pumpUploads();
       while (inFlight.size > 0) await Promise.all([...inFlight.values()]);
       if (queue.value.length > 0) {
@@ -328,8 +464,15 @@
         toast.error(t("ai_capture.errors.uploads_pending"));
         return;
       }
-      const expected = activeSession.value.photos.length;
-      const response = await api.aiCapture.finishSession(activeSession.value.id, expected);
+      const latestResponse = await api.aiCapture.getSession(activeSession.value.id);
+      if (latestResponse.error) throw new Error(responseMessage(latestResponse));
+      replaceSession(latestResponse.data);
+      const expected = latestResponse.data.photos.length;
+      const response = await api.aiCapture.finishSession(
+        latestResponse.data.id,
+        expected,
+        latestResponse.data.captureRevision
+      );
       if (response.error) throw new Error(responseMessage(response));
       replaceSession(response.data);
       view.value = "processing";
@@ -379,6 +522,39 @@
   function togglePhoto(item: AICaptureItem, photoId: string, checked: boolean) {
     const current = item.photoIds || [];
     item.photoIds = checked ? [...new Set([...current, photoId])] : current.filter(id => id !== photoId);
+    item.captureGroupId = undefined;
+  }
+
+  function splitItem(index: number) {
+    const items = activeSession.value?.draft?.items;
+    const item = items?.[index];
+    if (!items || !item || (item.photoIds?.length || 0) < 2) return;
+    const photoIds = item.photoIds || [];
+    const splitAt = Math.ceil(photoIds.length / 2);
+    const clone = JSON.parse(JSON.stringify(item)) as AICaptureItem;
+    item.photoIds = photoIds.slice(0, splitAt);
+    item.captureGroupId = undefined;
+    item.needsReview = true;
+    item.reviewReason = t("ai_capture.review.split_reason");
+    clone.clientId = crypto.randomUUID();
+    clone.photoIds = photoIds.slice(splitAt);
+    clone.captureGroupId = undefined;
+    clone.needsReview = true;
+    clone.reviewReason = t("ai_capture.review.split_reason");
+    items.splice(index + 1, 0, clone);
+  }
+
+  function mergeWithPrevious(index: number) {
+    const items = activeSession.value?.draft?.items;
+    if (!items || index <= 0 || !items[index]) return;
+    const target = items[index - 1];
+    const source = items[index];
+    if (!target || !source) return;
+    target.photoIds = [...new Set([...(target.photoIds || []), ...(source.photoIds || [])])];
+    target.captureGroupId = undefined;
+    target.needsReview = true;
+    target.reviewReason = t("ai_capture.review.merge_reason");
+    items.splice(index, 1);
   }
 
   function validDraft(value: AICaptureDraft | undefined, notify = true) {
@@ -647,8 +823,13 @@
         :count="capturedCount"
         :max-photos="maxPhotos"
         :busy="loading"
+        :same-item-mode="sameItemMode"
+        :active-group-number="activeGroupNumber"
+        :active-group-view-count="activeGroupViewCount"
         @captured="capturePhoto"
         @finish="finishCapture"
+        @next-item="nextItem"
+        @update:same-item-mode="updateSameItemMode"
       />
 
       <div
@@ -667,39 +848,87 @@
       </div>
 
       <div v-if="capturedCount" class="flex gap-2 overflow-x-auto rounded-lg border p-2">
-        <div v-for="photo in activeSession.photos" :key="photo.id" class="group relative shrink-0">
-          <img
-            :src="api.aiCapture.photoURL(activeSession.id, photo.id)"
-            :alt="photo.originalName"
-            class="size-24 rounded-md object-cover"
-          />
-          <button
-            type="button"
-            class="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
-            @click="removeServerPhoto(photo)"
+        <div v-for="photo in activeSession.photos" :key="photo.id" class="w-24 shrink-0 space-y-1">
+          <div class="group relative">
+            <img
+              :src="api.aiCapture.photoURL(activeSession.id, photo.id)"
+              :alt="photo.originalName"
+              class="size-24 rounded-md object-cover"
+            />
+            <span class="absolute bottom-1 left-1 rounded bg-black/75 px-1.5 py-0.5 text-[10px] text-white">
+              {{ groupLabel(photo.captureGroupId) }}
+            </span>
+            <button
+              type="button"
+              class="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
+              :aria-label="$t('ai_capture.camera.delete_photo')"
+              @click="removeServerPhoto(photo)"
+            >
+              <MdiDelete />
+            </button>
+          </div>
+          <label :for="`server-photo-group-${photo.id}`" class="sr-only">
+            {{ $t("ai_capture.camera.photo_group") }}
+          </label>
+          <select
+            :id="`server-photo-group-${photo.id}`"
+            class="h-8 w-24 rounded border bg-background px-1 text-xs text-foreground"
+            :value="photo.captureGroupId || ''"
+            :disabled="regroupingPhotoIds.includes(photo.id)"
+            @change="regroupServerPhoto(photo, ($event.target as HTMLSelectElement).value)"
           >
-            <MdiDelete />
-          </button>
+            <option value="">{{ $t("ai_capture.camera.ungrouped") }}</option>
+            <option v-for="group in captureGroups" :key="group.id" :value="group.id">
+              {{ $t("ai_capture.camera.item_group", { group: group.number }) }}
+            </option>
+            <option value="__new__">
+              {{ $t("ai_capture.camera.new_item_group") }}
+            </option>
+          </select>
         </div>
-        <div v-for="photo in queue" :key="photo.clientPhotoId" class="group relative shrink-0">
-          <img
-            :src="previewURLs[photo.clientPhotoId]"
-            :alt="photo.name"
-            class="size-24 rounded-md object-cover"
-            :class="photo.status === 'failed' ? 'opacity-60' : ''"
-          />
-          <MdiLoading
-            v-if="photo.status === 'uploading'"
-            class="absolute inset-0 m-auto size-7 animate-spin text-white drop-shadow"
-          />
-          <button
-            v-if="photo.status !== 'uploading'"
-            type="button"
-            class="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
-            @click="removeQueuedPhoto(photo)"
+        <div v-for="photo in queue" :key="photo.clientPhotoId" class="w-24 shrink-0 space-y-1">
+          <div class="group relative">
+            <img
+              :src="previewURLs[photo.clientPhotoId]"
+              :alt="photo.name"
+              class="size-24 rounded-md object-cover"
+              :class="photo.status === 'failed' ? 'opacity-60' : ''"
+            />
+            <span class="absolute bottom-1 left-1 rounded bg-black/75 px-1.5 py-0.5 text-[10px] text-white">
+              {{ groupLabel(photo.captureGroupId) }}
+            </span>
+            <MdiLoading
+              v-if="photo.status === 'uploading'"
+              class="absolute inset-0 m-auto size-7 animate-spin text-white drop-shadow"
+            />
+            <button
+              v-if="photo.status !== 'uploading'"
+              type="button"
+              class="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
+              :aria-label="$t('ai_capture.camera.delete_photo')"
+              @click="removeQueuedPhoto(photo)"
+            >
+              <MdiDelete />
+            </button>
+          </div>
+          <label :for="`queued-photo-group-${photo.clientPhotoId}`" class="sr-only">
+            {{ $t("ai_capture.camera.photo_group") }}
+          </label>
+          <select
+            :id="`queued-photo-group-${photo.clientPhotoId}`"
+            class="h-8 w-24 rounded border bg-background px-1 text-xs text-foreground"
+            :value="photo.captureGroupId || ''"
+            :disabled="photo.status === 'uploading'"
+            @change="regroupQueuedPhoto(photo, ($event.target as HTMLSelectElement).value)"
           >
-            <MdiDelete />
-          </button>
+            <option value="">{{ $t("ai_capture.camera.ungrouped") }}</option>
+            <option v-for="group in captureGroups" :key="group.id" :value="group.id">
+              {{ $t("ai_capture.camera.item_group", { group: group.number }) }}
+            </option>
+            <option value="__new__">
+              {{ $t("ai_capture.camera.new_item_group") }}
+            </option>
+          </select>
         </div>
       </div>
     </div>
@@ -765,16 +994,40 @@
 
       <Card v-for="(item, itemIndex) in draft.items" :key="item.clientId">
         <CardHeader class="pb-3">
-          <div class="flex items-start justify-between gap-2">
+          <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
               <CardTitle class="flex items-center gap-2 text-lg"
                 ><MdiPackageVariant /> {{ item.name || $t("ai_capture.review.unnamed") }}</CardTitle
               >
+              <span
+                v-if="item.captureGroupId"
+                class="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
+              >
+                <MdiImageMultiple class="mr-1" />
+                {{
+                  $t("ai_capture.review.multiple_views", {
+                    group: groupLabel(item.captureGroupId),
+                  })
+                }}
+              </span>
               <CardDescription v-if="item.needsReview" class="mt-1 text-amber-600">{{
                 item.reviewReason || $t("ai_capture.review.check_item")
               }}</CardDescription>
             </div>
-            <Button variant="ghost" size="icon" @click="removeItem(itemIndex)"><MdiDelete /></Button>
+            <div class="flex flex-wrap justify-end gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="(item.photoIds?.length || 0) < 2"
+                @click="splitItem(itemIndex)"
+              >
+                {{ $t("ai_capture.review.split") }}
+              </Button>
+              <Button v-if="itemIndex > 0" size="sm" variant="outline" @click="mergeWithPrevious(itemIndex)">
+                {{ $t("ai_capture.review.merge_previous") }}
+              </Button>
+              <Button variant="ghost" size="icon" @click="removeItem(itemIndex)"><MdiDelete /></Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent class="grid gap-4 sm:grid-cols-2">

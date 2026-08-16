@@ -25,6 +25,8 @@ const (
 	FieldClientPhotoID = "client_photo_id"
 	// FieldPosition holds the string denoting the position field in the database.
 	FieldPosition = "position"
+	// FieldCaptureGroupID holds the string denoting the capture_group_id field in the database.
+	FieldCaptureGroupID = "capture_group_id"
 	// FieldOriginalName holds the string denoting the original_name field in the database.
 	FieldOriginalName = "original_name"
 	// FieldPath holds the string denoting the path field in the database.
@@ -56,6 +58,7 @@ var Columns = []string{
 	FieldSessionID,
 	FieldClientPhotoID,
 	FieldPosition,
+	FieldCaptureGroupID,
 	FieldOriginalName,
 	FieldPath,
 	FieldMimeType,
@@ -125,6 +128,11 @@ func ByClientPhotoID(opts ...sql.OrderTermOption) OrderOption {
 // ByPosition orders the results by the position field.
 func ByPosition(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPosition, opts...).ToFunc()
+}
+
+// ByCaptureGroupID orders the results by the capture_group_id field.
+func ByCaptureGroupID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCaptureGroupID, opts...).ToFunc()
 }
 
 // ByOriginalName orders the results by the original_name field.

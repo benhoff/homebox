@@ -9,8 +9,6 @@ info:
 paths:
   /v1/actions/create-missing-thumbnails:
     post:
-      security:
-        - Bearer: []
       description: Creates thumbnails for items that are missing them
       tags:
         - Actions
@@ -22,10 +20,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/ensure-asset-ids:
-    post:
       security:
         - Bearer: []
+  /v1/actions/ensure-asset-ids:
+    post:
       description: Ensures all items in the database have an asset ID
       tags:
         - Actions
@@ -37,10 +35,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/ensure-import-refs:
-    post:
       security:
         - Bearer: []
+  /v1/actions/ensure-import-refs:
+    post:
       description: Ensures all items in the database have an import ref
       tags:
         - Actions
@@ -52,10 +50,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/set-primary-photos:
-    post:
       security:
         - Bearer: []
+  /v1/actions/set-primary-photos:
+    post:
       description: Sets the first photo of each item as the primary photo
       tags:
         - Actions
@@ -67,10 +65,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/wipe-inventory:
-    post:
       security:
         - Bearer: []
+  /v1/actions/wipe-inventory:
+    post:
       description: Deletes all items in the inventory
       tags:
         - Actions
@@ -88,10 +86,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/zero-item-time-fields:
-    post:
       security:
         - Bearer: []
+  /v1/actions/zero-item-time-fields:
+    post:
       description: Resets all item date fields to the beginning of the day
       tags:
         - Actions
@@ -103,10 +101,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/ai/capture/analyze:
-    post:
       security:
         - Bearer: []
+  /v1/ai/capture/analyze:
+    post:
       tags:
         - AI Capture
       summary: Analyze inventory photos with an OpenAI-compatible vision model
@@ -152,10 +150,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  /v1/ai/capture/sessions:
-    get:
       security:
         - Bearer: []
+  /v1/ai/capture/sessions:
+    get:
       tags:
         - AI Capture Sessions
       summary: List the current user's AI capture sessions
@@ -166,9 +164,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.Results-services_AICaptureSessionOut"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - AI Capture Sessions
       summary: Create an AI capture session
@@ -186,10 +184,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}":
-    get:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}":
+    get:
       tags:
         - AI Capture Sessions
       summary: Get an AI capture session
@@ -207,9 +205,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - AI Capture Sessions
       summary: Delete an AI capture session
@@ -223,9 +221,9 @@ paths:
       responses:
         "204":
           description: No Content
-    patch:
       security:
         - Bearer: []
+    patch:
       tags:
         - AI Capture Sessions
       summary: Change an AI capture session location
@@ -250,10 +248,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/corrections":
-    post:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/corrections":
+    post:
       tags:
         - AI Capture Sessions
       summary: Ask AI to correct a persisted capture draft
@@ -278,10 +276,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/draft":
-    put:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/draft":
+    put:
       tags:
         - AI Capture Sessions
       summary: Save an edited AI capture draft
@@ -306,10 +304,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/finish":
-    post:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/finish":
+    post:
       tags:
         - AI Capture Sessions
       summary: Seal an AI capture session and queue analysis
@@ -334,10 +332,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/photos":
-    post:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/photos":
+    post:
       tags:
         - AI Capture Sessions
       summary: Upload one photo to an AI capture session
@@ -364,6 +362,9 @@ paths:
                 position:
                   description: Capture order
                   type: integer
+                captureGroupId:
+                  description: Same-item group UUID
+                  type: string
               required:
                 - file
                 - clientPhotoId
@@ -376,10 +377,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionPhoto"
-  "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}":
-    get:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}":
+    get:
       tags:
         - AI Capture Sessions
       summary: Read an authorized AI capture session photo
@@ -416,9 +417,9 @@ paths:
               schema:
                 type: string
                 format: binary
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - AI Capture Sessions
       summary: Delete a photo from a capturing session
@@ -438,10 +439,43 @@ paths:
       responses:
         "204":
           description: No Content
-  "/v1/ai/capture/sessions/{sessionId}/retry-analysis":
-    post:
       security:
         - Bearer: []
+    patch:
+      tags:
+        - AI Capture Sessions
+      summary: Reassign or clear a photo's same-item group
+      parameters:
+        - description: Capture session ID
+          name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - description: Capture photo ID
+          name: photoId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.aiCaptureSessionPhotoUpdate"
+        description: Nullable same-item group UUID
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/services.AICaptureSessionPhoto"
+      security:
+        - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/retry-analysis":
+    post:
       tags:
         - AI Capture Sessions
       summary: Retry failed AI capture analysis
@@ -459,10 +493,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/submit":
-    post:
       security:
         - Bearer: []
+  "/v1/ai/capture/sessions/{sessionId}/submit":
+    post:
       tags:
         - AI Capture Sessions
       summary: Create reviewed items from an AI capture session
@@ -487,10 +521,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/assets/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/assets/{id}":
+    get:
       tags:
         - Items
       summary: Get Item by Asset ID
@@ -508,6 +542,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.PaginationResult-repo_EntitySummary"
+      security:
+        - Bearer: []
   /v1/currencies:
     get:
       tags:
@@ -522,8 +558,6 @@ paths:
                 $ref: "#/components/schemas/currencies.Currency"
   /v1/entities:
     get:
-      security:
-        - Bearer: []
       tags:
         - Entities
       summary: Query All Entities
@@ -566,9 +600,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityListResult"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Entities
       summary: Create Entity
@@ -586,10 +620,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  /v1/entities/export:
-    get:
       security:
         - Bearer: []
+  /v1/entities/export:
+    get:
       tags:
         - Entities
       summary: Export Entities
@@ -600,10 +634,10 @@ paths:
             "*/*":
               schema:
                 type: string
-  /v1/entities/fields:
-    get:
       security:
         - Bearer: []
+  /v1/entities/fields:
+    get:
       tags:
         - Entities
       summary: Get All Custom Field Names
@@ -616,10 +650,10 @@ paths:
                 type: array
                 items:
                   type: string
-  /v1/entities/fields/values:
-    get:
       security:
         - Bearer: []
+  /v1/entities/fields/values:
+    get:
       tags:
         - Entities
       summary: Get All Custom Field Values
@@ -639,10 +673,10 @@ paths:
                 type: array
                 items:
                   type: string
-  /v1/entities/import:
-    post:
       security:
         - Bearer: []
+  /v1/entities/import:
+    post:
       tags:
         - Entities
       summary: Import Entities
@@ -662,10 +696,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/entities/tree:
-    get:
       security:
         - Bearer: []
+  /v1/entities/tree:
+    get:
       tags:
         - Entities
       summary: Get Locations Tree
@@ -684,10 +718,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.TreeItem"
-  "/v1/entities/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/entities/{id}":
+    get:
       tags:
         - Entities
       summary: Get Entity
@@ -705,9 +739,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - Entities
       summary: Update Entity
@@ -732,9 +766,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Entities
       summary: Delete Entity
@@ -748,9 +782,9 @@ paths:
       responses:
         "204":
           description: No Content
-    patch:
       security:
         - Bearer: []
+    patch:
       tags:
         - Entities
       summary: Patch Entity
@@ -775,10 +809,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  "/v1/entities/{id}/attachments":
-    post:
       security:
         - Bearer: []
+  "/v1/entities/{id}/attachments":
+    post:
       tags:
         - Entities Attachments
       summary: Create Entity Attachment
@@ -825,10 +859,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  "/v1/entities/{id}/attachments/external":
-    post:
       security:
         - Bearer: []
+  "/v1/entities/{id}/attachments/external":
+    post:
       description: Links an entity to a document or URL in an external system without
         copying
       tags:
@@ -861,10 +895,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  "/v1/entities/{id}/attachments/{attachment_id}":
-    get:
       security:
         - Bearer: []
+  "/v1/entities/{id}/attachments/{attachment_id}":
+    get:
       tags:
         - Entities Attachments
       summary: Get Entity Attachment
@@ -889,9 +923,9 @@ paths:
               schema:
                 type: string
                 format: binary
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - Entities Attachments
       summary: Update Entity Attachment
@@ -922,9 +956,9 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Entities Attachments
       summary: Delete Entity Attachment
@@ -944,10 +978,10 @@ paths:
       responses:
         "204":
           description: No Content
-  "/v1/entities/{id}/duplicate":
-    post:
       security:
         - Bearer: []
+  "/v1/entities/{id}/duplicate":
+    post:
       tags:
         - Entities
       summary: Duplicate Entity
@@ -972,10 +1006,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  "/v1/entities/{id}/maintenance":
-    get:
       security:
         - Bearer: []
+  "/v1/entities/{id}/maintenance":
+    get:
       tags:
         - Item Maintenance
       summary: Get Maintenance Log
@@ -1007,9 +1041,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.MaintenanceEntryWithDetails"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Item Maintenance
       summary: Create Maintenance Entry
@@ -1034,10 +1068,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.MaintenanceEntry"
-  "/v1/entities/{id}/path":
-    get:
       security:
         - Bearer: []
+  "/v1/entities/{id}/path":
+    get:
       tags:
         - Entities
       summary: Get the full path of an entity
@@ -1057,10 +1091,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.EntityPath"
-  /v1/entity-types:
-    get:
       security:
         - Bearer: []
+  /v1/entity-types:
+    get:
       tags:
         - Entity Types
       summary: Get All Entity Types
@@ -1073,9 +1107,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.EntityTypeSummary"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Entity Types
       summary: Create Entity Type
@@ -1093,10 +1127,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTypeSummary"
-  "/v1/entity-types/{id}":
-    put:
       security:
         - Bearer: []
+  "/v1/entity-types/{id}":
+    put:
       tags:
         - Entity Types
       summary: Update Entity Type
@@ -1121,9 +1155,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTypeSummary"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Entity Types
       summary: Delete Entity Type
@@ -1137,10 +1171,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/group/exports:
-    get:
       security:
         - Bearer: []
+  /v1/group/exports:
+    get:
       description: Returns export job rows for the caller's group, newest first.
       tags:
         - Group
@@ -1152,9 +1186,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.Results-repo_ExportOut"
-    post:
       security:
         - Bearer: []
+    post:
       description: Creates a pending export row and enqueues the build job. Poll the
         listing endpoint or watch the WebSocket for completion.
       tags:
@@ -1167,10 +1201,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
-  "/v1/group/exports/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/group/exports/{id}":
+    get:
       tags:
         - Group
       summary: Get an Export
@@ -1188,9 +1222,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       description: Deletes the export row and its blob artifact.
       tags:
         - Group
@@ -1205,10 +1239,10 @@ paths:
       responses:
         "204":
           description: No Content
-  "/v1/group/exports/{id}/download":
-    get:
       security:
         - Bearer: []
+  "/v1/group/exports/{id}/download":
+    get:
       tags:
         - Group
       summary: Download an Export Artifact
@@ -1227,10 +1261,10 @@ paths:
               schema:
                 type: string
                 format: binary
-  /v1/group/import:
-    post:
       security:
         - Bearer: []
+  /v1/group/import:
+    post:
       description: Uploads a collection-export zip and enqueues the import job. The
         destination group must be empty. Returns the tracked import row so
         clients can poll for progress.
@@ -1257,10 +1291,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
-  /v1/groups:
-    get:
       security:
         - Bearer: []
+  /v1/groups:
+    get:
       tags:
         - Group
       summary: Get Group
@@ -1271,9 +1305,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.Group"
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - Group
       summary: Update Group
@@ -1291,9 +1325,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.Group"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Group
       summary: Create Group
@@ -1311,19 +1345,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.Group"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Group
       summary: Delete Group
       responses:
         "204":
           description: No Content
-  /v1/groups/all:
-    get:
       security:
         - Bearer: []
+  /v1/groups/all:
+    get:
       tags:
         - Group
       summary: Get All Groups
@@ -1336,10 +1370,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.Group"
-  /v1/groups/invitations:
-    get:
       security:
         - Bearer: []
+  /v1/groups/invitations:
+    get:
       tags:
         - Group
       summary: Get All Group Invitations
@@ -1352,9 +1386,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.GroupInvitation"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Group
       summary: Create Group Invitation
@@ -1373,10 +1407,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.GroupInvitation"
-  "/v1/groups/invitations/{id}":
-    post:
       security:
         - Bearer: []
+  "/v1/groups/invitations/{id}":
+    post:
       tags:
         - Group
       summary: Accept Group Invitation
@@ -1395,9 +1429,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.GroupAcceptInvitationResponse"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Group
       summary: Delete Group Invitation
@@ -1411,10 +1445,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/groups/members:
-    get:
       security:
         - Bearer: []
+  /v1/groups/members:
+    get:
       tags:
         - Group
       summary: Get All Group Members
@@ -1427,10 +1461,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.UserSummary"
-  "/v1/groups/members/{user_id}":
-    delete:
       security:
         - Bearer: []
+  "/v1/groups/members/{user_id}":
+    delete:
       tags:
         - Group
       summary: Remove User from Group
@@ -1444,10 +1478,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/groups/statistics:
-    get:
       security:
         - Bearer: []
+  /v1/groups/statistics:
+    get:
       tags:
         - Statistics
       summary: Get Group Statistics
@@ -1458,10 +1492,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.GroupStatistics"
-  /v1/groups/statistics/locations:
-    get:
       security:
         - Bearer: []
+  /v1/groups/statistics/locations:
+    get:
       tags:
         - Statistics
       summary: Get Location Statistics
@@ -1474,10 +1508,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.TotalsByOrganizer"
-  /v1/groups/statistics/purchase-price:
-    get:
       security:
         - Bearer: []
+  /v1/groups/statistics/purchase-price:
+    get:
       tags:
         - Statistics
       summary: Get Purchase Price Statistics
@@ -1499,10 +1533,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ValueOverTime"
-  /v1/groups/statistics/tags:
-    get:
       security:
         - Bearer: []
+  /v1/groups/statistics/tags:
+    get:
       tags:
         - Statistics
       summary: Get Tags Statistics
@@ -1515,10 +1549,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.TotalsByOrganizer"
-  "/v1/labelmaker/asset/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/labelmaker/asset/{id}":
+    get:
       tags:
         - Items
       summary: Get Asset label
@@ -1541,10 +1575,10 @@ paths:
             application/json:
               schema:
                 type: string
-  "/v1/labelmaker/item/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/labelmaker/item/{id}":
+    get:
       tags:
         - Items
       summary: Get Item label
@@ -1567,10 +1601,10 @@ paths:
             application/json:
               schema:
                 type: string
-  "/v1/labelmaker/location/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/labelmaker/location/{id}":
+    get:
       tags:
         - Locations
       summary: Get Location label
@@ -1593,10 +1627,10 @@ paths:
             application/json:
               schema:
                 type: string
-  /v1/maintenance:
-    get:
       security:
         - Bearer: []
+  /v1/maintenance:
+    get:
       tags:
         - Maintenance
       summary: Query All Maintenance
@@ -1622,10 +1656,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.MaintenanceEntryWithDetails"
-  "/v1/maintenance/{id}":
-    put:
       security:
         - Bearer: []
+  "/v1/maintenance/{id}":
+    put:
       tags:
         - Maintenance
       summary: Update Maintenance Entry
@@ -1650,9 +1684,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.MaintenanceEntry"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Maintenance
       summary: Delete Maintenance Entry
@@ -1666,10 +1700,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/notifiers:
-    get:
       security:
         - Bearer: []
+  /v1/notifiers:
+    get:
       tags:
         - Notifiers
       summary: Get Notifiers
@@ -1682,9 +1716,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.NotifierOut"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Notifiers
       summary: Create Notifier
@@ -1702,10 +1736,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.NotifierOut"
-  /v1/notifiers/test:
-    post:
       security:
         - Bearer: []
+  /v1/notifiers/test:
+    post:
       tags:
         - Notifiers
       summary: Test Notifier
@@ -1719,10 +1753,10 @@ paths:
       responses:
         "204":
           description: No Content
-  "/v1/notifiers/{id}":
-    put:
       security:
         - Bearer: []
+  "/v1/notifiers/{id}":
+    put:
       tags:
         - Notifiers
       summary: Update Notifier
@@ -1747,9 +1781,9 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/repo.NotifierOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Notifiers
       summary: Delete a Notifier
@@ -1763,10 +1797,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/products/search-from-barcode:
-    get:
       security:
         - Bearer: []
+  /v1/products/search-from-barcode:
+    get:
       tags:
         - Items
       summary: Search EAN from Barcode
@@ -1785,10 +1819,10 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.BarcodeProduct"
-  /v1/qrcode:
-    get:
       security:
         - Bearer: []
+  /v1/qrcode:
+    get:
       tags:
         - Items
       summary: Create QR Code
@@ -1805,10 +1839,10 @@ paths:
             application/json:
               schema:
                 type: string
-  /v1/reporting/bill-of-materials:
-    get:
       security:
         - Bearer: []
+  /v1/reporting/bill-of-materials:
+    get:
       tags:
         - Reporting
       summary: Export Bill of Materials
@@ -1819,6 +1853,8 @@ paths:
             application/json:
               schema:
                 type: string
+      security:
+        - Bearer: []
   /v1/status:
     get:
       tags:
@@ -1833,8 +1869,6 @@ paths:
                 $ref: "#/components/schemas/v1.APISummary"
   /v1/tags:
     get:
-      security:
-        - Bearer: []
       tags:
         - Tags
       summary: Get All Tags
@@ -1847,9 +1881,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.TagSummary"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Tags
       summary: Create Tag
@@ -1867,10 +1901,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-  "/v1/tags/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/tags/{id}":
+    get:
       tags:
         - Tags
       summary: Get Tag
@@ -1888,9 +1922,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - Tags
       summary: Update Tag
@@ -1915,9 +1949,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Tags
       summary: Delete Tag
@@ -1931,10 +1965,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/templates:
-    get:
       security:
         - Bearer: []
+  /v1/templates:
+    get:
       tags:
         - Entity Templates
       summary: Get All Entity Templates
@@ -1947,9 +1981,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.EntityTemplateSummary"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - Entity Templates
       summary: Create Entity Template
@@ -1967,10 +2001,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-  "/v1/templates/{id}":
-    get:
       security:
         - Bearer: []
+  "/v1/templates/{id}":
+    get:
       tags:
         - Entity Templates
       summary: Get Entity Template
@@ -1988,9 +2022,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - Entity Templates
       summary: Update Entity Template
@@ -2015,9 +2049,9 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - Entity Templates
       summary: Delete Entity Template
@@ -2031,10 +2065,10 @@ paths:
       responses:
         "204":
           description: No Content
-  "/v1/templates/{id}/create-item":
-    post:
       security:
         - Bearer: []
+  "/v1/templates/{id}/create-item":
+    post:
       tags:
         - Entity Templates
       summary: Create Entity from Template
@@ -2059,10 +2093,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  /v1/users/change-password:
-    put:
       security:
         - Bearer: []
+  /v1/users/change-password:
+    put:
       tags:
         - User
       summary: Change Password
@@ -2076,6 +2110,8 @@ paths:
       responses:
         "204":
           description: No Content
+      security:
+        - Bearer: []
   /v1/users/forgot-password:
     post:
       description: >-
@@ -2173,18 +2209,16 @@ paths:
           description: Found
   /v1/users/logout:
     post:
-      security:
-        - Bearer: []
       tags:
         - Authentication
       summary: User Logout
       responses:
         "204":
           description: No Content
-  /v1/users/logout/all:
-    post:
       security:
         - Bearer: []
+  /v1/users/logout/all:
+    post:
       description: |-
         Revokes every session token for the authenticated user across all
         devices, including the current one. Use this to invalidate a session
@@ -2196,10 +2230,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/users/refresh:
-    get:
       security:
         - Bearer: []
+  /v1/users/refresh:
+    get:
       description: >-
         handleAuthRefresh returns a handler that will issue a new token from an
         existing token.
@@ -2211,6 +2245,8 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+        - Bearer: []
   /v1/users/register:
     post:
       tags:
@@ -2271,8 +2307,6 @@ paths:
                 type: string
   /v1/users/self:
     get:
-      security:
-        - Bearer: []
       tags:
         - User
       summary: Get User Self
@@ -2288,9 +2322,9 @@ paths:
                     properties:
                       item:
                         $ref: "#/components/schemas/repo.UserOut"
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - User
       summary: Update Account
@@ -2313,19 +2347,19 @@ paths:
                     properties:
                       item:
                         $ref: "#/components/schemas/repo.UserUpdate"
-    delete:
       security:
         - Bearer: []
+    delete:
       tags:
         - User
       summary: Delete Account
       responses:
         "204":
           description: No Content
-  /v1/users/self/api-keys:
-    get:
       security:
         - Bearer: []
+  /v1/users/self/api-keys:
+    get:
       tags:
         - User
       summary: List API Keys
@@ -2338,9 +2372,9 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/repo.APIKeyOut"
-    post:
       security:
         - Bearer: []
+    post:
       tags:
         - User
       summary: Create API Key
@@ -2358,10 +2392,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.APIKeyCreatedOut"
-  "/v1/users/self/api-keys/{id}":
-    delete:
       security:
         - Bearer: []
+  "/v1/users/self/api-keys/{id}":
+    delete:
       tags:
         - User
       summary: Delete API Key
@@ -2375,10 +2409,10 @@ paths:
       responses:
         "204":
           description: No Content
-  /v1/users/self/settings:
-    get:
       security:
         - Bearer: []
+  /v1/users/self/settings:
+    get:
       tags:
         - User
       summary: Get user settings
@@ -2395,9 +2429,9 @@ paths:
                       item:
                         type: object
                         additionalProperties: true
-    put:
       security:
         - Bearer: []
+    put:
       tags:
         - User
       summary: Update user settings
@@ -2422,6 +2456,8 @@ paths:
                       item:
                         type: object
                         additionalProperties: true
+      security:
+        - Bearer: []
 servers:
   - url: /api
 components:
@@ -2514,6 +2550,9 @@ components:
     ent.AICapturePhoto:
       type: object
       properties:
+        capture_group_id:
+          description: CaptureGroupID holds the value of the "capture_group_id" field.
+          type: string
         client_photo_id:
           description: ClientPhotoID holds the value of the "client_photo_id" field.
           type: string
@@ -2570,6 +2609,9 @@ components:
         analyzed_at:
           description: AnalyzedAt holds the value of the "analyzed_at" field.
           type: string
+        capture_revision:
+          description: CaptureRevision holds the value of the "capture_revision" field.
+          type: integer
         completed_at:
           description: CompletedAt holds the value of the "completed_at" field.
           type: string
@@ -4832,6 +4874,10 @@ components:
     services.AICaptureItem:
       type: object
       properties:
+        captureGroupId:
+          type: string
+          x-omitempty: true
+          nullable: true
         clientId:
           type: string
         description:
@@ -4876,6 +4922,8 @@ components:
           type: integer
         analyzedAt:
           type: string
+        captureRevision:
+          type: integer
         completedAt:
           type: string
         createdAt:
@@ -4915,6 +4963,9 @@ components:
     services.AICaptureSessionPhoto:
       type: object
       properties:
+        captureGroupId:
+          type: string
+          nullable: true
         clientPhotoId:
           type: string
         createdAt:
@@ -5197,6 +5248,8 @@ components:
     v1.aiCaptureSessionFinish:
       type: object
       properties:
+        expectedCaptureRevision:
+          type: integer
         expectedPhotoCount:
           type: integer
     v1.aiCaptureSessionLocationUpdate:
@@ -5204,6 +5257,12 @@ components:
       properties:
         locationId:
           type: string
+    v1.aiCaptureSessionPhotoUpdate:
+      type: object
+      properties:
+        captureGroupId:
+          type: string
+          nullable: true
     v1.aiCaptureSessionSubmit:
       type: object
       properties:

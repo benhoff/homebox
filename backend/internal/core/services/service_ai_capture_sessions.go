@@ -21,23 +21,25 @@ import (
 )
 
 const (
-	AICaptureErrorInvalidState    = "INVALID_STATE"
-	AICaptureErrorSessionFull     = "SESSION_FULL"
-	AICaptureErrorPhotoMismatch   = "PHOTO_COUNT_MISMATCH"
-	AICaptureErrorLocationMissing = "LOCATION_MISSING"
-	AICaptureErrorAnalysisFailed  = "ANALYSIS_UPSTREAM_FAILED"
-	AICaptureErrorDraftConflict   = "DRAFT_REVISION_CONFLICT"
-	AICaptureErrorSubmitFailed    = "SUBMISSION_FAILED"
+	AICaptureErrorInvalidState     = "INVALID_STATE"
+	AICaptureErrorSessionFull      = "SESSION_FULL"
+	AICaptureErrorPhotoMismatch    = "PHOTO_COUNT_MISMATCH"
+	AICaptureErrorRevisionMismatch = "CAPTURE_REVISION_MISMATCH"
+	AICaptureErrorLocationMissing  = "LOCATION_MISSING"
+	AICaptureErrorAnalysisFailed   = "ANALYSIS_UPSTREAM_FAILED"
+	AICaptureErrorDraftConflict    = "DRAFT_REVISION_CONFLICT"
+	AICaptureErrorSubmitFailed     = "SUBMISSION_FAILED"
 )
 
 type AICaptureSessionPhoto struct {
-	ID            string    `json:"id"`
-	ClientPhotoID string    `json:"clientPhotoId"`
-	Position      int       `json:"position"`
-	OriginalName  string    `json:"originalName"`
-	MIMEType      string    `json:"mimeType"`
-	SizeBytes     int64     `json:"sizeBytes"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID             string    `json:"id"`
+	ClientPhotoID  string    `json:"clientPhotoId"`
+	Position       int       `json:"position"`
+	CaptureGroupID *string   `json:"captureGroupId" extensions:"x-nullable"`
+	OriginalName   string    `json:"originalName"`
+	MIMEType       string    `json:"mimeType"`
+	SizeBytes      int64     `json:"sizeBytes"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 type AICaptureCreatedItem struct {
@@ -54,6 +56,7 @@ type AICaptureSessionOut struct {
 	Photos             []AICaptureSessionPhoto `json:"photos"`
 	AnalysisAttempts   int                     `json:"analysisAttempts"`
 	DraftRevision      int                     `json:"draftRevision"`
+	CaptureRevision    int                     `json:"captureRevision"`
 	Draft              *AICaptureDraft         `json:"draft,omitempty"`
 	CreatedItems       []AICaptureCreatedItem  `json:"createdItems"`
 	ErrorCode          string                  `json:"errorCode,omitempty"`
@@ -86,6 +89,7 @@ func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (
 		Photos:             make([]AICaptureSessionPhoto, len(record.Photos)),
 		AnalysisAttempts:   record.AnalysisAttempts,
 		DraftRevision:      record.DraftRevision,
+		CaptureRevision:    record.CaptureRevision,
 		CreatedItems:       []AICaptureCreatedItem{},
 		ErrorCode:          record.ErrorCode,
 		ErrorMessage:       record.ErrorMessage,
@@ -100,9 +104,15 @@ func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (
 		out.Location = &AICaptureOption{ID: record.LocationID.String(), Name: record.LocationNameSnapshot}
 	}
 	for i, photo := range record.Photos {
+		var captureGroupID *string
+		if photo.CaptureGroupID != nil {
+			value := photo.CaptureGroupID.String()
+			captureGroupID = &value
+		}
 		out.Photos[i] = AICaptureSessionPhoto{
 			ID: photo.ID.String(), ClientPhotoID: photo.ClientPhotoID.String(), Position: photo.Position,
-			OriginalName: photo.OriginalName, MIMEType: photo.MIMEType, SizeBytes: photo.SizeBytes, CreatedAt: photo.CreatedAt,
+			CaptureGroupID: captureGroupID, OriginalName: photo.OriginalName, MIMEType: photo.MIMEType,
+			SizeBytes: photo.SizeBytes, CreatedAt: photo.CreatedAt,
 		}
 	}
 	var draft *AICaptureDraft
@@ -191,10 +201,10 @@ func cleanCaptureFilename(name string) string {
 	return truncate(name, 255)
 }
 
-func (svc *AICaptureSessionService) AddPhoto(ctx Context, sessionID, clientPhotoID uuid.UUID, position int, name, mimeType string, data []byte) (AICaptureSessionPhoto, error) {
+func (svc *AICaptureSessionService) AddPhoto(ctx Context, sessionID, clientPhotoID uuid.UUID, position int, captureGroupID *uuid.UUID, name, mimeType string, data []byte) (AICaptureSessionPhoto, error) {
 	photoID, blobPath, hash := svc.repos.AICaptureSessions.NewPhotoStorage(data, ctx.GID, sessionID)
 	record, existing, err := svc.repos.AICaptureSessions.CreatePhoto(
-		ctx, ctx.GID, ctx.UID, sessionID, photoID, clientPhotoID, position, svc.ai.MaxPhotos(),
+		ctx, ctx.GID, ctx.UID, sessionID, photoID, clientPhotoID, position, svc.ai.MaxPhotos(), captureGroupID,
 		cleanCaptureFilename(name), mimeType, blobPath, int64(len(data)), hash,
 	)
 	if err != nil {
@@ -206,9 +216,32 @@ func (svc *AICaptureSessionService) AddPhoto(ctx Context, sessionID, clientPhoto
 			return AICaptureSessionPhoto{}, err
 		}
 	}
+	var groupValue *string
+	if record.CaptureGroupID != nil {
+		value := record.CaptureGroupID.String()
+		groupValue = &value
+	}
 	return AICaptureSessionPhoto{
 		ID: record.ID.String(), ClientPhotoID: record.ClientPhotoID.String(), Position: record.Position,
-		OriginalName: record.OriginalName, MIMEType: record.MIMEType, SizeBytes: record.SizeBytes, CreatedAt: record.CreatedAt,
+		CaptureGroupID: groupValue, OriginalName: record.OriginalName, MIMEType: record.MIMEType,
+		SizeBytes: record.SizeBytes, CreatedAt: record.CreatedAt,
+	}, nil
+}
+
+func (svc *AICaptureSessionService) UpdatePhotoGroup(ctx Context, sessionID, photoID uuid.UUID, captureGroupID *uuid.UUID) (AICaptureSessionPhoto, error) {
+	record, err := svc.repos.AICaptureSessions.UpdatePhotoGroup(ctx, ctx.GID, ctx.UID, sessionID, photoID, captureGroupID)
+	if err != nil {
+		return AICaptureSessionPhoto{}, err
+	}
+	var groupValue *string
+	if record.CaptureGroupID != nil {
+		value := record.CaptureGroupID.String()
+		groupValue = &value
+	}
+	return AICaptureSessionPhoto{
+		ID: record.ID.String(), ClientPhotoID: record.ClientPhotoID.String(), Position: record.Position,
+		CaptureGroupID: groupValue, OriginalName: record.OriginalName, MIMEType: record.MIMEType,
+		SizeBytes: record.SizeBytes, CreatedAt: record.CreatedAt,
 	}, nil
 }
 
@@ -234,8 +267,8 @@ func (svc *AICaptureSessionService) ReadPhoto(ctx Context, sessionID, photoID uu
 	return repo.AICapturePhotoRecord{}, nil, &ent.NotFoundError{}
 }
 
-func (svc *AICaptureSessionService) Finish(ctx Context, id uuid.UUID, expected int) (AICaptureSessionOut, error) {
-	if err := svc.repos.AICaptureSessions.Finish(ctx, ctx.GID, ctx.UID, id, expected); err != nil {
+func (svc *AICaptureSessionService) Finish(ctx Context, id uuid.UUID, expected, expectedRevision int) (AICaptureSessionOut, error) {
+	if err := svc.repos.AICaptureSessions.Finish(ctx, ctx.GID, ctx.UID, id, expected, expectedRevision); err != nil {
 		return AICaptureSessionOut{}, err
 	}
 	return svc.Get(ctx, id)
@@ -279,8 +312,12 @@ func (svc *AICaptureSessionService) metadata(ctx context.Context, record repo.AI
 }
 
 func (svc *AICaptureSessionService) analysisPhotos(ctx context.Context, record repo.AICaptureSessionRecord) ([]AICapturePhoto, error) {
-	photos := make([]AICapturePhoto, 0, len(record.Photos))
-	for _, photo := range record.Photos {
+	return svc.analysisPhotosFor(ctx, record.Photos)
+}
+
+func (svc *AICaptureSessionService) analysisPhotosFor(ctx context.Context, records []repo.AICapturePhotoRecord) ([]AICapturePhoto, error) {
+	photos := make([]AICapturePhoto, 0, len(records))
+	for _, photo := range records {
 		data, err := svc.repos.AICaptureSessions.ReadBlob(ctx, photo.Path)
 		if err != nil {
 			return nil, err
@@ -288,6 +325,105 @@ func (svc *AICaptureSessionService) analysisPhotos(ctx context.Context, record r
 		photos = append(photos, AICapturePhoto{MIMEType: photo.MIMEType, Data: data})
 	}
 	return photos, nil
+}
+
+type aiCaptureAnalysisBatch struct {
+	CaptureGroupID string
+	Photos         []repo.AICapturePhotoRecord
+}
+
+func partitionAICapturePhotos(photos []repo.AICapturePhotoRecord) []aiCaptureAnalysisBatch {
+	batches := make([]aiCaptureAnalysisBatch, 0)
+	batchByGroup := make(map[string]int)
+	for _, photo := range photos {
+		groupID := ""
+		if photo.CaptureGroupID != nil {
+			groupID = photo.CaptureGroupID.String()
+		}
+		batchIndex, exists := batchByGroup[groupID]
+		if !exists {
+			batchIndex = len(batches)
+			batchByGroup[groupID] = batchIndex
+			batches = append(batches, aiCaptureAnalysisBatch{CaptureGroupID: groupID})
+		}
+		batches[batchIndex].Photos = append(batches[batchIndex].Photos, photo)
+	}
+	return batches
+}
+
+func ensureUniqueAICaptureClientIDs(draft *AICaptureDraft) {
+	used := make(map[string]struct{}, len(draft.Items))
+	for index := range draft.Items {
+		clientID := strings.TrimSpace(draft.Items[index].ClientID)
+		if clientID == "" {
+			clientID = fmt.Sprintf("item-%d", index+1)
+		}
+		if _, exists := used[clientID]; exists {
+			for suffix := index + 1; ; suffix++ {
+				candidate := fmt.Sprintf("item-%d", suffix)
+				if _, taken := used[candidate]; !taken {
+					clientID = candidate
+					break
+				}
+			}
+		}
+		draft.Items[index].ClientID = clientID
+		used[clientID] = struct{}{}
+	}
+}
+
+func sortAICaptureItemsByFirstPhoto(items []AICaptureItem, photos []repo.AICapturePhotoRecord) {
+	positions := make(map[string]int, len(photos))
+	for _, photo := range photos {
+		positions[photo.ID.String()] = photo.Position
+	}
+	firstPosition := func(item AICaptureItem) int {
+		first := int(^uint(0) >> 1)
+		for _, photoID := range item.PhotoIDs {
+			if position, ok := positions[photoID]; ok && position < first {
+				first = position
+			}
+		}
+		return first
+	}
+	slices.SortStableFunc(items, func(left, right AICaptureItem) int {
+		return firstPosition(left) - firstPosition(right)
+	})
+}
+
+func (svc *AICaptureSessionService) analyzeSession(ctx context.Context, record repo.AICaptureSessionRecord, metadata AICaptureContext) (AICaptureDraft, error) {
+	out := AICaptureDraft{Items: []AICaptureItem{}, Warnings: []string{}}
+	for _, batch := range partitionAICapturePhotos(record.Photos) {
+		photos, err := svc.analysisPhotosFor(ctx, batch.Photos)
+		if err != nil {
+			return AICaptureDraft{}, err
+		}
+		request := AICaptureRequest{Photos: photos, Context: metadata, CaptureGroupID: batch.CaptureGroupID}
+		draft, err := svc.ai.Analyze(ctx, request)
+		if err != nil && batch.CaptureGroupID != "" && errors.Is(err, ErrAIGroupContract) {
+			request.Instruction = "Your previous response violated the same-item contract. Return exactly one item and copy captureGroupId exactly."
+			draft, err = svc.ai.Analyze(ctx, request)
+		}
+		if err != nil {
+			return AICaptureDraft{}, err
+		}
+		mapDraftPhotoIDs(&draft, batch.Photos)
+		if batch.CaptureGroupID != "" {
+			draft.Items[0].ClientID = "group-" + batch.CaptureGroupID
+		}
+		out.Items = append(out.Items, draft.Items...)
+		out.Warnings = append(out.Warnings, draft.Warnings...)
+	}
+	maxItems := svc.config.MaxItems
+	if maxItems <= 0 {
+		maxItems = 25
+	}
+	if len(out.Items) > maxItems {
+		return AICaptureDraft{}, fmt.Errorf("%w: grouped analysis returned %d items, maximum is %d", ErrAIUpstream, len(out.Items), maxItems)
+	}
+	sortAICaptureItemsByFirstPhoto(out.Items, record.Photos)
+	ensureUniqueAICaptureClientIDs(&out)
+	return out, nil
 }
 
 func mapDraftPhotoIDs(draft *AICaptureDraft, photos []repo.AICapturePhotoRecord) {
@@ -319,6 +455,45 @@ func mapDraftPhotoIndexes(draft *AICaptureDraft, photos []repo.AICapturePhotoRec
 	}
 }
 
+func validateDraftCaptureGroups(draft *AICaptureDraft, photos []repo.AICapturePhotoRecord) {
+	groupPhotos := make(map[string]map[string]struct{})
+	for _, photo := range photos {
+		if photo.CaptureGroupID == nil {
+			continue
+		}
+		groupID := photo.CaptureGroupID.String()
+		if groupPhotos[groupID] == nil {
+			groupPhotos[groupID] = make(map[string]struct{})
+		}
+		groupPhotos[groupID][photo.ID.String()] = struct{}{}
+	}
+	usedGroups := make(map[string]struct{})
+	for index := range draft.Items {
+		item := &draft.Items[index]
+		if item.CaptureGroupID == "" {
+			continue
+		}
+		expected, valid := groupPhotos[item.CaptureGroupID]
+		_, duplicate := usedGroups[item.CaptureGroupID]
+		if !valid || duplicate || len(expected) != len(item.PhotoIDs) {
+			item.CaptureGroupID = ""
+			continue
+		}
+		matches := true
+		for _, photoID := range item.PhotoIDs {
+			if _, ok := expected[photoID]; !ok {
+				matches = false
+				break
+			}
+		}
+		if !matches {
+			item.CaptureGroupID = ""
+			continue
+		}
+		usedGroups[item.CaptureGroupID] = struct{}{}
+	}
+}
+
 func (svc *AICaptureSessionService) RunNextAnalysis(ctx context.Context) error {
 	if svc.ai == nil || !svc.ai.IsEnabled() {
 		return nil
@@ -333,19 +508,14 @@ func (svc *AICaptureSessionService) RunNextAnalysis(ctx context.Context) error {
 	}
 	metadata, err := svc.metadata(ctx, record)
 	if err == nil {
-		var photos []AICapturePhoto
-		photos, err = svc.analysisPhotos(ctx, record)
+		var draft AICaptureDraft
+		draft, err = svc.analyzeSession(ctx, record, metadata)
 		if err == nil {
-			var draft AICaptureDraft
-			draft, err = svc.ai.Analyze(ctx, AICaptureRequest{Photos: photos, Context: metadata})
-			if err == nil {
-				mapDraftPhotoIDs(&draft, record.Photos)
-				encoded, marshalErr := json.Marshal(draft)
-				if marshalErr != nil {
-					err = marshalErr
-				} else {
-					err = svc.repos.AICaptureSessions.SetAnalysisReady(ctx, record.ID, string(encoded))
-				}
+			encoded, marshalErr := json.Marshal(draft)
+			if marshalErr != nil {
+				err = marshalErr
+			} else {
+				err = svc.repos.AICaptureSessions.SetAnalysisReady(ctx, record.ID, string(encoded))
 			}
 		}
 	}
@@ -353,7 +523,7 @@ func (svc *AICaptureSessionService) RunNextAnalysis(ctx context.Context) error {
 		return nil
 	}
 	log.Error().Err(err).Str("session_id", record.ID.String()).Msg("AI capture session analysis failed")
-	retry := record.AnalysisAttempts < 3 && errors.Is(err, ErrAIUpstream)
+	retry := record.AnalysisAttempts < 3 && errors.Is(err, ErrAIUpstream) && !errors.Is(err, ErrAIGroupContract)
 	code := AICaptureErrorAnalysisFailed
 	message := "The vision provider could not analyze this session. Try again."
 	if strings.Contains(err.Error(), AICaptureErrorLocationMissing) {
@@ -375,6 +545,7 @@ func (svc *AICaptureSessionService) validateSessionDraft(ctx context.Context, re
 		return AICaptureDraft{}, err
 	}
 	mapDraftPhotoIDs(&draft, record.Photos)
+	validateDraftCaptureGroups(&draft, record.Photos)
 	return draft, nil
 }
 
@@ -418,13 +589,32 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 		return AICaptureSessionOut{}, err
 	}
 	mapDraftPhotoIndexes(&current, record.Photos)
+	groupsByClientID := make(map[string]string, len(current.Items))
+	allowedGroups := make([]string, 0)
+	seenGroups := make(map[string]struct{})
+	for _, item := range current.Items {
+		groupsByClientID[item.ClientID] = item.CaptureGroupID
+		if item.CaptureGroupID != "" {
+			if _, seen := seenGroups[item.CaptureGroupID]; !seen {
+				seenGroups[item.CaptureGroupID] = struct{}{}
+				allowedGroups = append(allowedGroups, item.CaptureGroupID)
+			}
+		}
+	}
 	corrected, err := svc.ai.Analyze(ctx, AICaptureRequest{
 		Photos: photos, Context: metadata, Draft: &current, Instruction: truncate(strings.TrimSpace(instruction), 2000),
+		AllowedCaptureGroups: allowedGroups,
 	})
 	if err != nil {
 		return AICaptureSessionOut{}, err
 	}
+	for index := range corrected.Items {
+		if corrected.Items[index].CaptureGroupID == "" {
+			corrected.Items[index].CaptureGroupID = groupsByClientID[corrected.Items[index].ClientID]
+		}
+	}
 	mapDraftPhotoIDs(&corrected, record.Photos)
+	validateDraftCaptureGroups(&corrected, record.Photos)
 	encoded, err := json.Marshal(corrected)
 	if err != nil {
 		return AICaptureSessionOut{}, err

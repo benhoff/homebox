@@ -21,6 +21,7 @@ var (
 	ErrAICaptureInvalidState  = errors.New("capture session is not in the required state")
 	ErrAICapturePhotoLimit    = errors.New("capture session photo limit reached")
 	ErrAICapturePhotoCount    = errors.New("capture session photo count does not match")
+	ErrAICaptureRevision      = errors.New("capture session photo grouping was changed elsewhere")
 	ErrAICaptureDraftConflict = errors.New("capture session draft was changed elsewhere")
 	ErrAICaptureSessionLimit  = errors.New("too many active capture sessions")
 )
@@ -31,15 +32,16 @@ type AICaptureSessionRepository struct {
 }
 
 type AICapturePhotoRecord struct {
-	ID            uuid.UUID `json:"id"`
-	ClientPhotoID uuid.UUID `json:"clientPhotoId"`
-	Position      int       `json:"position"`
-	OriginalName  string    `json:"originalName"`
-	Path          string    `json:"-"`
-	MIMEType      string    `json:"mimeType"`
-	SizeBytes     int64     `json:"sizeBytes"`
-	ContentHash   string    `json:"-"`
-	CreatedAt     time.Time `json:"createdAt"`
+	ID             uuid.UUID  `json:"id"`
+	ClientPhotoID  uuid.UUID  `json:"clientPhotoId"`
+	Position       int        `json:"position"`
+	CaptureGroupID *uuid.UUID `json:"captureGroupId,omitempty"`
+	OriginalName   string     `json:"originalName"`
+	Path           string     `json:"-"`
+	MIMEType       string     `json:"mimeType"`
+	SizeBytes      int64      `json:"sizeBytes"`
+	ContentHash    string     `json:"-"`
+	CreatedAt      time.Time  `json:"createdAt"`
 }
 
 type AICaptureSessionItemRecord struct {
@@ -59,6 +61,7 @@ type AICaptureSessionRecord struct {
 	Status               string
 	DraftJSON            string
 	DraftRevision        int
+	CaptureRevision      int
 	AnalysisAttempts     int
 	PhotoCount           int
 	WorkerLeaseUntil     *time.Time
@@ -76,15 +79,16 @@ type AICaptureSessionRecord struct {
 
 func mapAICapturePhoto(row *ent.AICapturePhoto) AICapturePhotoRecord {
 	return AICapturePhotoRecord{
-		ID:            row.ID,
-		ClientPhotoID: row.ClientPhotoID,
-		Position:      row.Position,
-		OriginalName:  row.OriginalName,
-		Path:          row.Path,
-		MIMEType:      row.MimeType,
-		SizeBytes:     row.SizeBytes,
-		ContentHash:   row.ContentHash,
-		CreatedAt:     row.CreatedAt,
+		ID:             row.ID,
+		ClientPhotoID:  row.ClientPhotoID,
+		Position:       row.Position,
+		CaptureGroupID: row.CaptureGroupID,
+		OriginalName:   row.OriginalName,
+		Path:           row.Path,
+		MIMEType:       row.MimeType,
+		SizeBytes:      row.SizeBytes,
+		ContentHash:    row.ContentHash,
+		CreatedAt:      row.CreatedAt,
 	}
 }
 
@@ -108,6 +112,7 @@ func mapAICaptureSession(row *ent.AICaptureSession) AICaptureSessionRecord {
 		Status:               row.Status.String(),
 		DraftJSON:            row.DraftJSON,
 		DraftRevision:        row.DraftRevision,
+		CaptureRevision:      row.CaptureRevision,
 		AnalysisAttempts:     row.AnalysisAttempts,
 		PhotoCount:           row.PhotoCount,
 		WorkerLeaseUntil:     row.WorkerLeaseUntil,
@@ -221,7 +226,21 @@ func (r *AICaptureSessionRepository) UpdateLocation(ctx context.Context, gid, ui
 	return nil
 }
 
-func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, sessionID, photoID, clientPhotoID uuid.UUID, position, maxPhotos int, name, mimeType, blobPath string, size int64, hash string) (AICapturePhotoRecord, bool, error) {
+func incrementCaptureRevisionWhileCapturing(ctx context.Context, tx *ent.Tx, sessionID uuid.UUID) error {
+	updated, err := tx.AICaptureSession.Update().Where(
+		aicapturesession.ID(sessionID),
+		aicapturesession.StatusEQ(aicapturesession.StatusCapturing),
+	).AddCaptureRevision(1).Save(ctx)
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		return ErrAICaptureInvalidState
+	}
+	return nil
+}
+
+func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, sessionID, photoID, clientPhotoID uuid.UUID, position, maxPhotos int, captureGroupID *uuid.UUID, name, mimeType, blobPath string, size int64, hash string) (AICapturePhotoRecord, bool, error) {
 	tx, err := r.db.Tx(ctx)
 	if err != nil {
 		return AICapturePhotoRecord{}, false, err
@@ -261,6 +280,7 @@ func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, 
 		SetSessionID(sessionID).
 		SetClientPhotoID(clientPhotoID).
 		SetPosition(position).
+		SetNillableCaptureGroupID(captureGroupID).
 		SetOriginalName(name).
 		SetPath(blobPath).
 		SetMimeType(mimeType).
@@ -270,6 +290,9 @@ func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, 
 	if err != nil {
 		return AICapturePhotoRecord{}, false, err
 	}
+	if err := incrementCaptureRevisionWhileCapturing(ctx, tx, sessionID); err != nil {
+		return AICapturePhotoRecord{}, false, err
+	}
 	if err := tx.Commit(); err != nil {
 		return AICapturePhotoRecord{}, false, err
 	}
@@ -277,26 +300,89 @@ func (r *AICaptureSessionRepository) CreatePhoto(ctx context.Context, gid, uid, 
 }
 
 func (r *AICaptureSessionRepository) DeletePhotoRow(ctx context.Context, gid, uid, sessionID, photoID uuid.UUID) (AICapturePhotoRecord, error) {
-	session, err := r.Get(ctx, gid, uid, sessionID)
+	tx, err := r.db.Tx(ctx)
 	if err != nil {
 		return AICapturePhotoRecord{}, err
 	}
-	if session.Status != aicapturesession.StatusCapturing.String() {
+	defer func() { _ = tx.Rollback() }()
+	session, err := tx.AICaptureSession.Query().Where(
+		aicapturesession.ID(sessionID), aicapturesession.GroupID(gid), aicapturesession.UserID(uid),
+	).Only(ctx)
+	if err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if session.Status != aicapturesession.StatusCapturing {
 		return AICapturePhotoRecord{}, ErrAICaptureInvalidState
 	}
-	row, err := r.db.AICapturePhoto.Query().Where(
+	row, err := tx.AICapturePhoto.Query().Where(
 		aicapturephoto.ID(photoID), aicapturephoto.SessionID(sessionID),
 	).Only(ctx)
 	if err != nil {
 		return AICapturePhotoRecord{}, err
 	}
-	if err := r.db.AICapturePhoto.DeleteOneID(photoID).Exec(ctx); err != nil {
+	if err := tx.AICapturePhoto.DeleteOneID(photoID).Exec(ctx); err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if err := incrementCaptureRevisionWhileCapturing(ctx, tx, sessionID); err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if err := tx.Commit(); err != nil {
 		return AICapturePhotoRecord{}, err
 	}
 	return mapAICapturePhoto(row), nil
 }
 
-func (r *AICaptureSessionRepository) Finish(ctx context.Context, gid, uid, id uuid.UUID, expected int) error {
+func sameCaptureGroup(left, right *uuid.UUID) bool {
+	return left == nil && right == nil || left != nil && right != nil && *left == *right
+}
+
+func (r *AICaptureSessionRepository) UpdatePhotoGroup(ctx context.Context, gid, uid, sessionID, photoID uuid.UUID, captureGroupID *uuid.UUID) (AICapturePhotoRecord, error) {
+	tx, err := r.db.Tx(ctx)
+	if err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	session, err := tx.AICaptureSession.Query().Where(
+		aicapturesession.ID(sessionID), aicapturesession.GroupID(gid), aicapturesession.UserID(uid),
+	).Only(ctx)
+	if err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if session.Status != aicapturesession.StatusCapturing {
+		return AICapturePhotoRecord{}, ErrAICaptureInvalidState
+	}
+	row, err := tx.AICapturePhoto.Query().Where(
+		aicapturephoto.ID(photoID), aicapturephoto.SessionID(sessionID),
+	).Only(ctx)
+	if err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if sameCaptureGroup(row.CaptureGroupID, captureGroupID) {
+		if err := tx.Commit(); err != nil {
+			return AICapturePhotoRecord{}, err
+		}
+		return mapAICapturePhoto(row), nil
+	}
+	update := tx.AICapturePhoto.UpdateOneID(photoID)
+	if captureGroupID == nil {
+		update.ClearCaptureGroupID()
+	} else {
+		update.SetCaptureGroupID(*captureGroupID)
+	}
+	row, err = update.Save(ctx)
+	if err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if err := incrementCaptureRevisionWhileCapturing(ctx, tx, sessionID); err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return AICapturePhotoRecord{}, err
+	}
+	return mapAICapturePhoto(row), nil
+}
+
+func (r *AICaptureSessionRepository) Finish(ctx context.Context, gid, uid, id uuid.UUID, expected, expectedRevision int) error {
 	tx, err := r.db.Tx(ctx)
 	if err != nil {
 		return err
@@ -321,9 +407,16 @@ func (r *AICaptureSessionRepository) Finish(ctx context.Context, gid, uid, id uu
 	if count == 0 || count != expected {
 		return ErrAICapturePhotoCount
 	}
+	if row.CaptureRevision != expectedRevision {
+		return ErrAICaptureRevision
+	}
 	now := time.Now()
 	updated, err := tx.AICaptureSession.Update().Where(
-		aicapturesession.ID(id), aicapturesession.StatusEQ(aicapturesession.StatusCapturing),
+		aicapturesession.ID(id),
+		aicapturesession.GroupID(gid),
+		aicapturesession.UserID(uid),
+		aicapturesession.StatusEQ(aicapturesession.StatusCapturing),
+		aicapturesession.CaptureRevisionEQ(expectedRevision),
 	).SetStatus(aicapturesession.StatusQueued).
 		SetPhotoCount(count).
 		SetFinishedAt(now).
@@ -333,7 +426,7 @@ func (r *AICaptureSessionRepository) Finish(ctx context.Context, gid, uid, id uu
 		return err
 	}
 	if updated != 1 {
-		return ErrAICaptureInvalidState
+		return ErrAICaptureRevision
 	}
 	return tx.Commit()
 }
