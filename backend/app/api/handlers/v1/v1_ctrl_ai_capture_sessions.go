@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/hay-kot/httpkit/errchain"
 	"github.com/hay-kot/httpkit/server"
@@ -51,6 +52,13 @@ type aiCaptureSessionReanalysis struct {
 	Instruction string `json:"instruction"`
 }
 
+type aiCaptureSessionReanalysisBatch struct {
+	Revision    int      `json:"revision"`
+	ClientIDs   []string `json:"clientIds"`
+	Provider    string   `json:"provider"`
+	Instruction string   `json:"instruction"`
+}
+
 type aiCaptureSessionSubmit struct {
 	Revision int `json:"revision"`
 }
@@ -71,6 +79,8 @@ func aiCaptureSessionRequestError(err error) error {
 		return validate.NewRequestError(fmt.Errorf("%s: reload the latest photo grouping before finishing", services.AICaptureErrorRevisionMismatch), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICaptureDraftConflict):
 		return validate.NewRequestError(fmt.Errorf("%s: reload the latest draft before saving", services.AICaptureErrorDraftConflict), http.StatusConflict)
+	case errors.Is(err, repo.ErrAICaptureReanalysisActive):
+		return validate.NewRequestError(errors.New("a reanalysis batch is already queued or running"), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICaptureInvalidState):
 		return validate.NewRequestError(fmt.Errorf("%s: that action is unavailable for the current session", services.AICaptureErrorInvalidState), http.StatusConflict)
 	case errors.Is(err, services.ErrAIInvalidRequest):
@@ -514,6 +524,71 @@ func (ctrl *V1Controller) HandleAICaptureSessionReanalysis() errchain.HandlerFun
 		out, err := ctrl.svc.AICaptureSessions.ReanalyzeItem(
 			services.NewContext(r.Context()), id, body.Revision, body.ClientID, body.Provider, body.Instruction,
 		)
+		if err != nil {
+			return aiCaptureSessionRequestError(err)
+		}
+		return server.JSON(w, http.StatusOK, out)
+	}
+}
+
+// HandleAICaptureSessionReanalysisBatch godoc
+//
+//	@Summary	Queue durable provider reanalysis for reviewed capture items
+//	@Tags		AI Capture Sessions
+//	@Accept		json
+//	@Produce	json
+//	@Param		sessionId	path		string						true	"Capture session ID"
+//	@Param		payload		body		aiCaptureSessionReanalysisBatch	true	"Reviewed items and provider"
+//	@Success	202			{object}	services.AICaptureSessionOut
+//	@Router		/v1/ai/capture/sessions/{sessionId}/reanalyze-items [POST]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleAICaptureSessionReanalysisBatch() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := ctrl.routeUUID(r, "sessionId")
+		if err != nil {
+			return err
+		}
+		var body aiCaptureSessionReanalysisBatch
+		if err := decodeAICaptureSessionBody(r, &body); err != nil {
+			return err
+		}
+		if len(body.ClientIDs) == 0 {
+			return validate.NewRequestError(errors.New("select at least one clientId"), http.StatusUnprocessableEntity)
+		}
+		if len(body.Instruction) > 2000 {
+			return validate.NewRequestError(errors.New("instruction must be at most 2000 characters"), http.StatusUnprocessableEntity)
+		}
+		out, err := ctrl.svc.AICaptureSessions.QueueReanalysis(
+			services.NewContext(r.Context()), id, body.Revision, body.ClientIDs, body.Provider, body.Instruction,
+		)
+		if err != nil {
+			return aiCaptureSessionRequestError(err)
+		}
+		return server.JSON(w, http.StatusAccepted, out)
+	}
+}
+
+// HandleAICaptureSessionReanalysisDismiss godoc
+//
+//	@Summary	Dismiss a durable capture-item reanalysis result
+//	@Tags		AI Capture Sessions
+//	@Produce	json
+//	@Param		sessionId	path		string	true	"Capture session ID"
+//	@Param		clientId	path		string	true	"Draft client ID"
+//	@Success	200			{object}	services.AICaptureSessionOut
+//	@Router		/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId} [DELETE]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleAICaptureSessionReanalysisDismiss() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := ctrl.routeUUID(r, "sessionId")
+		if err != nil {
+			return err
+		}
+		clientID := strings.TrimSpace(chi.URLParam(r, "clientId"))
+		if clientID == "" {
+			return validate.NewRequestError(errors.New("clientId is required"), http.StatusUnprocessableEntity)
+		}
+		out, err := ctrl.svc.AICaptureSessions.DismissReanalysis(services.NewContext(r.Context()), id, clientID)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}

@@ -99,6 +99,7 @@
   let captureChain = Promise.resolve();
   let pollTimer: ReturnType<typeof setInterval> | undefined;
   let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+  let reanalysisDismissChain = Promise.resolve();
 
   const itemTypes = computed(() => entityTypeStore.itemTypes);
   const tags = computed(() => tagStore.tags);
@@ -110,6 +111,9 @@
   const draft = computed(() => activeSession.value?.draft);
   const sessionPhotos = computed(() => activeSession.value?.photos || []);
   const activeStatus = computed(() => activeSession.value?.status || "capturing");
+  const reanalysisActive = computed(() =>
+    ["queued", "processing", "waiting"].includes(activeSession.value?.reanalysis?.status || "")
+  );
   const reanalysisProviders = computed(() => {
     const configured = status.value?.ai?.providers?.filter(provider => provider.enabled) || [];
     return configured.length
@@ -205,10 +209,23 @@
 
   function replaceSession(session: AICaptureSession) {
     activeSession.value = session;
+    syncReanalysis(session);
     selectedLocation.value = session.location || null;
     const index = sessions.value.findIndex(candidate => candidate.id === session.id);
     if (index >= 0) sessions.value[index] = session;
     else sessions.value.unshift(session);
+  }
+
+  function syncReanalysis(session: AICaptureSession) {
+    reanalysisSuggestions.value = { ...(session.reanalysis?.suggestions || {}) };
+    reanalysisErrors.value = { ...(session.reanalysis?.errors || {}) };
+    reanalyzingItemIds.value = reanalysisActiveStatus(session.reanalysis?.status)
+      ? [...(session.reanalysis?.pendingClientIds || [])]
+      : [];
+  }
+
+  function reanalysisActiveStatus(value?: string) {
+    return value === "queued" || value === "processing" || value === "waiting";
   }
 
   function providerName(providerId: string) {
@@ -629,6 +646,9 @@
   }
 
   function clearReanalysis(clientId: string) {
+    const shouldPersist =
+      activeSession.value?.reanalysis?.status === "completed" &&
+      (!!activeSession.value.reanalysis.suggestions[clientId] || !!activeSession.value.reanalysis.errors[clientId]);
     const suggestions = { ...reanalysisSuggestions.value };
     const errors = { ...reanalysisErrors.value };
     Reflect.deleteProperty(suggestions, clientId);
@@ -636,6 +656,16 @@
     reanalysisSuggestions.value = suggestions;
     reanalysisErrors.value = errors;
     selectedReviewItemIds.value = selectedReviewItemIds.value.filter(id => id !== clientId);
+    if (shouldPersist && activeSession.value) {
+      const sessionId = activeSession.value.id;
+      reanalysisDismissChain = reanalysisDismissChain.then(async () => {
+        const response = await api.aiCapture.dismissReanalysis(sessionId, clientId);
+        if (!response.error && activeSession.value?.id === sessionId) {
+          activeSession.value.reanalysis = response.data.reanalysis;
+          syncReanalysis(activeSession.value);
+        }
+      });
+    }
   }
 
   function cloneDraft(value: AICaptureDraft) {
@@ -818,48 +848,26 @@
 
   async function reanalyzeItems(clientIds: string[]) {
     const uniqueIds = [...new Set(clientIds)];
-    if (!activeSession.value || uniqueIds.length === 0 || reanalyzingItemIds.value.length > 0 || !(await saveDraft()))
-      return;
+    if (!activeSession.value || uniqueIds.length === 0 || reanalysisActive.value || !(await saveDraft())) return;
     const sessionId = activeSession.value.id;
     const revision = activeSession.value.draftRevision;
     const provider = reanalysisProvider.value;
-    let succeeded = 0;
-    let failed = 0;
-
-    for (const clientId of uniqueIds) {
-      if (!activeSession.value?.draft?.items.some(item => item.clientId === clientId)) continue;
-      reanalyzingItemIds.value = [...reanalyzingItemIds.value, clientId];
-      const errors = { ...reanalysisErrors.value };
-      Reflect.deleteProperty(errors, clientId);
-      reanalysisErrors.value = errors;
-      try {
-        const response = await api.aiCapture.reanalyzeItem(
-          sessionId,
-          revision,
-          clientId,
-          provider,
-          reanalysisInstruction.value.trim()
-        );
-        if (response.error) throw new Error(responseMessage(response));
-        reanalysisSuggestions.value = {
-          ...reanalysisSuggestions.value,
-          [clientId]: response.data,
-        };
-        succeeded += 1;
-      } catch (error) {
-        console.error(error);
-        reanalysisErrors.value = {
-          ...reanalysisErrors.value,
-          [clientId]: error instanceof Error ? error.message : t("ai_capture.errors.analysis_failed"),
-        };
-        failed += 1;
-      } finally {
-        reanalyzingItemIds.value = reanalyzingItemIds.value.filter(id => id !== clientId);
-      }
+    const selected = uniqueIds.filter(clientId =>
+      activeSession.value?.draft?.items.some(item => item.clientId === clientId)
+    );
+    const response = await api.aiCapture.queueReanalysis(
+      sessionId,
+      revision,
+      selected,
+      provider,
+      reanalysisInstruction.value.trim()
+    );
+    if (response.error) {
+      toast.error(responseMessage(response));
+      return;
     }
-
-    if (succeeded) toast.success(t("ai_capture.review.reanalysis_complete", { count: succeeded }));
-    if (failed) toast.error(t("ai_capture.review.reanalysis_failed", { count: failed }));
+    replaceSession(response.data);
+    toast.success(t("ai_capture.review.reanalysis_queued", { count: selected.length }));
   }
 
   function reanalyzeItem(item: AICaptureItem) {
@@ -867,7 +875,7 @@
   }
 
   async function submitSession() {
-    if (!activeSession.value || !(await saveDraft())) return;
+    if (!activeSession.value || reanalysisActive.value || !(await saveDraft())) return;
     submitting.value = true;
     const response = await api.aiCapture.submitSession(activeSession.value.id, activeSession.value.draftRevision);
     submitting.value = false;
@@ -911,6 +919,18 @@
       replaceSession(current);
       if (current.status === "ready_for_review") view.value = "review";
       if (current.status === "completed") view.value = "done";
+    } else if (view.value === "review") {
+      const previousStatus = activeSession.value.reanalysis?.status;
+      activeSession.value.reanalysis = current.reanalysis;
+      syncReanalysis(activeSession.value);
+      if (reanalysisActiveStatus(previousStatus) && current.reanalysis?.status === "completed") {
+        const succeeded = current.reanalysis.clientIds.filter(
+          clientId => !!current.reanalysis?.suggestions[clientId]
+        ).length;
+        const failed = current.reanalysis.clientIds.filter(clientId => !!current.reanalysis?.errors[clientId]).length;
+        if (succeeded) toast.success(t("ai_capture.review.reanalysis_complete", { count: succeeded }));
+        if (failed) toast.error(t("ai_capture.review.reanalysis_failed", { count: failed }));
+      }
     }
   }
 
@@ -1185,7 +1205,7 @@
           {{
             activeStatus === "analysis_failed"
               ? activeSession.errorMessage || $t("ai_capture.processing.failed")
-              : $t("ai_capture.processing.description")
+              : activeSession.errorMessage || $t("ai_capture.processing.description")
           }}
         </p>
         <Button v-if="activeStatus === 'analysis_failed'" class="mt-5" :disabled="loading" @click="retryAnalysis">
@@ -1225,9 +1245,9 @@
             <Textarea
               v-model="correction"
               :placeholder="$t('ai_capture.review.correction_placeholder')"
-              :disabled="saving"
+              :disabled="saving || reanalysisActive"
             />
-            <Button variant="outline" :disabled="!correction.trim() || saving" @click="askAI">
+            <Button variant="outline" :disabled="!correction.trim() || saving || reanalysisActive" @click="askAI">
               <MdiLoading v-if="saving" class="mr-2 animate-spin" /><MdiMagicStaff v-else class="mr-2" />
               {{ $t("ai_capture.review.ask_ai") }}
             </Button>
@@ -1246,10 +1266,35 @@
                 {{ $t("ai_capture.review.undo") }}
               </Button>
             </div>
+            <div v-if="activeSession.reanalysis && reanalysisActive" class="flex gap-3 rounded-md bg-muted p-3 text-sm">
+              <MdiLoading class="mt-0.5 shrink-0 animate-spin" />
+              <div>
+                <p class="font-medium">
+                  {{
+                    activeSession.reanalysis.status === "waiting"
+                      ? $t("ai_capture.review.reanalysis_waiting", {
+                          provider: providerName(activeSession.reanalysis.provider),
+                        })
+                      : $t("ai_capture.review.reanalysis_processing")
+                  }}
+                </p>
+                <p class="text-muted-foreground">
+                  {{
+                    $t("ai_capture.review.reanalysis_progress", {
+                      completed: activeSession.reanalysis.completed,
+                      total: activeSession.reanalysis.total,
+                    })
+                  }}
+                </p>
+              </div>
+            </div>
+            <p v-if="reanalysisErrors._job" class="text-sm text-destructive">
+              {{ reanalysisErrors._job }}
+            </p>
             <div class="grid gap-2 sm:grid-cols-[12rem_1fr]">
               <div class="space-y-1">
                 <Label for="reanalysis-provider">{{ $t("ai_capture.review.provider") }}</Label>
-                <Select id="reanalysis-provider" v-model="reanalysisProvider">
+                <Select id="reanalysis-provider" v-model="reanalysisProvider" :disabled="reanalysisActive">
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="provider in reanalysisProviders" :key="provider.id" :value="provider.id">
@@ -1264,6 +1309,7 @@
                   id="reanalysis-instruction"
                   v-model="reanalysisInstruction"
                   maxlength="2000"
+                  :disabled="reanalysisActive"
                   :placeholder="$t('ai_capture.review.reanalysis_placeholder')"
                 />
               </div>
@@ -1278,10 +1324,10 @@
               </label>
               <Button
                 variant="outline"
-                :disabled="selectedReviewItemIds.length === 0 || reanalyzingItemIds.length > 0 || saving"
+                :disabled="selectedReviewItemIds.length === 0 || reanalysisActive || saving"
                 @click="reanalyzeItems(selectedReviewItemIds)"
               >
-                <MdiLoading v-if="reanalyzingItemIds.length" class="mr-2 animate-spin" />
+                <MdiLoading v-if="reanalysisActive" class="mr-2 animate-spin" />
                 <MdiRefresh v-else class="mr-2" />
                 {{
                   $t("ai_capture.review.reanalyze_selected", {
@@ -1327,7 +1373,7 @@
               <Button
                 size="sm"
                 variant="outline"
-                :disabled="reanalyzingItemIds.length > 0 || saving || !(item.photoIds?.length || 0)"
+                :disabled="reanalysisActive || saving || !(item.photoIds?.length || 0)"
                 @click="reanalyzeItem(item)"
               >
                 <MdiLoading v-if="reanalyzingItemIds.includes(item.clientId)" class="mr-1 animate-spin" />
@@ -1378,10 +1424,15 @@
                 </p>
               </div>
               <div class="flex gap-2">
-                <Button size="sm" variant="ghost" @click="dismissSuggestion(item.clientId)">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  :disabled="reanalysisActive"
+                  @click="dismissSuggestion(item.clientId)"
+                >
                   {{ $t("ai_capture.review.dismiss") }}
                 </Button>
-                <Button size="sm" @click="applyAllSuggestedFields(item)">
+                <Button size="sm" :disabled="reanalysisActive" @click="applyAllSuggestedFields(item)">
                   {{ $t("ai_capture.review.apply_all") }}
                 </Button>
               </div>
@@ -1412,7 +1463,12 @@
                   {{ formatReanalysisValue(change.field, reanalysisSuggestions[item.clientId]!.item[change.field]) }}
                 </span>
               </div>
-              <Button size="sm" variant="outline" @click="applySuggestedField(item, change.field)">
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="reanalysisActive"
+                @click="applySuggestedField(item, change.field)"
+              >
                 {{ $t("ai_capture.review.use_suggestion") }}
               </Button>
             </div>
@@ -1493,7 +1549,10 @@
           <Button variant="outline" :disabled="saving || submitting" @click="saveDraft(true)">{{
             $t("ai_capture.review.save_later")
           }}</Button>
-          <Button :disabled="saving || submitting || draft.items.length === 0" @click="submitSession">
+          <Button
+            :disabled="saving || submitting || reanalysisActive || draft.items.length === 0"
+            @click="submitSession"
+          >
             <MdiLoading v-if="submitting" class="mr-2 animate-spin" /><MdiCheckCircle v-else class="mr-2" />
             {{ $t("ai_capture.review.submit", { count: draft.items.length }) }}
           </Button>

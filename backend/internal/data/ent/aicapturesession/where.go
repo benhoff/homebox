@@ -106,6 +106,11 @@ func AnalysisAttempts(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldAnalysisAttempts, v))
 }
 
+// AnalysisNextAttemptAt applies equality check predicate on the "analysis_next_attempt_at" field. It's identical to AnalysisNextAttemptAtEQ.
+func AnalysisNextAttemptAt(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldAnalysisNextAttemptAt, v))
+}
+
 // PhotoCount applies equality check predicate on the "photo_count" field. It's identical to PhotoCountEQ.
 func PhotoCount(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldPhotoCount, v))
@@ -114,6 +119,26 @@ func PhotoCount(v int) predicate.AICaptureSession {
 // WorkerLeaseUntil applies equality check predicate on the "worker_lease_until" field. It's identical to WorkerLeaseUntilEQ.
 func WorkerLeaseUntil(v time.Time) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldWorkerLeaseUntil, v))
+}
+
+// ReanalysisJSON applies equality check predicate on the "reanalysis_json" field. It's identical to ReanalysisJSONEQ.
+func ReanalysisJSON(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisJSON, v))
+}
+
+// ReanalysisStatus applies equality check predicate on the "reanalysis_status" field. It's identical to ReanalysisStatusEQ.
+func ReanalysisStatus(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisStatus, v))
+}
+
+// ReanalysisNextAttemptAt applies equality check predicate on the "reanalysis_next_attempt_at" field. It's identical to ReanalysisNextAttemptAtEQ.
+func ReanalysisNextAttemptAt(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisWorkerLeaseUntil applies equality check predicate on the "reanalysis_worker_lease_until" field. It's identical to ReanalysisWorkerLeaseUntilEQ.
+func ReanalysisWorkerLeaseUntil(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisWorkerLeaseUntil, v))
 }
 
 // ErrorCode applies equality check predicate on the "error_code" field. It's identical to ErrorCodeEQ.
@@ -576,6 +601,56 @@ func AnalysisAttemptsLTE(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldLTE(FieldAnalysisAttempts, v))
 }
 
+// AnalysisNextAttemptAtEQ applies the EQ predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtNEQ applies the NEQ predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtNEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtIn applies the In predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldAnalysisNextAttemptAt, vs...))
+}
+
+// AnalysisNextAttemptAtNotIn applies the NotIn predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtNotIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldAnalysisNextAttemptAt, vs...))
+}
+
+// AnalysisNextAttemptAtGT applies the GT predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtGT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtGTE applies the GTE predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtGTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtLT applies the LT predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtLT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtLTE applies the LTE predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtLTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldAnalysisNextAttemptAt, v))
+}
+
+// AnalysisNextAttemptAtIsNil applies the IsNil predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtIsNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIsNull(FieldAnalysisNextAttemptAt))
+}
+
+// AnalysisNextAttemptAtNotNil applies the NotNil predicate on the "analysis_next_attempt_at" field.
+func AnalysisNextAttemptAtNotNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotNull(FieldAnalysisNextAttemptAt))
+}
+
 // PhotoCountEQ applies the EQ predicate on the "photo_count" field.
 func PhotoCountEQ(v int) predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldEQ(FieldPhotoCount, v))
@@ -664,6 +739,256 @@ func WorkerLeaseUntilIsNil() predicate.AICaptureSession {
 // WorkerLeaseUntilNotNil applies the NotNil predicate on the "worker_lease_until" field.
 func WorkerLeaseUntilNotNil() predicate.AICaptureSession {
 	return predicate.AICaptureSession(sql.FieldNotNull(FieldWorkerLeaseUntil))
+}
+
+// ReanalysisJSONEQ applies the EQ predicate on the "reanalysis_json" field.
+func ReanalysisJSONEQ(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONNEQ applies the NEQ predicate on the "reanalysis_json" field.
+func ReanalysisJSONNEQ(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONIn applies the In predicate on the "reanalysis_json" field.
+func ReanalysisJSONIn(vs ...string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldReanalysisJSON, vs...))
+}
+
+// ReanalysisJSONNotIn applies the NotIn predicate on the "reanalysis_json" field.
+func ReanalysisJSONNotIn(vs ...string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldReanalysisJSON, vs...))
+}
+
+// ReanalysisJSONGT applies the GT predicate on the "reanalysis_json" field.
+func ReanalysisJSONGT(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONGTE applies the GTE predicate on the "reanalysis_json" field.
+func ReanalysisJSONGTE(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONLT applies the LT predicate on the "reanalysis_json" field.
+func ReanalysisJSONLT(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONLTE applies the LTE predicate on the "reanalysis_json" field.
+func ReanalysisJSONLTE(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONContains applies the Contains predicate on the "reanalysis_json" field.
+func ReanalysisJSONContains(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldContains(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONHasPrefix applies the HasPrefix predicate on the "reanalysis_json" field.
+func ReanalysisJSONHasPrefix(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldHasPrefix(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONHasSuffix applies the HasSuffix predicate on the "reanalysis_json" field.
+func ReanalysisJSONHasSuffix(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldHasSuffix(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONIsNil applies the IsNil predicate on the "reanalysis_json" field.
+func ReanalysisJSONIsNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIsNull(FieldReanalysisJSON))
+}
+
+// ReanalysisJSONNotNil applies the NotNil predicate on the "reanalysis_json" field.
+func ReanalysisJSONNotNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotNull(FieldReanalysisJSON))
+}
+
+// ReanalysisJSONEqualFold applies the EqualFold predicate on the "reanalysis_json" field.
+func ReanalysisJSONEqualFold(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEqualFold(FieldReanalysisJSON, v))
+}
+
+// ReanalysisJSONContainsFold applies the ContainsFold predicate on the "reanalysis_json" field.
+func ReanalysisJSONContainsFold(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldContainsFold(FieldReanalysisJSON, v))
+}
+
+// ReanalysisStatusEQ applies the EQ predicate on the "reanalysis_status" field.
+func ReanalysisStatusEQ(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusNEQ applies the NEQ predicate on the "reanalysis_status" field.
+func ReanalysisStatusNEQ(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusIn applies the In predicate on the "reanalysis_status" field.
+func ReanalysisStatusIn(vs ...string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldReanalysisStatus, vs...))
+}
+
+// ReanalysisStatusNotIn applies the NotIn predicate on the "reanalysis_status" field.
+func ReanalysisStatusNotIn(vs ...string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldReanalysisStatus, vs...))
+}
+
+// ReanalysisStatusGT applies the GT predicate on the "reanalysis_status" field.
+func ReanalysisStatusGT(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusGTE applies the GTE predicate on the "reanalysis_status" field.
+func ReanalysisStatusGTE(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusLT applies the LT predicate on the "reanalysis_status" field.
+func ReanalysisStatusLT(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusLTE applies the LTE predicate on the "reanalysis_status" field.
+func ReanalysisStatusLTE(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusContains applies the Contains predicate on the "reanalysis_status" field.
+func ReanalysisStatusContains(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldContains(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusHasPrefix applies the HasPrefix predicate on the "reanalysis_status" field.
+func ReanalysisStatusHasPrefix(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldHasPrefix(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusHasSuffix applies the HasSuffix predicate on the "reanalysis_status" field.
+func ReanalysisStatusHasSuffix(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldHasSuffix(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusIsNil applies the IsNil predicate on the "reanalysis_status" field.
+func ReanalysisStatusIsNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIsNull(FieldReanalysisStatus))
+}
+
+// ReanalysisStatusNotNil applies the NotNil predicate on the "reanalysis_status" field.
+func ReanalysisStatusNotNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotNull(FieldReanalysisStatus))
+}
+
+// ReanalysisStatusEqualFold applies the EqualFold predicate on the "reanalysis_status" field.
+func ReanalysisStatusEqualFold(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEqualFold(FieldReanalysisStatus, v))
+}
+
+// ReanalysisStatusContainsFold applies the ContainsFold predicate on the "reanalysis_status" field.
+func ReanalysisStatusContainsFold(v string) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldContainsFold(FieldReanalysisStatus, v))
+}
+
+// ReanalysisNextAttemptAtEQ applies the EQ predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtNEQ applies the NEQ predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtNEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtIn applies the In predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldReanalysisNextAttemptAt, vs...))
+}
+
+// ReanalysisNextAttemptAtNotIn applies the NotIn predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtNotIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldReanalysisNextAttemptAt, vs...))
+}
+
+// ReanalysisNextAttemptAtGT applies the GT predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtGT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtGTE applies the GTE predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtGTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtLT applies the LT predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtLT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtLTE applies the LTE predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtLTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldReanalysisNextAttemptAt, v))
+}
+
+// ReanalysisNextAttemptAtIsNil applies the IsNil predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtIsNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIsNull(FieldReanalysisNextAttemptAt))
+}
+
+// ReanalysisNextAttemptAtNotNil applies the NotNil predicate on the "reanalysis_next_attempt_at" field.
+func ReanalysisNextAttemptAtNotNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotNull(FieldReanalysisNextAttemptAt))
+}
+
+// ReanalysisWorkerLeaseUntilEQ applies the EQ predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldEQ(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilNEQ applies the NEQ predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilNEQ(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNEQ(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilIn applies the In predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIn(FieldReanalysisWorkerLeaseUntil, vs...))
+}
+
+// ReanalysisWorkerLeaseUntilNotIn applies the NotIn predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilNotIn(vs ...time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotIn(FieldReanalysisWorkerLeaseUntil, vs...))
+}
+
+// ReanalysisWorkerLeaseUntilGT applies the GT predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilGT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGT(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilGTE applies the GTE predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilGTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldGTE(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilLT applies the LT predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilLT(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLT(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilLTE applies the LTE predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilLTE(v time.Time) predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldLTE(FieldReanalysisWorkerLeaseUntil, v))
+}
+
+// ReanalysisWorkerLeaseUntilIsNil applies the IsNil predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilIsNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldIsNull(FieldReanalysisWorkerLeaseUntil))
+}
+
+// ReanalysisWorkerLeaseUntilNotNil applies the NotNil predicate on the "reanalysis_worker_lease_until" field.
+func ReanalysisWorkerLeaseUntilNotNil() predicate.AICaptureSession {
+	return predicate.AICaptureSession(sql.FieldNotNull(FieldReanalysisWorkerLeaseUntil))
 }
 
 // ErrorCodeEQ applies the EQ predicate on the "error_code" field.

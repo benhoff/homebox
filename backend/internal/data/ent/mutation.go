@@ -1088,45 +1088,50 @@ func (m *AICapturePhotoMutation) ResetEdge(name string) error {
 // AICaptureSessionMutation represents an operation that mutates the AICaptureSession nodes in the graph.
 type AICaptureSessionMutation struct {
 	config
-	op                     Op
-	typ                    string
-	id                     *uuid.UUID
-	created_at             *time.Time
-	updated_at             *time.Time
-	location_name_snapshot *string
-	status                 *aicapturesession.Status
-	draft_json             *string
-	draft_revision         *int
-	adddraft_revision      *int
-	capture_revision       *int
-	addcapture_revision    *int
-	analysis_attempts      *int
-	addanalysis_attempts   *int
-	photo_count            *int
-	addphoto_count         *int
-	worker_lease_until     *time.Time
-	error_code             *string
-	error_message          *string
-	finished_at            *time.Time
-	analyzed_at            *time.Time
-	completed_at           *time.Time
-	expires_at             *time.Time
-	clearedFields          map[string]struct{}
-	group                  *uuid.UUID
-	clearedgroup           bool
-	user                   *uuid.UUID
-	cleareduser            bool
-	location               *uuid.UUID
-	clearedlocation        bool
-	photos                 map[uuid.UUID]struct{}
-	removedphotos          map[uuid.UUID]struct{}
-	clearedphotos          bool
-	items                  map[uuid.UUID]struct{}
-	removeditems           map[uuid.UUID]struct{}
-	cleareditems           bool
-	done                   bool
-	oldValue               func(context.Context) (*AICaptureSession, error)
-	predicates             []predicate.AICaptureSession
+	op                            Op
+	typ                           string
+	id                            *uuid.UUID
+	created_at                    *time.Time
+	updated_at                    *time.Time
+	location_name_snapshot        *string
+	status                        *aicapturesession.Status
+	draft_json                    *string
+	draft_revision                *int
+	adddraft_revision             *int
+	capture_revision              *int
+	addcapture_revision           *int
+	analysis_attempts             *int
+	addanalysis_attempts          *int
+	analysis_next_attempt_at      *time.Time
+	photo_count                   *int
+	addphoto_count                *int
+	worker_lease_until            *time.Time
+	reanalysis_json               *string
+	reanalysis_status             *string
+	reanalysis_next_attempt_at    *time.Time
+	reanalysis_worker_lease_until *time.Time
+	error_code                    *string
+	error_message                 *string
+	finished_at                   *time.Time
+	analyzed_at                   *time.Time
+	completed_at                  *time.Time
+	expires_at                    *time.Time
+	clearedFields                 map[string]struct{}
+	group                         *uuid.UUID
+	clearedgroup                  bool
+	user                          *uuid.UUID
+	cleareduser                   bool
+	location                      *uuid.UUID
+	clearedlocation               bool
+	photos                        map[uuid.UUID]struct{}
+	removedphotos                 map[uuid.UUID]struct{}
+	clearedphotos                 bool
+	items                         map[uuid.UUID]struct{}
+	removeditems                  map[uuid.UUID]struct{}
+	cleareditems                  bool
+	done                          bool
+	oldValue                      func(context.Context) (*AICaptureSession, error)
+	predicates                    []predicate.AICaptureSession
 }
 
 var _ ent.Mutation = (*AICaptureSessionMutation)(nil)
@@ -1715,6 +1720,55 @@ func (m *AICaptureSessionMutation) ResetAnalysisAttempts() {
 	m.addanalysis_attempts = nil
 }
 
+// SetAnalysisNextAttemptAt sets the "analysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) SetAnalysisNextAttemptAt(t time.Time) {
+	m.analysis_next_attempt_at = &t
+}
+
+// AnalysisNextAttemptAt returns the value of the "analysis_next_attempt_at" field in the mutation.
+func (m *AICaptureSessionMutation) AnalysisNextAttemptAt() (r time.Time, exists bool) {
+	v := m.analysis_next_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnalysisNextAttemptAt returns the old "analysis_next_attempt_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldAnalysisNextAttemptAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnalysisNextAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnalysisNextAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnalysisNextAttemptAt: %w", err)
+	}
+	return oldValue.AnalysisNextAttemptAt, nil
+}
+
+// ClearAnalysisNextAttemptAt clears the value of the "analysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) ClearAnalysisNextAttemptAt() {
+	m.analysis_next_attempt_at = nil
+	m.clearedFields[aicapturesession.FieldAnalysisNextAttemptAt] = struct{}{}
+}
+
+// AnalysisNextAttemptAtCleared returns if the "analysis_next_attempt_at" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) AnalysisNextAttemptAtCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldAnalysisNextAttemptAt]
+	return ok
+}
+
+// ResetAnalysisNextAttemptAt resets all changes to the "analysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) ResetAnalysisNextAttemptAt() {
+	m.analysis_next_attempt_at = nil
+	delete(m.clearedFields, aicapturesession.FieldAnalysisNextAttemptAt)
+}
+
 // SetPhotoCount sets the "photo_count" field.
 func (m *AICaptureSessionMutation) SetPhotoCount(i int) {
 	m.photo_count = &i
@@ -1818,6 +1872,202 @@ func (m *AICaptureSessionMutation) WorkerLeaseUntilCleared() bool {
 func (m *AICaptureSessionMutation) ResetWorkerLeaseUntil() {
 	m.worker_lease_until = nil
 	delete(m.clearedFields, aicapturesession.FieldWorkerLeaseUntil)
+}
+
+// SetReanalysisJSON sets the "reanalysis_json" field.
+func (m *AICaptureSessionMutation) SetReanalysisJSON(s string) {
+	m.reanalysis_json = &s
+}
+
+// ReanalysisJSON returns the value of the "reanalysis_json" field in the mutation.
+func (m *AICaptureSessionMutation) ReanalysisJSON() (r string, exists bool) {
+	v := m.reanalysis_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReanalysisJSON returns the old "reanalysis_json" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldReanalysisJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReanalysisJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReanalysisJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReanalysisJSON: %w", err)
+	}
+	return oldValue.ReanalysisJSON, nil
+}
+
+// ClearReanalysisJSON clears the value of the "reanalysis_json" field.
+func (m *AICaptureSessionMutation) ClearReanalysisJSON() {
+	m.reanalysis_json = nil
+	m.clearedFields[aicapturesession.FieldReanalysisJSON] = struct{}{}
+}
+
+// ReanalysisJSONCleared returns if the "reanalysis_json" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ReanalysisJSONCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldReanalysisJSON]
+	return ok
+}
+
+// ResetReanalysisJSON resets all changes to the "reanalysis_json" field.
+func (m *AICaptureSessionMutation) ResetReanalysisJSON() {
+	m.reanalysis_json = nil
+	delete(m.clearedFields, aicapturesession.FieldReanalysisJSON)
+}
+
+// SetReanalysisStatus sets the "reanalysis_status" field.
+func (m *AICaptureSessionMutation) SetReanalysisStatus(s string) {
+	m.reanalysis_status = &s
+}
+
+// ReanalysisStatus returns the value of the "reanalysis_status" field in the mutation.
+func (m *AICaptureSessionMutation) ReanalysisStatus() (r string, exists bool) {
+	v := m.reanalysis_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReanalysisStatus returns the old "reanalysis_status" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldReanalysisStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReanalysisStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReanalysisStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReanalysisStatus: %w", err)
+	}
+	return oldValue.ReanalysisStatus, nil
+}
+
+// ClearReanalysisStatus clears the value of the "reanalysis_status" field.
+func (m *AICaptureSessionMutation) ClearReanalysisStatus() {
+	m.reanalysis_status = nil
+	m.clearedFields[aicapturesession.FieldReanalysisStatus] = struct{}{}
+}
+
+// ReanalysisStatusCleared returns if the "reanalysis_status" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ReanalysisStatusCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldReanalysisStatus]
+	return ok
+}
+
+// ResetReanalysisStatus resets all changes to the "reanalysis_status" field.
+func (m *AICaptureSessionMutation) ResetReanalysisStatus() {
+	m.reanalysis_status = nil
+	delete(m.clearedFields, aicapturesession.FieldReanalysisStatus)
+}
+
+// SetReanalysisNextAttemptAt sets the "reanalysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) SetReanalysisNextAttemptAt(t time.Time) {
+	m.reanalysis_next_attempt_at = &t
+}
+
+// ReanalysisNextAttemptAt returns the value of the "reanalysis_next_attempt_at" field in the mutation.
+func (m *AICaptureSessionMutation) ReanalysisNextAttemptAt() (r time.Time, exists bool) {
+	v := m.reanalysis_next_attempt_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReanalysisNextAttemptAt returns the old "reanalysis_next_attempt_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldReanalysisNextAttemptAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReanalysisNextAttemptAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReanalysisNextAttemptAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReanalysisNextAttemptAt: %w", err)
+	}
+	return oldValue.ReanalysisNextAttemptAt, nil
+}
+
+// ClearReanalysisNextAttemptAt clears the value of the "reanalysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) ClearReanalysisNextAttemptAt() {
+	m.reanalysis_next_attempt_at = nil
+	m.clearedFields[aicapturesession.FieldReanalysisNextAttemptAt] = struct{}{}
+}
+
+// ReanalysisNextAttemptAtCleared returns if the "reanalysis_next_attempt_at" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ReanalysisNextAttemptAtCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldReanalysisNextAttemptAt]
+	return ok
+}
+
+// ResetReanalysisNextAttemptAt resets all changes to the "reanalysis_next_attempt_at" field.
+func (m *AICaptureSessionMutation) ResetReanalysisNextAttemptAt() {
+	m.reanalysis_next_attempt_at = nil
+	delete(m.clearedFields, aicapturesession.FieldReanalysisNextAttemptAt)
+}
+
+// SetReanalysisWorkerLeaseUntil sets the "reanalysis_worker_lease_until" field.
+func (m *AICaptureSessionMutation) SetReanalysisWorkerLeaseUntil(t time.Time) {
+	m.reanalysis_worker_lease_until = &t
+}
+
+// ReanalysisWorkerLeaseUntil returns the value of the "reanalysis_worker_lease_until" field in the mutation.
+func (m *AICaptureSessionMutation) ReanalysisWorkerLeaseUntil() (r time.Time, exists bool) {
+	v := m.reanalysis_worker_lease_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldReanalysisWorkerLeaseUntil returns the old "reanalysis_worker_lease_until" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldReanalysisWorkerLeaseUntil(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldReanalysisWorkerLeaseUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldReanalysisWorkerLeaseUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldReanalysisWorkerLeaseUntil: %w", err)
+	}
+	return oldValue.ReanalysisWorkerLeaseUntil, nil
+}
+
+// ClearReanalysisWorkerLeaseUntil clears the value of the "reanalysis_worker_lease_until" field.
+func (m *AICaptureSessionMutation) ClearReanalysisWorkerLeaseUntil() {
+	m.reanalysis_worker_lease_until = nil
+	m.clearedFields[aicapturesession.FieldReanalysisWorkerLeaseUntil] = struct{}{}
+}
+
+// ReanalysisWorkerLeaseUntilCleared returns if the "reanalysis_worker_lease_until" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ReanalysisWorkerLeaseUntilCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldReanalysisWorkerLeaseUntil]
+	return ok
+}
+
+// ResetReanalysisWorkerLeaseUntil resets all changes to the "reanalysis_worker_lease_until" field.
+func (m *AICaptureSessionMutation) ResetReanalysisWorkerLeaseUntil() {
+	m.reanalysis_worker_lease_until = nil
+	delete(m.clearedFields, aicapturesession.FieldReanalysisWorkerLeaseUntil)
 }
 
 // SetErrorCode sets the "error_code" field.
@@ -2324,7 +2574,7 @@ func (m *AICaptureSessionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AICaptureSessionMutation) Fields() []string {
-	fields := make([]string, 0, 19)
+	fields := make([]string, 0, 24)
 	if m.created_at != nil {
 		fields = append(fields, aicapturesession.FieldCreatedAt)
 	}
@@ -2358,11 +2608,26 @@ func (m *AICaptureSessionMutation) Fields() []string {
 	if m.analysis_attempts != nil {
 		fields = append(fields, aicapturesession.FieldAnalysisAttempts)
 	}
+	if m.analysis_next_attempt_at != nil {
+		fields = append(fields, aicapturesession.FieldAnalysisNextAttemptAt)
+	}
 	if m.photo_count != nil {
 		fields = append(fields, aicapturesession.FieldPhotoCount)
 	}
 	if m.worker_lease_until != nil {
 		fields = append(fields, aicapturesession.FieldWorkerLeaseUntil)
+	}
+	if m.reanalysis_json != nil {
+		fields = append(fields, aicapturesession.FieldReanalysisJSON)
+	}
+	if m.reanalysis_status != nil {
+		fields = append(fields, aicapturesession.FieldReanalysisStatus)
+	}
+	if m.reanalysis_next_attempt_at != nil {
+		fields = append(fields, aicapturesession.FieldReanalysisNextAttemptAt)
+	}
+	if m.reanalysis_worker_lease_until != nil {
+		fields = append(fields, aicapturesession.FieldReanalysisWorkerLeaseUntil)
 	}
 	if m.error_code != nil {
 		fields = append(fields, aicapturesession.FieldErrorCode)
@@ -2412,10 +2677,20 @@ func (m *AICaptureSessionMutation) Field(name string) (ent.Value, bool) {
 		return m.CaptureRevision()
 	case aicapturesession.FieldAnalysisAttempts:
 		return m.AnalysisAttempts()
+	case aicapturesession.FieldAnalysisNextAttemptAt:
+		return m.AnalysisNextAttemptAt()
 	case aicapturesession.FieldPhotoCount:
 		return m.PhotoCount()
 	case aicapturesession.FieldWorkerLeaseUntil:
 		return m.WorkerLeaseUntil()
+	case aicapturesession.FieldReanalysisJSON:
+		return m.ReanalysisJSON()
+	case aicapturesession.FieldReanalysisStatus:
+		return m.ReanalysisStatus()
+	case aicapturesession.FieldReanalysisNextAttemptAt:
+		return m.ReanalysisNextAttemptAt()
+	case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+		return m.ReanalysisWorkerLeaseUntil()
 	case aicapturesession.FieldErrorCode:
 		return m.ErrorCode()
 	case aicapturesession.FieldErrorMessage:
@@ -2459,10 +2734,20 @@ func (m *AICaptureSessionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldCaptureRevision(ctx)
 	case aicapturesession.FieldAnalysisAttempts:
 		return m.OldAnalysisAttempts(ctx)
+	case aicapturesession.FieldAnalysisNextAttemptAt:
+		return m.OldAnalysisNextAttemptAt(ctx)
 	case aicapturesession.FieldPhotoCount:
 		return m.OldPhotoCount(ctx)
 	case aicapturesession.FieldWorkerLeaseUntil:
 		return m.OldWorkerLeaseUntil(ctx)
+	case aicapturesession.FieldReanalysisJSON:
+		return m.OldReanalysisJSON(ctx)
+	case aicapturesession.FieldReanalysisStatus:
+		return m.OldReanalysisStatus(ctx)
+	case aicapturesession.FieldReanalysisNextAttemptAt:
+		return m.OldReanalysisNextAttemptAt(ctx)
+	case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+		return m.OldReanalysisWorkerLeaseUntil(ctx)
 	case aicapturesession.FieldErrorCode:
 		return m.OldErrorCode(ctx)
 	case aicapturesession.FieldErrorMessage:
@@ -2561,6 +2846,13 @@ func (m *AICaptureSessionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetAnalysisAttempts(v)
 		return nil
+	case aicapturesession.FieldAnalysisNextAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnalysisNextAttemptAt(v)
+		return nil
 	case aicapturesession.FieldPhotoCount:
 		v, ok := value.(int)
 		if !ok {
@@ -2574,6 +2866,34 @@ func (m *AICaptureSessionMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetWorkerLeaseUntil(v)
+		return nil
+	case aicapturesession.FieldReanalysisJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReanalysisJSON(v)
+		return nil
+	case aicapturesession.FieldReanalysisStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReanalysisStatus(v)
+		return nil
+	case aicapturesession.FieldReanalysisNextAttemptAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReanalysisNextAttemptAt(v)
+		return nil
+	case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetReanalysisWorkerLeaseUntil(v)
 		return nil
 	case aicapturesession.FieldErrorCode:
 		v, ok := value.(string)
@@ -2704,8 +3024,23 @@ func (m *AICaptureSessionMutation) ClearedFields() []string {
 	if m.FieldCleared(aicapturesession.FieldDraftJSON) {
 		fields = append(fields, aicapturesession.FieldDraftJSON)
 	}
+	if m.FieldCleared(aicapturesession.FieldAnalysisNextAttemptAt) {
+		fields = append(fields, aicapturesession.FieldAnalysisNextAttemptAt)
+	}
 	if m.FieldCleared(aicapturesession.FieldWorkerLeaseUntil) {
 		fields = append(fields, aicapturesession.FieldWorkerLeaseUntil)
+	}
+	if m.FieldCleared(aicapturesession.FieldReanalysisJSON) {
+		fields = append(fields, aicapturesession.FieldReanalysisJSON)
+	}
+	if m.FieldCleared(aicapturesession.FieldReanalysisStatus) {
+		fields = append(fields, aicapturesession.FieldReanalysisStatus)
+	}
+	if m.FieldCleared(aicapturesession.FieldReanalysisNextAttemptAt) {
+		fields = append(fields, aicapturesession.FieldReanalysisNextAttemptAt)
+	}
+	if m.FieldCleared(aicapturesession.FieldReanalysisWorkerLeaseUntil) {
+		fields = append(fields, aicapturesession.FieldReanalysisWorkerLeaseUntil)
 	}
 	if m.FieldCleared(aicapturesession.FieldErrorCode) {
 		fields = append(fields, aicapturesession.FieldErrorCode)
@@ -2742,8 +3077,23 @@ func (m *AICaptureSessionMutation) ClearField(name string) error {
 	case aicapturesession.FieldDraftJSON:
 		m.ClearDraftJSON()
 		return nil
+	case aicapturesession.FieldAnalysisNextAttemptAt:
+		m.ClearAnalysisNextAttemptAt()
+		return nil
 	case aicapturesession.FieldWorkerLeaseUntil:
 		m.ClearWorkerLeaseUntil()
+		return nil
+	case aicapturesession.FieldReanalysisJSON:
+		m.ClearReanalysisJSON()
+		return nil
+	case aicapturesession.FieldReanalysisStatus:
+		m.ClearReanalysisStatus()
+		return nil
+	case aicapturesession.FieldReanalysisNextAttemptAt:
+		m.ClearReanalysisNextAttemptAt()
+		return nil
+	case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+		m.ClearReanalysisWorkerLeaseUntil()
 		return nil
 	case aicapturesession.FieldErrorCode:
 		m.ClearErrorCode()
@@ -2801,11 +3151,26 @@ func (m *AICaptureSessionMutation) ResetField(name string) error {
 	case aicapturesession.FieldAnalysisAttempts:
 		m.ResetAnalysisAttempts()
 		return nil
+	case aicapturesession.FieldAnalysisNextAttemptAt:
+		m.ResetAnalysisNextAttemptAt()
+		return nil
 	case aicapturesession.FieldPhotoCount:
 		m.ResetPhotoCount()
 		return nil
 	case aicapturesession.FieldWorkerLeaseUntil:
 		m.ResetWorkerLeaseUntil()
+		return nil
+	case aicapturesession.FieldReanalysisJSON:
+		m.ResetReanalysisJSON()
+		return nil
+	case aicapturesession.FieldReanalysisStatus:
+		m.ResetReanalysisStatus()
+		return nil
+	case aicapturesession.FieldReanalysisNextAttemptAt:
+		m.ResetReanalysisNextAttemptAt()
+		return nil
+	case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+		m.ResetReanalysisWorkerLeaseUntil()
 		return nil
 	case aicapturesession.FieldErrorCode:
 		m.ResetErrorCode()

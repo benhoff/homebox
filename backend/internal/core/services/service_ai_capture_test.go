@@ -213,6 +213,36 @@ func TestAICaptureAnalyzeDisabled(t *testing.T) {
 	assert.ErrorIs(t, err, ErrAIDisabled)
 }
 
+func TestAICaptureAnalyzeClassifiesTemporaryProviderFailures(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "starting", http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "vision-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	_, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+	})
+	assert.ErrorIs(t, err, ErrAIUpstream)
+	assert.ErrorIs(t, err, ErrAIRetryable)
+}
+
+func TestAICaptureAnalyzeDoesNotRetryPermanentProviderFailures(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "bad request", http.StatusBadRequest)
+	}))
+	defer server.Close()
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "vision-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	_, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+	})
+	assert.ErrorIs(t, err, ErrAIUpstream)
+	assert.NotErrorIs(t, err, ErrAIRetryable)
+}
+
 func TestAICapturePromptLimitsAIToVisualMetadata(t *testing.T) {
 	assert.Contains(t, aiCaptureSystemPrompt, "Only identify the item name")
 	assert.Contains(t, aiCaptureSystemPrompt, "Never infer or return serial numbers")

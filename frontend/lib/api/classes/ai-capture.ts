@@ -28,6 +28,24 @@ export interface AICaptureReanalysis {
   warnings: string[];
 }
 
+export type AICaptureReanalysisStatus = "queued" | "processing" | "waiting" | "completed";
+
+export interface AICaptureReanalysisBatch {
+  status: AICaptureReanalysisStatus;
+  provider: string;
+  total: number;
+  completed: number;
+  attempts: number;
+  clientIds: string[];
+  pendingClientIds: string[];
+  suggestions: Record<string, AICaptureReanalysis>;
+  errors: Record<string, string>;
+  nextAttemptAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
+
 export interface AICaptureLocation {
   id: string;
   name: string;
@@ -60,6 +78,7 @@ export interface AICaptureSession {
   uploadedPhotoCount: number;
   photos: AICaptureSessionPhoto[];
   analysisAttempts: number;
+  analysisNextAttemptAt?: string;
   draftRevision: number;
   captureRevision: number;
   draft?: AICaptureDraft;
@@ -72,6 +91,7 @@ export interface AICaptureSession {
   analyzedAt?: string;
   completedAt?: string;
   expiresAt: string;
+  reanalysis?: AICaptureReanalysisBatch;
 }
 
 export class AICaptureAPI extends BaseAPI {
@@ -207,6 +227,27 @@ export class AICaptureAPI extends BaseAPI {
     >({
       url: route(`/ai/capture/sessions/${sessionId}/reanalyze-item`),
       body: { revision, clientId, provider, instruction },
+    });
+  }
+
+  queueReanalysis(sessionId: string, revision: number, clientIds: string[], provider: string, instruction = "") {
+    return this.http.post<
+      {
+        revision: number;
+        clientIds: string[];
+        provider: string;
+        instruction: string;
+      },
+      AICaptureSession
+    >({
+      url: route(`/ai/capture/sessions/${sessionId}/reanalyze-items`),
+      body: { revision, clientIds, provider, instruction },
+    });
+  }
+
+  dismissReanalysis(sessionId: string, clientId: string) {
+    return this.http.delete<AICaptureSession>({
+      url: route(`/ai/capture/sessions/${sessionId}/reanalysis/${encodeURIComponent(clientId)}`),
     });
   }
 

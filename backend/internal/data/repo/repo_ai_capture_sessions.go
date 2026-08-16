@@ -18,12 +18,20 @@ import (
 )
 
 var (
-	ErrAICaptureInvalidState  = errors.New("capture session is not in the required state")
-	ErrAICapturePhotoLimit    = errors.New("capture session photo limit reached")
-	ErrAICapturePhotoCount    = errors.New("capture session photo count does not match")
-	ErrAICaptureRevision      = errors.New("capture session photo grouping was changed elsewhere")
-	ErrAICaptureDraftConflict = errors.New("capture session draft was changed elsewhere")
-	ErrAICaptureSessionLimit  = errors.New("too many active capture sessions")
+	ErrAICaptureInvalidState     = errors.New("capture session is not in the required state")
+	ErrAICapturePhotoLimit       = errors.New("capture session photo limit reached")
+	ErrAICapturePhotoCount       = errors.New("capture session photo count does not match")
+	ErrAICaptureRevision         = errors.New("capture session photo grouping was changed elsewhere")
+	ErrAICaptureDraftConflict    = errors.New("capture session draft was changed elsewhere")
+	ErrAICaptureSessionLimit     = errors.New("too many active capture sessions")
+	ErrAICaptureReanalysisActive = errors.New("capture session reanalysis is already running")
+)
+
+const (
+	AICaptureReanalysisQueued     = "queued"
+	AICaptureReanalysisProcessing = "processing"
+	AICaptureReanalysisWaiting    = "waiting"
+	AICaptureReanalysisCompleted  = "completed"
 )
 
 type AICaptureSessionRepository struct {
@@ -53,28 +61,33 @@ type AICaptureSessionItemRecord struct {
 }
 
 type AICaptureSessionRecord struct {
-	ID                   uuid.UUID
-	GroupID              uuid.UUID
-	UserID               uuid.UUID
-	LocationID           *uuid.UUID
-	LocationNameSnapshot string
-	Status               string
-	DraftJSON            string
-	DraftRevision        int
-	CaptureRevision      int
-	AnalysisAttempts     int
-	PhotoCount           int
-	WorkerLeaseUntil     *time.Time
-	ErrorCode            string
-	ErrorMessage         string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	FinishedAt           *time.Time
-	AnalyzedAt           *time.Time
-	CompletedAt          *time.Time
-	ExpiresAt            time.Time
-	Photos               []AICapturePhotoRecord
-	Items                []AICaptureSessionItemRecord
+	ID                         uuid.UUID
+	GroupID                    uuid.UUID
+	UserID                     uuid.UUID
+	LocationID                 *uuid.UUID
+	LocationNameSnapshot       string
+	Status                     string
+	DraftJSON                  string
+	DraftRevision              int
+	CaptureRevision            int
+	AnalysisAttempts           int
+	AnalysisNextAttemptAt      *time.Time
+	PhotoCount                 int
+	WorkerLeaseUntil           *time.Time
+	ReanalysisJSON             string
+	ReanalysisStatus           string
+	ReanalysisNextAttemptAt    *time.Time
+	ReanalysisWorkerLeaseUntil *time.Time
+	ErrorCode                  string
+	ErrorMessage               string
+	CreatedAt                  time.Time
+	UpdatedAt                  time.Time
+	FinishedAt                 *time.Time
+	AnalyzedAt                 *time.Time
+	CompletedAt                *time.Time
+	ExpiresAt                  time.Time
+	Photos                     []AICapturePhotoRecord
+	Items                      []AICaptureSessionItemRecord
 }
 
 func mapAICapturePhoto(row *ent.AICapturePhoto) AICapturePhotoRecord {
@@ -104,26 +117,31 @@ func mapAICaptureSessionItem(row *ent.AICaptureSessionItem) AICaptureSessionItem
 
 func mapAICaptureSession(row *ent.AICaptureSession) AICaptureSessionRecord {
 	out := AICaptureSessionRecord{
-		ID:                   row.ID,
-		GroupID:              row.GroupID,
-		UserID:               row.UserID,
-		LocationID:           row.LocationID,
-		LocationNameSnapshot: row.LocationNameSnapshot,
-		Status:               row.Status.String(),
-		DraftJSON:            row.DraftJSON,
-		DraftRevision:        row.DraftRevision,
-		CaptureRevision:      row.CaptureRevision,
-		AnalysisAttempts:     row.AnalysisAttempts,
-		PhotoCount:           row.PhotoCount,
-		WorkerLeaseUntil:     row.WorkerLeaseUntil,
-		ErrorCode:            row.ErrorCode,
-		ErrorMessage:         row.ErrorMessage,
-		CreatedAt:            row.CreatedAt,
-		UpdatedAt:            row.UpdatedAt,
-		FinishedAt:           row.FinishedAt,
-		AnalyzedAt:           row.AnalyzedAt,
-		CompletedAt:          row.CompletedAt,
-		ExpiresAt:            row.ExpiresAt,
+		ID:                         row.ID,
+		GroupID:                    row.GroupID,
+		UserID:                     row.UserID,
+		LocationID:                 row.LocationID,
+		LocationNameSnapshot:       row.LocationNameSnapshot,
+		Status:                     row.Status.String(),
+		DraftJSON:                  row.DraftJSON,
+		DraftRevision:              row.DraftRevision,
+		CaptureRevision:            row.CaptureRevision,
+		AnalysisAttempts:           row.AnalysisAttempts,
+		AnalysisNextAttemptAt:      row.AnalysisNextAttemptAt,
+		PhotoCount:                 row.PhotoCount,
+		WorkerLeaseUntil:           row.WorkerLeaseUntil,
+		ReanalysisJSON:             row.ReanalysisJSON,
+		ReanalysisStatus:           row.ReanalysisStatus,
+		ReanalysisNextAttemptAt:    row.ReanalysisNextAttemptAt,
+		ReanalysisWorkerLeaseUntil: row.ReanalysisWorkerLeaseUntil,
+		ErrorCode:                  row.ErrorCode,
+		ErrorMessage:               row.ErrorMessage,
+		CreatedAt:                  row.CreatedAt,
+		UpdatedAt:                  row.UpdatedAt,
+		FinishedAt:                 row.FinishedAt,
+		AnalyzedAt:                 row.AnalyzedAt,
+		CompletedAt:                row.CompletedAt,
+		ExpiresAt:                  row.ExpiresAt,
 	}
 	if row.Edges.Photos != nil {
 		out.Photos = make([]AICapturePhotoRecord, len(row.Edges.Photos))
@@ -419,6 +437,7 @@ func (r *AICaptureSessionRepository) Finish(ctx context.Context, gid, uid, id uu
 		aicapturesession.CaptureRevisionEQ(expectedRevision),
 	).SetStatus(aicapturesession.StatusQueued).
 		SetPhotoCount(count).
+		ClearAnalysisNextAttemptAt().
 		SetFinishedAt(now).
 		SetExpiresAt(now.Add(30 * 24 * time.Hour)).
 		Save(ctx)
@@ -440,7 +459,13 @@ func (r *AICaptureSessionRepository) ClaimQueued(ctx context.Context, lease time
 	if err != nil {
 		return AICaptureSessionRecord{}, false, err
 	}
-	row, err := r.db.AICaptureSession.Query().Where(aicapturesession.StatusEQ(aicapturesession.StatusQueued)).
+	row, err := r.db.AICaptureSession.Query().Where(
+		aicapturesession.StatusEQ(aicapturesession.StatusQueued),
+		aicapturesession.Or(
+			aicapturesession.AnalysisNextAttemptAtIsNil(),
+			aicapturesession.AnalysisNextAttemptAtLTE(now),
+		),
+	).
 		Order(ent.Asc(aicapturesession.FieldUpdatedAt)).First(ctx)
 	if ent.IsNotFound(err) {
 		return AICaptureSessionRecord{}, false, nil
@@ -453,6 +478,7 @@ func (r *AICaptureSessionRepository) ClaimQueued(ctx context.Context, lease time
 	).SetStatus(aicapturesession.StatusAnalyzing).
 		SetWorkerLeaseUntil(now.Add(lease)).
 		AddAnalysisAttempts(1).
+		ClearAnalysisNextAttemptAt().
 		ClearErrorCode().ClearErrorMessage().
 		Save(ctx)
 	if err != nil {
@@ -474,7 +500,7 @@ func (r *AICaptureSessionRepository) SetAnalysisReady(ctx context.Context, id uu
 		AddDraftRevision(1).
 		SetAnalyzedAt(now).
 		SetExpiresAt(now.Add(30 * 24 * time.Hour)).
-		ClearWorkerLeaseUntil().ClearErrorCode().ClearErrorMessage().
+		ClearWorkerLeaseUntil().ClearAnalysisNextAttemptAt().ClearErrorCode().ClearErrorMessage().
 		Save(ctx)
 	if err != nil {
 		return err
@@ -485,18 +511,24 @@ func (r *AICaptureSessionRepository) SetAnalysisReady(ctx context.Context, id uu
 	return nil
 }
 
-func (r *AICaptureSessionRepository) SetAnalysisError(ctx context.Context, id uuid.UUID, retry bool, code, message string) error {
+func (r *AICaptureSessionRepository) SetAnalysisError(ctx context.Context, id uuid.UUID, retry bool, nextAttemptAt *time.Time, code, message string) error {
 	status := aicapturesession.StatusAnalysisFailed
 	if retry {
 		status = aicapturesession.StatusQueued
 	}
-	return r.db.AICaptureSession.UpdateOneID(id).
+	update := r.db.AICaptureSession.UpdateOneID(id).
 		Where(aicapturesession.StatusEQ(aicapturesession.StatusAnalyzing)).
 		SetStatus(status).
 		SetErrorCode(code).
 		SetErrorMessage(message).
-		ClearWorkerLeaseUntil().
-		Exec(ctx)
+		ClearWorkerLeaseUntil()
+	if retry && nextAttemptAt != nil {
+		update.SetAnalysisNextAttemptAt(*nextAttemptAt).
+			SetExpiresAt(time.Now().Add(30 * 24 * time.Hour))
+	} else {
+		update.ClearAnalysisNextAttemptAt()
+	}
+	return update.Exec(ctx)
 }
 
 func (r *AICaptureSessionRepository) RetryAnalysis(ctx context.Context, gid, uid, id uuid.UUID) error {
@@ -505,7 +537,140 @@ func (r *AICaptureSessionRepository) RetryAnalysis(ctx context.Context, gid, uid
 		aicapturesession.StatusEQ(aicapturesession.StatusAnalysisFailed),
 	).SetStatus(aicapturesession.StatusQueued).
 		SetAnalysisAttempts(0).
+		ClearAnalysisNextAttemptAt().
 		ClearErrorCode().ClearErrorMessage().
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		return ErrAICaptureInvalidState
+	}
+	return nil
+}
+
+func (r *AICaptureSessionRepository) QueueReanalysis(
+	ctx context.Context,
+	gid, uid, id uuid.UUID,
+	expectedRevision int,
+	stateJSON string,
+) error {
+	updated, err := r.db.AICaptureSession.Update().Where(
+		aicapturesession.ID(id),
+		aicapturesession.GroupID(gid),
+		aicapturesession.UserID(uid),
+		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+		aicapturesession.DraftRevisionEQ(expectedRevision),
+		aicapturesession.Or(
+			aicapturesession.ReanalysisStatusIsNil(),
+			aicapturesession.ReanalysisStatusNotIn(
+				AICaptureReanalysisQueued,
+				AICaptureReanalysisProcessing,
+				AICaptureReanalysisWaiting,
+			),
+		),
+	).SetReanalysisJSON(stateJSON).
+		SetReanalysisStatus(AICaptureReanalysisQueued).
+		SetExpiresAt(time.Now().Add(30 * 24 * time.Hour)).
+		ClearReanalysisNextAttemptAt().
+		ClearReanalysisWorkerLeaseUntil().
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if updated != 1 {
+		current, getErr := r.Get(ctx, gid, uid, id)
+		if getErr != nil {
+			return getErr
+		}
+		if current.DraftRevision != expectedRevision {
+			return ErrAICaptureDraftConflict
+		}
+		return ErrAICaptureReanalysisActive
+	}
+	return nil
+}
+
+func (r *AICaptureSessionRepository) ClaimQueuedReanalysis(ctx context.Context, lease time.Duration) (AICaptureSessionRecord, bool, error) {
+	now := time.Now()
+	_, err := r.db.AICaptureSession.Update().Where(
+		aicapturesession.ReanalysisStatusEQ(AICaptureReanalysisProcessing),
+		aicapturesession.ReanalysisWorkerLeaseUntilLT(now),
+	).SetReanalysisStatus(AICaptureReanalysisQueued).
+		ClearReanalysisWorkerLeaseUntil().
+		ClearReanalysisNextAttemptAt().
+		Save(ctx)
+	if err != nil {
+		return AICaptureSessionRecord{}, false, err
+	}
+	row, err := r.db.AICaptureSession.Query().Where(
+		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+		aicapturesession.ReanalysisStatusIn(AICaptureReanalysisQueued, AICaptureReanalysisWaiting),
+		aicapturesession.Or(
+			aicapturesession.ReanalysisNextAttemptAtIsNil(),
+			aicapturesession.ReanalysisNextAttemptAtLTE(now),
+		),
+	).Order(ent.Asc(aicapturesession.FieldUpdatedAt)).First(ctx)
+	if ent.IsNotFound(err) {
+		return AICaptureSessionRecord{}, false, nil
+	}
+	if err != nil {
+		return AICaptureSessionRecord{}, false, err
+	}
+	updated, err := r.db.AICaptureSession.Update().Where(
+		aicapturesession.ID(row.ID),
+		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+		aicapturesession.ReanalysisStatusIn(AICaptureReanalysisQueued, AICaptureReanalysisWaiting),
+	).SetReanalysisStatus(AICaptureReanalysisProcessing).
+		SetReanalysisWorkerLeaseUntil(now.Add(lease)).
+		ClearReanalysisNextAttemptAt().
+		Save(ctx)
+	if err != nil {
+		return AICaptureSessionRecord{}, false, err
+	}
+	if updated != 1 {
+		return AICaptureSessionRecord{}, false, nil
+	}
+	claimed, err := r.getInternal(ctx, row.ID)
+	return claimed, err == nil, err
+}
+
+func (r *AICaptureSessionRepository) SetReanalysisState(
+	ctx context.Context,
+	id uuid.UUID,
+	status, stateJSON string,
+	nextAttemptAt *time.Time,
+) error {
+	update := r.db.AICaptureSession.UpdateOneID(id).
+		Where(
+			aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+			aicapturesession.ReanalysisStatusEQ(AICaptureReanalysisProcessing),
+		).
+		SetReanalysisStatus(status).
+		SetReanalysisJSON(stateJSON).
+		SetExpiresAt(time.Now().Add(30 * 24 * time.Hour)).
+		ClearReanalysisWorkerLeaseUntil()
+	if nextAttemptAt != nil {
+		update.SetReanalysisNextAttemptAt(*nextAttemptAt)
+	} else {
+		update.ClearReanalysisNextAttemptAt()
+	}
+	return update.Exec(ctx)
+}
+
+func (r *AICaptureSessionRepository) SaveReanalysisResults(
+	ctx context.Context,
+	gid, uid, id uuid.UUID,
+	stateJSON string,
+) error {
+	updated, err := r.db.AICaptureSession.Update().Where(
+		aicapturesession.ID(id),
+		aicapturesession.GroupID(gid),
+		aicapturesession.UserID(uid),
+		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+		aicapturesession.ReanalysisStatusEQ(AICaptureReanalysisCompleted),
+	).SetReanalysisJSON(stateJSON).
+		SetExpiresAt(time.Now().Add(30 * 24 * time.Hour)).
 		Save(ctx)
 	if err != nil {
 		return err
@@ -534,19 +699,73 @@ func (r *AICaptureSessionRepository) SaveDraft(ctx context.Context, gid, uid, id
 	return nil
 }
 
+func (r *AICaptureSessionRepository) SaveCorrection(ctx context.Context, gid, uid, id uuid.UUID, expectedRevision int, draftJSON string) error {
+	updated, err := r.db.AICaptureSession.Update().Where(
+		aicapturesession.ID(id), aicapturesession.GroupID(gid), aicapturesession.UserID(uid),
+		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
+		aicapturesession.DraftRevisionEQ(expectedRevision),
+		aicapturesession.Or(
+			aicapturesession.ReanalysisStatusIsNil(),
+			aicapturesession.ReanalysisStatusNotIn(
+				AICaptureReanalysisQueued,
+				AICaptureReanalysisProcessing,
+				AICaptureReanalysisWaiting,
+			),
+		),
+	).SetDraftJSON(draftJSON).
+		AddDraftRevision(1).
+		SetExpiresAt(time.Now().Add(30 * 24 * time.Hour)).
+		ClearReanalysisJSON().ClearReanalysisStatus().
+		ClearReanalysisNextAttemptAt().ClearReanalysisWorkerLeaseUntil().
+		Save(ctx)
+	if err != nil {
+		return err
+	}
+	if updated == 1 {
+		return nil
+	}
+	current, getErr := r.Get(ctx, gid, uid, id)
+	if getErr != nil {
+		return getErr
+	}
+	if current.ReanalysisStatus == AICaptureReanalysisQueued ||
+		current.ReanalysisStatus == AICaptureReanalysisProcessing ||
+		current.ReanalysisStatus == AICaptureReanalysisWaiting {
+		return ErrAICaptureReanalysisActive
+	}
+	return ErrAICaptureDraftConflict
+}
+
 func (r *AICaptureSessionRepository) StartSubmitting(ctx context.Context, gid, uid, id uuid.UUID, expectedRevision int) error {
 	updated, err := r.db.AICaptureSession.Update().Where(
 		aicapturesession.ID(id), aicapturesession.GroupID(gid), aicapturesession.UserID(uid),
 		aicapturesession.StatusEQ(aicapturesession.StatusReadyForReview),
 		aicapturesession.DraftRevisionEQ(expectedRevision),
+		aicapturesession.Or(
+			aicapturesession.ReanalysisStatusIsNil(),
+			aicapturesession.ReanalysisStatusNotIn(
+				AICaptureReanalysisQueued,
+				AICaptureReanalysisProcessing,
+				AICaptureReanalysisWaiting,
+			),
+		),
 	).SetStatus(aicapturesession.StatusSubmitting).Save(ctx)
 	if err != nil {
 		return err
 	}
-	if updated != 1 {
-		return ErrAICaptureDraftConflict
+	if updated == 1 {
+		return nil
 	}
-	return nil
+	current, getErr := r.Get(ctx, gid, uid, id)
+	if getErr != nil {
+		return getErr
+	}
+	if current.ReanalysisStatus == AICaptureReanalysisQueued ||
+		current.ReanalysisStatus == AICaptureReanalysisProcessing ||
+		current.ReanalysisStatus == AICaptureReanalysisWaiting {
+		return ErrAICaptureReanalysisActive
+	}
+	return ErrAICaptureDraftConflict
 }
 
 func (r *AICaptureSessionRepository) SetSubmitFailed(ctx context.Context, id uuid.UUID, code, message string) error {

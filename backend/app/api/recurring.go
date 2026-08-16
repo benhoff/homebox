@@ -60,6 +60,9 @@ func registerRecurringTasks(app *app, cfg *config.Config, runner *graceful.Runne
 		if err := app.services.AICaptureSessions.RunNextAnalysis(ctx); err != nil {
 			log.Error().Err(err).Msg("AI capture session worker failed")
 		}
+		if err := app.services.AICaptureSessions.RunNextReanalysis(ctx); err != nil {
+			log.Error().Err(err).Msg("AI capture reanalysis worker failed")
+		}
 	}))
 
 	runner.AddPlugin(NewTask("purge-expired-ai-capture-sessions", 24*time.Hour, func(ctx context.Context) {

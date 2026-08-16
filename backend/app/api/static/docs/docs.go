@@ -729,6 +729,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}": {
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Dismiss a durable capture-item reanalysis result",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Draft client ID",
+                        "name": "clientId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/ai/capture/sessions/{sessionId}/reanalyze-item": {
             "post": {
                 "security": [
@@ -769,6 +809,51 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/services.AICaptureReanalysisOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/reanalyze-items": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Queue durable provider reanalysis for reviewed capture items",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reviewed items and provider",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionReanalysisBatch"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
                 }
@@ -4050,6 +4135,10 @@ const docTemplate = `{
                     "description": "AnalysisAttempts holds the value of the \"analysis_attempts\" field.",
                     "type": "integer"
                 },
+                "analysis_next_attempt_at": {
+                    "description": "AnalysisNextAttemptAt holds the value of the \"analysis_next_attempt_at\" field.",
+                    "type": "string"
+                },
                 "analyzed_at": {
                     "description": "AnalyzedAt holds the value of the \"analyzed_at\" field.",
                     "type": "string"
@@ -4117,6 +4206,22 @@ const docTemplate = `{
                 "photo_count": {
                     "description": "PhotoCount holds the value of the \"photo_count\" field.",
                     "type": "integer"
+                },
+                "reanalysis_json": {
+                    "description": "ReanalysisJSON holds the value of the \"reanalysis_json\" field.",
+                    "type": "string"
+                },
+                "reanalysis_next_attempt_at": {
+                    "description": "ReanalysisNextAttemptAt holds the value of the \"reanalysis_next_attempt_at\" field.",
+                    "type": "string"
+                },
+                "reanalysis_status": {
+                    "description": "ReanalysisStatus holds the value of the \"reanalysis_status\" field.",
+                    "type": "string"
+                },
+                "reanalysis_worker_lease_until": {
+                    "description": "ReanalysisWorkerLeaseUntil holds the value of the \"reanalysis_worker_lease_until\" field.",
+                    "type": "string"
                 },
                 "status": {
                     "description": "Status holds the value of the \"status\" field.",
@@ -7405,6 +7510,62 @@ const docTemplate = `{
                 }
             }
         },
+        "services.AICaptureReanalysisBatchOut": {
+            "type": "object",
+            "properties": {
+                "attempts": {
+                    "type": "integer"
+                },
+                "clientIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "completed": {
+                    "type": "integer"
+                },
+                "completedAt": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "errors": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "nextAttemptAt": {
+                    "type": "string"
+                },
+                "pendingClientIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "suggestions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/services.AICaptureReanalysisOut"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
         "services.AICaptureReanalysisOut": {
             "type": "object",
             "properties": {
@@ -7427,6 +7588,9 @@ const docTemplate = `{
             "properties": {
                 "analysisAttempts": {
                     "type": "integer"
+                },
+                "analysisNextAttemptAt": {
+                    "type": "string"
                 },
                 "analyzedAt": {
                     "type": "string"
@@ -7478,6 +7642,9 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/services.AICaptureSessionPhoto"
                     }
+                },
+                "reanalysis": {
+                    "$ref": "#/definitions/services.AICaptureReanalysisBatchOut"
                 },
                 "status": {
                     "type": "string"
@@ -7951,6 +8118,26 @@ const docTemplate = `{
             "properties": {
                 "clientId": {
                     "type": "string"
+                },
+                "instruction": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.aiCaptureSessionReanalysisBatch": {
+            "type": "object",
+            "properties": {
+                "clientIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "instruction": {
                     "type": "string"

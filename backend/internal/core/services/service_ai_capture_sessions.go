@@ -48,31 +48,64 @@ type AICaptureCreatedItem struct {
 }
 
 type AICaptureSessionOut struct {
-	ID                 string                  `json:"id"`
-	Status             string                  `json:"status"`
-	Location           *AICaptureOption        `json:"location,omitempty"`
-	PhotoCount         int                     `json:"photoCount"`
-	UploadedPhotoCount int                     `json:"uploadedPhotoCount"`
-	Photos             []AICaptureSessionPhoto `json:"photos"`
-	AnalysisAttempts   int                     `json:"analysisAttempts"`
-	DraftRevision      int                     `json:"draftRevision"`
-	CaptureRevision    int                     `json:"captureRevision"`
-	Draft              *AICaptureDraft         `json:"draft,omitempty"`
-	CreatedItems       []AICaptureCreatedItem  `json:"createdItems"`
-	ErrorCode          string                  `json:"errorCode,omitempty"`
-	ErrorMessage       string                  `json:"errorMessage,omitempty"`
-	CreatedAt          time.Time               `json:"createdAt"`
-	UpdatedAt          time.Time               `json:"updatedAt"`
-	FinishedAt         *time.Time              `json:"finishedAt,omitempty"`
-	AnalyzedAt         *time.Time              `json:"analyzedAt,omitempty"`
-	CompletedAt        *time.Time              `json:"completedAt,omitempty"`
-	ExpiresAt          time.Time               `json:"expiresAt"`
+	ID                    string                       `json:"id"`
+	Status                string                       `json:"status"`
+	Location              *AICaptureOption             `json:"location,omitempty"`
+	PhotoCount            int                          `json:"photoCount"`
+	UploadedPhotoCount    int                          `json:"uploadedPhotoCount"`
+	Photos                []AICaptureSessionPhoto      `json:"photos"`
+	AnalysisAttempts      int                          `json:"analysisAttempts"`
+	AnalysisNextAttemptAt *time.Time                   `json:"analysisNextAttemptAt,omitempty"`
+	DraftRevision         int                          `json:"draftRevision"`
+	CaptureRevision       int                          `json:"captureRevision"`
+	Draft                 *AICaptureDraft              `json:"draft,omitempty"`
+	CreatedItems          []AICaptureCreatedItem       `json:"createdItems"`
+	ErrorCode             string                       `json:"errorCode,omitempty"`
+	ErrorMessage          string                       `json:"errorMessage,omitempty"`
+	CreatedAt             time.Time                    `json:"createdAt"`
+	UpdatedAt             time.Time                    `json:"updatedAt"`
+	FinishedAt            *time.Time                   `json:"finishedAt,omitempty"`
+	AnalyzedAt            *time.Time                   `json:"analyzedAt,omitempty"`
+	CompletedAt           *time.Time                   `json:"completedAt,omitempty"`
+	ExpiresAt             time.Time                    `json:"expiresAt"`
+	Reanalysis            *AICaptureReanalysisBatchOut `json:"reanalysis,omitempty"`
 }
 
 type AICaptureReanalysisOut struct {
 	Item     AICaptureItem `json:"item"`
 	Provider string        `json:"provider"`
 	Warnings []string      `json:"warnings"`
+}
+
+type AICaptureReanalysisBatchOut struct {
+	Status           string                            `json:"status"`
+	Provider         string                            `json:"provider"`
+	Total            int                               `json:"total"`
+	Completed        int                               `json:"completed"`
+	Attempts         int                               `json:"attempts"`
+	ClientIDs        []string                          `json:"clientIds"`
+	PendingClientIDs []string                          `json:"pendingClientIds"`
+	Suggestions      map[string]AICaptureReanalysisOut `json:"suggestions"`
+	Errors           map[string]string                 `json:"errors"`
+	NextAttemptAt    *time.Time                        `json:"nextAttemptAt,omitempty"`
+	CreatedAt        time.Time                         `json:"createdAt"`
+	UpdatedAt        time.Time                         `json:"updatedAt"`
+	CompletedAt      *time.Time                        `json:"completedAt,omitempty"`
+}
+
+type aiCaptureReanalysisState struct {
+	Status      string                            `json:"status"`
+	Provider    string                            `json:"provider"`
+	Instruction string                            `json:"instruction,omitempty"`
+	Revision    int                               `json:"revision"`
+	Items       []AICaptureItem                   `json:"items"`
+	Current     int                               `json:"current"`
+	Attempts    int                               `json:"attempts"`
+	Suggestions map[string]AICaptureReanalysisOut `json:"suggestions"`
+	Errors      map[string]string                 `json:"errors"`
+	CreatedAt   time.Time                         `json:"createdAt"`
+	UpdatedAt   time.Time                         `json:"updatedAt"`
+	CompletedAt *time.Time                        `json:"completedAt,omitempty"`
 }
 
 type AICaptureSessionService struct {
@@ -88,23 +121,52 @@ func NewAICaptureSessionService(repos *repo.AllRepos, ai *AICaptureService, enti
 
 func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (AICaptureSessionOut, error) {
 	out := AICaptureSessionOut{
-		ID:                 record.ID.String(),
-		Status:             record.Status,
-		PhotoCount:         max(record.PhotoCount, len(record.Photos)),
-		UploadedPhotoCount: len(record.Photos),
-		Photos:             make([]AICaptureSessionPhoto, len(record.Photos)),
-		AnalysisAttempts:   record.AnalysisAttempts,
-		DraftRevision:      record.DraftRevision,
-		CaptureRevision:    record.CaptureRevision,
-		CreatedItems:       []AICaptureCreatedItem{},
-		ErrorCode:          record.ErrorCode,
-		ErrorMessage:       record.ErrorMessage,
-		CreatedAt:          record.CreatedAt,
-		UpdatedAt:          record.UpdatedAt,
-		FinishedAt:         record.FinishedAt,
-		AnalyzedAt:         record.AnalyzedAt,
-		CompletedAt:        record.CompletedAt,
-		ExpiresAt:          record.ExpiresAt,
+		ID:                    record.ID.String(),
+		Status:                record.Status,
+		PhotoCount:            max(record.PhotoCount, len(record.Photos)),
+		UploadedPhotoCount:    len(record.Photos),
+		Photos:                make([]AICaptureSessionPhoto, len(record.Photos)),
+		AnalysisAttempts:      record.AnalysisAttempts,
+		AnalysisNextAttemptAt: record.AnalysisNextAttemptAt,
+		DraftRevision:         record.DraftRevision,
+		CaptureRevision:       record.CaptureRevision,
+		CreatedItems:          []AICaptureCreatedItem{},
+		ErrorCode:             record.ErrorCode,
+		ErrorMessage:          record.ErrorMessage,
+		CreatedAt:             record.CreatedAt,
+		UpdatedAt:             record.UpdatedAt,
+		FinishedAt:            record.FinishedAt,
+		AnalyzedAt:            record.AnalyzedAt,
+		CompletedAt:           record.CompletedAt,
+		ExpiresAt:             record.ExpiresAt,
+	}
+	if record.ReanalysisJSON != "" {
+		var state aiCaptureReanalysisState
+		if err := json.Unmarshal([]byte(record.ReanalysisJSON), &state); err != nil {
+			return AICaptureSessionOut{}, fmt.Errorf("decode capture reanalysis: %w", err)
+		}
+		if state.Suggestions == nil {
+			state.Suggestions = map[string]AICaptureReanalysisOut{}
+		}
+		if state.Errors == nil {
+			state.Errors = map[string]string{}
+		}
+		pending := make([]string, 0, max(0, len(state.Items)-state.Current))
+		clientIDs := make([]string, 0, len(state.Items))
+		for _, item := range state.Items {
+			clientIDs = append(clientIDs, item.ClientID)
+		}
+		for index := max(0, state.Current); index < len(state.Items); index++ {
+			pending = append(pending, state.Items[index].ClientID)
+		}
+		out.Reanalysis = &AICaptureReanalysisBatchOut{
+			Status: record.ReanalysisStatus, Provider: state.Provider,
+			Total: len(state.Items), Completed: min(max(state.Current, 0), len(state.Items)),
+			Attempts: state.Attempts, ClientIDs: clientIDs, PendingClientIDs: pending,
+			Suggestions: state.Suggestions, Errors: state.Errors,
+			NextAttemptAt: record.ReanalysisNextAttemptAt,
+			CreatedAt:     state.CreatedAt, UpdatedAt: state.UpdatedAt, CompletedAt: state.CompletedAt,
+		}
 	}
 	if record.LocationID != nil {
 		out.Location = &AICaptureOption{ID: record.LocationID.String(), Name: record.LocationNameSnapshot}
@@ -529,15 +591,30 @@ func (svc *AICaptureSessionService) RunNextAnalysis(ctx context.Context) error {
 		return nil
 	}
 	log.Error().Err(err).Str("session_id", record.ID.String()).Msg("AI capture session analysis failed")
-	retry := record.AnalysisAttempts < 3 && errors.Is(err, ErrAIUpstream) && !errors.Is(err, ErrAIGroupContract)
+	retry := errors.Is(err, ErrAIRetryable)
+	var nextAttemptAt *time.Time
 	code := AICaptureErrorAnalysisFailed
 	message := "The vision provider could not analyze this session. Try again."
+	if retry {
+		next := time.Now().Add(aiRetryDelay(record.AnalysisAttempts))
+		nextAttemptAt = &next
+		message = "The vision provider is unavailable. Analysis will resume automatically."
+	}
 	if strings.Contains(err.Error(), AICaptureErrorLocationMissing) {
 		code = AICaptureErrorLocationMissing
 		message = "The selected location no longer exists. Choose another location and retry."
 		retry = false
+		nextAttemptAt = nil
 	}
-	return svc.repos.AICaptureSessions.SetAnalysisError(ctx, record.ID, retry, code, message)
+	return svc.repos.AICaptureSessions.SetAnalysisError(ctx, record.ID, retry, nextAttemptAt, code, message)
+}
+
+func aiRetryDelay(attempt int) time.Duration {
+	delays := [...]time.Duration{5 * time.Second, 15 * time.Second, 30 * time.Second, time.Minute, 2 * time.Minute, 5 * time.Minute}
+	if attempt <= 1 {
+		return delays[0]
+	}
+	return delays[min(attempt-1, len(delays)-1)]
 }
 
 func (svc *AICaptureSessionService) validateSessionDraft(ctx context.Context, record repo.AICaptureSessionRecord, draft AICaptureDraft) (AICaptureDraft, error) {
@@ -601,7 +678,15 @@ func (svc *AICaptureSessionService) ReanalyzeItem(
 	if itemIndex < 0 {
 		return AICaptureReanalysisOut{}, fmt.Errorf("%w: reviewed item was not found", ErrAIInvalidRequest)
 	}
-	original := current.Items[itemIndex]
+	return svc.reanalyzeItemRecord(ctx, record, current.Items[itemIndex], providerID, instruction)
+}
+
+func (svc *AICaptureSessionService) reanalyzeItemRecord(
+	ctx context.Context,
+	record repo.AICaptureSessionRecord,
+	original AICaptureItem,
+	providerID, instruction string,
+) (AICaptureReanalysisOut, error) {
 	photoIDs := make(map[string]struct{}, len(original.PhotoIDs))
 	for _, photoID := range original.PhotoIDs {
 		photoIDs[photoID] = struct{}{}
@@ -648,6 +733,211 @@ func (svc *AICaptureSessionService) ReanalyzeItem(
 	return AICaptureReanalysisOut{Item: item, Provider: providerID, Warnings: suggested.Warnings}, nil
 }
 
+func (svc *AICaptureSessionService) QueueReanalysis(
+	ctx Context,
+	id uuid.UUID,
+	expectedRevision int,
+	clientIDs []string,
+	providerID, instruction string,
+) (AICaptureSessionOut, error) {
+	record, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	if record.Status != "ready_for_review" || record.DraftRevision != expectedRevision {
+		return AICaptureSessionOut{}, repo.ErrAICaptureDraftConflict
+	}
+	providerID = strings.TrimSpace(strings.ToLower(providerID))
+	if providerID == "" {
+		providerID = AICaptureProviderDefault
+	}
+	if _, err := svc.ai.provider(providerID); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	maxItems := svc.config.MaxItems
+	if maxItems <= 0 {
+		maxItems = 25
+	}
+	if len(clientIDs) == 0 || len(clientIDs) > maxItems {
+		return AICaptureSessionOut{}, fmt.Errorf("%w: select between 1 and %d reviewed items", ErrAIInvalidRequest, maxItems)
+	}
+	if len(instruction) > 2000 {
+		return AICaptureSessionOut{}, fmt.Errorf("%w: instruction must be at most 2000 characters", ErrAIInvalidRequest)
+	}
+	var draft AICaptureDraft
+	if err := json.Unmarshal([]byte(record.DraftJSON), &draft); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	seen := make(map[string]struct{}, len(clientIDs))
+	items := make([]AICaptureItem, 0, len(clientIDs))
+	for _, requestedID := range clientIDs {
+		clientID := strings.TrimSpace(requestedID)
+		if clientID == "" {
+			return AICaptureSessionOut{}, fmt.Errorf("%w: every clientId is required", ErrAIInvalidRequest)
+		}
+		if _, exists := seen[clientID]; exists {
+			continue
+		}
+		seen[clientID] = struct{}{}
+		itemIndex := slices.IndexFunc(draft.Items, func(item AICaptureItem) bool { return item.ClientID == clientID })
+		if itemIndex < 0 {
+			return AICaptureSessionOut{}, fmt.Errorf("%w: reviewed item %s was not found", ErrAIInvalidRequest, clientID)
+		}
+		if len(draft.Items[itemIndex].PhotoIDs) == 0 {
+			return AICaptureSessionOut{}, fmt.Errorf("%w: reviewed item %s has no assigned photos", ErrAIInvalidRequest, clientID)
+		}
+		items = append(items, draft.Items[itemIndex])
+	}
+	now := time.Now()
+	state := aiCaptureReanalysisState{
+		Status: repo.AICaptureReanalysisQueued, Provider: providerID,
+		Instruction: strings.TrimSpace(instruction), Revision: expectedRevision,
+		Items: items, Suggestions: map[string]AICaptureReanalysisOut{}, Errors: map[string]string{},
+		CreatedAt: now, UpdatedAt: now,
+	}
+	if record.ReanalysisJSON != "" {
+		var previous aiCaptureReanalysisState
+		if json.Unmarshal([]byte(record.ReanalysisJSON), &previous) == nil {
+			state.Suggestions = previous.Suggestions
+			state.Errors = previous.Errors
+			if state.Suggestions == nil {
+				state.Suggestions = map[string]AICaptureReanalysisOut{}
+			}
+			if state.Errors == nil {
+				state.Errors = map[string]string{}
+			}
+		}
+	}
+	for _, item := range items {
+		delete(state.Suggestions, item.ClientID)
+		delete(state.Errors, item.ClientID)
+	}
+	encoded, err := json.Marshal(state)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	if err := svc.repos.AICaptureSessions.QueueReanalysis(ctx, ctx.GID, ctx.UID, id, expectedRevision, string(encoded)); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	return svc.Get(ctx, id)
+}
+
+func (svc *AICaptureSessionService) DismissReanalysis(
+	ctx Context,
+	id uuid.UUID,
+	clientID string,
+) (AICaptureSessionOut, error) {
+	record, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	if record.ReanalysisStatus != repo.AICaptureReanalysisCompleted || record.ReanalysisJSON == "" {
+		return AICaptureSessionOut{}, repo.ErrAICaptureInvalidState
+	}
+	var state aiCaptureReanalysisState
+	if err := json.Unmarshal([]byte(record.ReanalysisJSON), &state); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	clientID = strings.TrimSpace(clientID)
+	delete(state.Suggestions, clientID)
+	delete(state.Errors, clientID)
+	state.UpdatedAt = time.Now()
+	encoded, err := json.Marshal(state)
+	if err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	if err := svc.repos.AICaptureSessions.SaveReanalysisResults(ctx, ctx.GID, ctx.UID, id, string(encoded)); err != nil {
+		return AICaptureSessionOut{}, err
+	}
+	return svc.Get(ctx, id)
+}
+
+func (svc *AICaptureSessionService) RunNextReanalysis(ctx context.Context) error {
+	if svc.ai == nil || !svc.ai.IsEnabled() {
+		return nil
+	}
+	lease := svc.config.Timeout + time.Minute
+	if lease < 3*time.Minute {
+		lease = 3 * time.Minute
+	}
+	record, found, err := svc.repos.AICaptureSessions.ClaimQueuedReanalysis(ctx, lease)
+	if err != nil || !found {
+		return err
+	}
+	var state aiCaptureReanalysisState
+	if err := json.Unmarshal([]byte(record.ReanalysisJSON), &state); err != nil {
+		return svc.finishBrokenReanalysis(ctx, record.ID, "The saved reanalysis request could not be read.")
+	}
+	if state.Current < 0 || state.Current >= len(state.Items) {
+		return svc.finishBrokenReanalysis(ctx, record.ID, "The saved reanalysis request has no pending item.")
+	}
+	state.Status = repo.AICaptureReanalysisProcessing
+	state.Attempts++
+	state.UpdatedAt = time.Now()
+	clientID := state.Items[state.Current].ClientID
+	suggestion, analyzeErr := svc.reanalyzeItemRecord(ctx, record, state.Items[state.Current], state.Provider, state.Instruction)
+	if analyzeErr == nil {
+		if state.Suggestions == nil {
+			state.Suggestions = map[string]AICaptureReanalysisOut{}
+		}
+		if state.Errors == nil {
+			state.Errors = map[string]string{}
+		}
+		state.Suggestions[clientID] = suggestion
+		delete(state.Errors, clientID)
+		state.Current++
+		state.Attempts = 0
+		return svc.advanceReanalysis(ctx, record.ID, &state)
+	}
+	log.Error().Err(analyzeErr).Str("session_id", record.ID.String()).Str("client_id", clientID).Msg("AI capture item reanalysis failed")
+	if errors.Is(analyzeErr, ErrAIRetryable) {
+		next := time.Now().Add(aiRetryDelay(state.Attempts))
+		state.Status = repo.AICaptureReanalysisWaiting
+		state.UpdatedAt = time.Now()
+		encoded, err := json.Marshal(state)
+		if err != nil {
+			return err
+		}
+		return svc.repos.AICaptureSessions.SetReanalysisState(ctx, record.ID, state.Status, string(encoded), &next)
+	}
+	if state.Errors == nil {
+		state.Errors = map[string]string{}
+	}
+	state.Errors[clientID] = "The vision provider could not analyze this item."
+	delete(state.Suggestions, clientID)
+	state.Current++
+	state.Attempts = 0
+	return svc.advanceReanalysis(ctx, record.ID, &state)
+}
+
+func (svc *AICaptureSessionService) advanceReanalysis(ctx context.Context, id uuid.UUID, state *aiCaptureReanalysisState) error {
+	state.Status = repo.AICaptureReanalysisQueued
+	state.UpdatedAt = time.Now()
+	if state.Current >= len(state.Items) {
+		state.Status = repo.AICaptureReanalysisCompleted
+		completedAt := state.UpdatedAt
+		state.CompletedAt = &completedAt
+	}
+	encoded, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return svc.repos.AICaptureSessions.SetReanalysisState(ctx, id, state.Status, string(encoded), nil)
+}
+
+func (svc *AICaptureSessionService) finishBrokenReanalysis(ctx context.Context, id uuid.UUID, message string) error {
+	now := time.Now()
+	state := aiCaptureReanalysisState{
+		Status: repo.AICaptureReanalysisCompleted, Suggestions: map[string]AICaptureReanalysisOut{},
+		Errors: map[string]string{"_job": message}, CreatedAt: now, UpdatedAt: now, CompletedAt: &now,
+	}
+	encoded, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return svc.repos.AICaptureSessions.SetReanalysisState(ctx, id, state.Status, string(encoded), nil)
+}
+
 func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedRevision int, instruction string) (AICaptureSessionOut, error) {
 	record, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
 	if err != nil {
@@ -655,6 +945,11 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 	}
 	if record.Status != "ready_for_review" || record.DraftRevision != expectedRevision {
 		return AICaptureSessionOut{}, repo.ErrAICaptureDraftConflict
+	}
+	if record.ReanalysisStatus == repo.AICaptureReanalysisQueued ||
+		record.ReanalysisStatus == repo.AICaptureReanalysisProcessing ||
+		record.ReanalysisStatus == repo.AICaptureReanalysisWaiting {
+		return AICaptureSessionOut{}, repo.ErrAICaptureReanalysisActive
 	}
 	var current AICaptureDraft
 	if err := json.Unmarshal([]byte(record.DraftJSON), &current); err != nil {
@@ -699,7 +994,7 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 	if err != nil {
 		return AICaptureSessionOut{}, err
 	}
-	if err := svc.repos.AICaptureSessions.SaveDraft(ctx, ctx.GID, ctx.UID, id, expectedRevision, string(encoded)); err != nil {
+	if err := svc.repos.AICaptureSessions.SaveCorrection(ctx, ctx.GID, ctx.UID, id, expectedRevision, string(encoded)); err != nil {
 		return AICaptureSessionOut{}, err
 	}
 	return svc.Get(ctx, id)
@@ -798,6 +1093,11 @@ func (svc *AICaptureSessionService) Submit(ctx Context, id uuid.UUID, expectedRe
 	}
 	if session.LocationID == nil {
 		return AICaptureSessionOut{}, fmt.Errorf("%s: select a replacement location", AICaptureErrorLocationMissing)
+	}
+	if session.ReanalysisStatus == repo.AICaptureReanalysisQueued ||
+		session.ReanalysisStatus == repo.AICaptureReanalysisProcessing ||
+		session.ReanalysisStatus == repo.AICaptureReanalysisWaiting {
+		return AICaptureSessionOut{}, repo.ErrAICaptureReanalysisActive
 	}
 	if err := svc.repos.AICaptureSessions.StartSubmitting(ctx, ctx.GID, ctx.UID, id, expectedRevision); err != nil {
 		return AICaptureSessionOut{}, err

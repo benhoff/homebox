@@ -141,6 +141,8 @@ export interface EntAICapturePhotoEdges {
 export interface EntAICaptureSession {
   /** AnalysisAttempts holds the value of the "analysis_attempts" field. */
   analysis_attempts: number;
+  /** AnalysisNextAttemptAt holds the value of the "analysis_next_attempt_at" field. */
+  analysis_next_attempt_at: string;
   /** AnalyzedAt holds the value of the "analyzed_at" field. */
   analyzed_at: string;
   /** CaptureRevision holds the value of the "capture_revision" field. */
@@ -176,6 +178,14 @@ export interface EntAICaptureSession {
   location_name_snapshot: string;
   /** PhotoCount holds the value of the "photo_count" field. */
   photo_count: number;
+  /** ReanalysisJSON holds the value of the "reanalysis_json" field. */
+  reanalysis_json: string;
+  /** ReanalysisNextAttemptAt holds the value of the "reanalysis_next_attempt_at" field. */
+  reanalysis_next_attempt_at: string;
+  /** ReanalysisStatus holds the value of the "reanalysis_status" field. */
+  reanalysis_status: string;
+  /** ReanalysisWorkerLeaseUntil holds the value of the "reanalysis_worker_lease_until" field. */
+  reanalysis_worker_lease_until: string;
   /** Status holds the value of the "status" field. */
   status: AicapturesessionStatus;
   /** UpdatedAt holds the value of the "updated_at" field. */
@@ -1504,6 +1514,22 @@ export interface AICaptureProviderStatus {
   name: string;
 }
 
+export interface AICaptureReanalysisBatchOut {
+  attempts: number;
+  clientIds: string[];
+  completed: number;
+  completedAt: string;
+  createdAt: Date | string;
+  errors: Record<string, string>;
+  nextAttemptAt: string;
+  pendingClientIds: string[];
+  provider: string;
+  status: string;
+  suggestions: Record<string, AICaptureReanalysisOut>;
+  total: number;
+  updatedAt: Date | string;
+}
+
 export interface AICaptureReanalysisOut {
   item: AICaptureItem;
   provider: string;
@@ -1512,6 +1538,7 @@ export interface AICaptureReanalysisOut {
 
 export interface AICaptureSessionOut {
   analysisAttempts: number;
+  analysisNextAttemptAt: string;
   analyzedAt: string;
   captureRevision: number;
   completedAt: string;
@@ -1527,6 +1554,7 @@ export interface AICaptureSessionOut {
   location: AICaptureOption;
   photoCount: number;
   photos: AICaptureSessionPhoto[];
+  reanalysis: AICaptureReanalysisBatchOut;
   status: string;
   updatedAt: Date | string;
   uploadedPhotoCount: number;
@@ -1719,6 +1747,13 @@ export interface AiCaptureSessionPhotoUpdate {
 
 export interface AiCaptureSessionReanalysis {
   clientId: string;
+  instruction: string;
+  provider: string;
+  revision: number;
+}
+
+export interface AiCaptureSessionReanalysisBatch {
+  clientIds: string[];
   instruction: string;
   provider: string;
   revision: number;

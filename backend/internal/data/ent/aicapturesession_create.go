@@ -156,6 +156,20 @@ func (_c *AICaptureSessionCreate) SetNillableAnalysisAttempts(v *int) *AICapture
 	return _c
 }
 
+// SetAnalysisNextAttemptAt sets the "analysis_next_attempt_at" field.
+func (_c *AICaptureSessionCreate) SetAnalysisNextAttemptAt(v time.Time) *AICaptureSessionCreate {
+	_c.mutation.SetAnalysisNextAttemptAt(v)
+	return _c
+}
+
+// SetNillableAnalysisNextAttemptAt sets the "analysis_next_attempt_at" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableAnalysisNextAttemptAt(v *time.Time) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetAnalysisNextAttemptAt(*v)
+	}
+	return _c
+}
+
 // SetPhotoCount sets the "photo_count" field.
 func (_c *AICaptureSessionCreate) SetPhotoCount(v int) *AICaptureSessionCreate {
 	_c.mutation.SetPhotoCount(v)
@@ -180,6 +194,62 @@ func (_c *AICaptureSessionCreate) SetWorkerLeaseUntil(v time.Time) *AICaptureSes
 func (_c *AICaptureSessionCreate) SetNillableWorkerLeaseUntil(v *time.Time) *AICaptureSessionCreate {
 	if v != nil {
 		_c.SetWorkerLeaseUntil(*v)
+	}
+	return _c
+}
+
+// SetReanalysisJSON sets the "reanalysis_json" field.
+func (_c *AICaptureSessionCreate) SetReanalysisJSON(v string) *AICaptureSessionCreate {
+	_c.mutation.SetReanalysisJSON(v)
+	return _c
+}
+
+// SetNillableReanalysisJSON sets the "reanalysis_json" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableReanalysisJSON(v *string) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetReanalysisJSON(*v)
+	}
+	return _c
+}
+
+// SetReanalysisStatus sets the "reanalysis_status" field.
+func (_c *AICaptureSessionCreate) SetReanalysisStatus(v string) *AICaptureSessionCreate {
+	_c.mutation.SetReanalysisStatus(v)
+	return _c
+}
+
+// SetNillableReanalysisStatus sets the "reanalysis_status" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableReanalysisStatus(v *string) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetReanalysisStatus(*v)
+	}
+	return _c
+}
+
+// SetReanalysisNextAttemptAt sets the "reanalysis_next_attempt_at" field.
+func (_c *AICaptureSessionCreate) SetReanalysisNextAttemptAt(v time.Time) *AICaptureSessionCreate {
+	_c.mutation.SetReanalysisNextAttemptAt(v)
+	return _c
+}
+
+// SetNillableReanalysisNextAttemptAt sets the "reanalysis_next_attempt_at" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableReanalysisNextAttemptAt(v *time.Time) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetReanalysisNextAttemptAt(*v)
+	}
+	return _c
+}
+
+// SetReanalysisWorkerLeaseUntil sets the "reanalysis_worker_lease_until" field.
+func (_c *AICaptureSessionCreate) SetReanalysisWorkerLeaseUntil(v time.Time) *AICaptureSessionCreate {
+	_c.mutation.SetReanalysisWorkerLeaseUntil(v)
+	return _c
+}
+
+// SetNillableReanalysisWorkerLeaseUntil sets the "reanalysis_worker_lease_until" field if the given value is not nil.
+func (_c *AICaptureSessionCreate) SetNillableReanalysisWorkerLeaseUntil(v *time.Time) *AICaptureSessionCreate {
+	if v != nil {
+		_c.SetReanalysisWorkerLeaseUntil(*v)
 	}
 	return _c
 }
@@ -442,6 +512,11 @@ func (_c *AICaptureSessionCreate) check() error {
 	if _, ok := _c.mutation.PhotoCount(); !ok {
 		return &ValidationError{Name: "photo_count", err: errors.New(`ent: missing required field "AICaptureSession.photo_count"`)}
 	}
+	if v, ok := _c.mutation.ReanalysisStatus(); ok {
+		if err := aicapturesession.ReanalysisStatusValidator(v); err != nil {
+			return &ValidationError{Name: "reanalysis_status", err: fmt.Errorf(`ent: validator failed for field "AICaptureSession.reanalysis_status": %w`, err)}
+		}
+	}
 	if v, ok := _c.mutation.ErrorCode(); ok {
 		if err := aicapturesession.ErrorCodeValidator(v); err != nil {
 			return &ValidationError{Name: "error_code", err: fmt.Errorf(`ent: validator failed for field "AICaptureSession.error_code": %w`, err)}
@@ -528,6 +603,10 @@ func (_c *AICaptureSessionCreate) createSpec() (*AICaptureSession, *sqlgraph.Cre
 		_spec.SetField(aicapturesession.FieldAnalysisAttempts, field.TypeInt, value)
 		_node.AnalysisAttempts = value
 	}
+	if value, ok := _c.mutation.AnalysisNextAttemptAt(); ok {
+		_spec.SetField(aicapturesession.FieldAnalysisNextAttemptAt, field.TypeTime, value)
+		_node.AnalysisNextAttemptAt = &value
+	}
 	if value, ok := _c.mutation.PhotoCount(); ok {
 		_spec.SetField(aicapturesession.FieldPhotoCount, field.TypeInt, value)
 		_node.PhotoCount = value
@@ -535,6 +614,22 @@ func (_c *AICaptureSessionCreate) createSpec() (*AICaptureSession, *sqlgraph.Cre
 	if value, ok := _c.mutation.WorkerLeaseUntil(); ok {
 		_spec.SetField(aicapturesession.FieldWorkerLeaseUntil, field.TypeTime, value)
 		_node.WorkerLeaseUntil = &value
+	}
+	if value, ok := _c.mutation.ReanalysisJSON(); ok {
+		_spec.SetField(aicapturesession.FieldReanalysisJSON, field.TypeString, value)
+		_node.ReanalysisJSON = value
+	}
+	if value, ok := _c.mutation.ReanalysisStatus(); ok {
+		_spec.SetField(aicapturesession.FieldReanalysisStatus, field.TypeString, value)
+		_node.ReanalysisStatus = value
+	}
+	if value, ok := _c.mutation.ReanalysisNextAttemptAt(); ok {
+		_spec.SetField(aicapturesession.FieldReanalysisNextAttemptAt, field.TypeTime, value)
+		_node.ReanalysisNextAttemptAt = &value
+	}
+	if value, ok := _c.mutation.ReanalysisWorkerLeaseUntil(); ok {
+		_spec.SetField(aicapturesession.FieldReanalysisWorkerLeaseUntil, field.TypeTime, value)
+		_node.ReanalysisWorkerLeaseUntil = &value
 	}
 	if value, ok := _c.mutation.ErrorCode(); ok {
 		_spec.SetField(aicapturesession.FieldErrorCode, field.TypeString, value)

@@ -38,10 +38,20 @@ const (
 	FieldCaptureRevision = "capture_revision"
 	// FieldAnalysisAttempts holds the string denoting the analysis_attempts field in the database.
 	FieldAnalysisAttempts = "analysis_attempts"
+	// FieldAnalysisNextAttemptAt holds the string denoting the analysis_next_attempt_at field in the database.
+	FieldAnalysisNextAttemptAt = "analysis_next_attempt_at"
 	// FieldPhotoCount holds the string denoting the photo_count field in the database.
 	FieldPhotoCount = "photo_count"
 	// FieldWorkerLeaseUntil holds the string denoting the worker_lease_until field in the database.
 	FieldWorkerLeaseUntil = "worker_lease_until"
+	// FieldReanalysisJSON holds the string denoting the reanalysis_json field in the database.
+	FieldReanalysisJSON = "reanalysis_json"
+	// FieldReanalysisStatus holds the string denoting the reanalysis_status field in the database.
+	FieldReanalysisStatus = "reanalysis_status"
+	// FieldReanalysisNextAttemptAt holds the string denoting the reanalysis_next_attempt_at field in the database.
+	FieldReanalysisNextAttemptAt = "reanalysis_next_attempt_at"
+	// FieldReanalysisWorkerLeaseUntil holds the string denoting the reanalysis_worker_lease_until field in the database.
+	FieldReanalysisWorkerLeaseUntil = "reanalysis_worker_lease_until"
 	// FieldErrorCode holds the string denoting the error_code field in the database.
 	FieldErrorCode = "error_code"
 	// FieldErrorMessage holds the string denoting the error_message field in the database.
@@ -117,8 +127,13 @@ var Columns = []string{
 	FieldDraftRevision,
 	FieldCaptureRevision,
 	FieldAnalysisAttempts,
+	FieldAnalysisNextAttemptAt,
 	FieldPhotoCount,
 	FieldWorkerLeaseUntil,
+	FieldReanalysisJSON,
+	FieldReanalysisStatus,
+	FieldReanalysisNextAttemptAt,
+	FieldReanalysisWorkerLeaseUntil,
 	FieldErrorCode,
 	FieldErrorMessage,
 	FieldFinishedAt,
@@ -154,6 +169,8 @@ var (
 	DefaultAnalysisAttempts int
 	// DefaultPhotoCount holds the default value on creation for the "photo_count" field.
 	DefaultPhotoCount int
+	// ReanalysisStatusValidator is a validator for the "reanalysis_status" field. It is called by the builders before save.
+	ReanalysisStatusValidator func(string) error
 	// ErrorCodeValidator is a validator for the "error_code" field. It is called by the builders before save.
 	ErrorCodeValidator func(string) error
 	// ErrorMessageValidator is a validator for the "error_message" field. It is called by the builders before save.
@@ -258,6 +275,11 @@ func ByAnalysisAttempts(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldAnalysisAttempts, opts...).ToFunc()
 }
 
+// ByAnalysisNextAttemptAt orders the results by the analysis_next_attempt_at field.
+func ByAnalysisNextAttemptAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAnalysisNextAttemptAt, opts...).ToFunc()
+}
+
 // ByPhotoCount orders the results by the photo_count field.
 func ByPhotoCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPhotoCount, opts...).ToFunc()
@@ -266,6 +288,26 @@ func ByPhotoCount(opts ...sql.OrderTermOption) OrderOption {
 // ByWorkerLeaseUntil orders the results by the worker_lease_until field.
 func ByWorkerLeaseUntil(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldWorkerLeaseUntil, opts...).ToFunc()
+}
+
+// ByReanalysisJSON orders the results by the reanalysis_json field.
+func ByReanalysisJSON(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReanalysisJSON, opts...).ToFunc()
+}
+
+// ByReanalysisStatus orders the results by the reanalysis_status field.
+func ByReanalysisStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReanalysisStatus, opts...).ToFunc()
+}
+
+// ByReanalysisNextAttemptAt orders the results by the reanalysis_next_attempt_at field.
+func ByReanalysisNextAttemptAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReanalysisNextAttemptAt, opts...).ToFunc()
+}
+
+// ByReanalysisWorkerLeaseUntil orders the results by the reanalysis_worker_lease_until field.
+func ByReanalysisWorkerLeaseUntil(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldReanalysisWorkerLeaseUntil, opts...).ToFunc()
 }
 
 // ByErrorCode orders the results by the error_code field.

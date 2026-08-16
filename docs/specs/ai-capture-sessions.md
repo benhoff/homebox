@@ -215,6 +215,7 @@ stateDiagram-v2
     capturing --> queued: finish after all uploads
     capturing --> deleted: user deletes
     queued --> analyzing: worker claims session
+    analyzing --> queued: transient provider backoff
     analyzing --> ready_for_review: draft persisted
     analyzing --> analysis_failed: provider or validation error
     analysis_failed --> queued: retry
@@ -285,7 +286,7 @@ stateDiagram-v2
 - **CAP-030:** Finishing queues analysis and responds without waiting for the AI provider.
 - **CAP-031:** Analysis runs from server-stored photos and uses the existing `AICaptureService` prompt and sanitization.
 - **CAP-032:** Only one worker may analyze a session at a time.
-- **CAP-033:** Transient upstream failures retry up to three times with backoff; invalid requests fail without automatic retry.
+- **CAP-033:** Transient upstream failures remain durably queued and retry with bounded exponential backoff until the provider recovers. Retry activity extends temporary-data retention so an offline provider cannot expire pending work. Invalid requests and permanent provider errors fail without automatic retry.
 - **CAP-034:** A successful result and warnings are persisted as the session draft before the state becomes `ready_for_review`.
 - **CAP-035:** Draft photo references use stable server photo IDs. Indexes may be derived only at the provider boundary.
 - **CAP-036:** The server must never send photos from one session, collection, or user in another session's analysis.
@@ -300,8 +301,9 @@ stateDiagram-v2
 - **CAP-042:** AI corrections operate on server-stored photos and the latest persisted draft.
 - **CAP-042A:** Initial analysis and ordinary corrections use the configured primary provider. A secondary provider is used only when the reviewer explicitly selects it.
 - **CAP-042B:** Item reanalysis sends every photo currently assigned to that reviewed item in one provider request and enforces exactly one returned item. Multiple views never imply quantity.
-- **CAP-042C:** Bulk reanalysis processes selected items independently and serially, preserving successful suggestions when another item fails.
-- **CAP-042D:** Reanalysis returns a preview and does not mutate the persisted draft until the reviewer applies suggested fields.
+- **CAP-042C:** Bulk reanalysis is a durable server-side batch that processes selected items independently and serially, preserving progress and successful suggestions across navigation, browser closure, and server restart.
+- **CAP-042D:** Reanalysis suggestions are persisted previews and do not mutate the draft until the reviewer applies suggested fields.
+- **CAP-042E:** A transient provider outage places the current reanalysis item into bounded exponential backoff without losing the rest of the batch. Processing resumes automatically when the provider recovers; permanent item errors are recorded and the batch continues.
 - **CAP-043:** Submission revalidates location, item type IDs, tag IDs, quantities, names, and photo ownership.
 - **CAP-044:** Submission creates each inventory item at most once for a given session draft `clientId`.
 - **CAP-045:** Session photos are copied into normal item attachments on the server, including normal thumbnail generation and primary-photo selection.
@@ -330,6 +332,8 @@ All routes use the existing authenticated active-collection middleware. Resource
 | `PUT` | `/v1/ai/capture/sessions/{sessionId}/draft` | Persist an edited draft using `revision` |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/corrections` | Ask AI to revise the latest draft |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/reanalyze-item` | Preview one reviewed item's metadata from the selected provider |
+| `POST` | `/v1/ai/capture/sessions/{sessionId}/reanalyze-items` | Queue durable reanalysis for one or more reviewed items |
+| `DELETE` | `/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}` | Dismiss a persisted item suggestion or error |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/submit` | Idempotently create inventory items and attachments |
 
 The existing `POST /v1/ai/capture/analyze` route remains available during rollout. The session UI must use only session routes. The direct route can be deprecated after session stability is proven.
@@ -397,13 +401,18 @@ Errors expose stable machine-readable codes such as `SESSION_FULL`, `PHOTO_COUNT
 | `photo_count` | Expected sealed photo count |
 | `capture_revision` | Incremented whenever a photo is added, deleted, or reassigned to a group |
 | `analysis_attempts` | Worker retry count |
+| `analysis_next_attempt_at` | Earliest claim time after a transient provider failure |
 | `worker_lease_until` | Crash recovery for claimed work |
+| `reanalysis_json` | Durable batch request, item cursor, suggestions, and item errors |
+| `reanalysis_status` | `queued`, `processing`, `waiting`, or `completed` |
+| `reanalysis_next_attempt_at` | Earliest retry time for the current batch item |
+| `reanalysis_worker_lease_until` | Crash recovery for claimed reanalysis work |
 | `error_code` / `error_message` | User-safe last failure, nullable |
 | `created_at` / `updated_at` | Standard timestamps |
 | `finished_at` / `analyzed_at` / `completed_at` | Lifecycle timestamps, nullable |
 | `expires_at` | Temporary-data retention deadline |
 
-Indexes cover `(user_id, updated_at)`, `(group_id, user_id, status)`, and `(status, worker_lease_until)`.
+Indexes cover ownership and state lookup, including next-attempt scheduling for initial analysis and reanalysis.
 
 ### `ai_capture_photos`
 

@@ -43,10 +43,20 @@ type AICaptureSession struct {
 	CaptureRevision int `json:"capture_revision,omitempty"`
 	// AnalysisAttempts holds the value of the "analysis_attempts" field.
 	AnalysisAttempts int `json:"analysis_attempts,omitempty"`
+	// AnalysisNextAttemptAt holds the value of the "analysis_next_attempt_at" field.
+	AnalysisNextAttemptAt *time.Time `json:"analysis_next_attempt_at,omitempty"`
 	// PhotoCount holds the value of the "photo_count" field.
 	PhotoCount int `json:"photo_count,omitempty"`
 	// WorkerLeaseUntil holds the value of the "worker_lease_until" field.
 	WorkerLeaseUntil *time.Time `json:"worker_lease_until,omitempty"`
+	// ReanalysisJSON holds the value of the "reanalysis_json" field.
+	ReanalysisJSON string `json:"reanalysis_json,omitempty"`
+	// ReanalysisStatus holds the value of the "reanalysis_status" field.
+	ReanalysisStatus string `json:"reanalysis_status,omitempty"`
+	// ReanalysisNextAttemptAt holds the value of the "reanalysis_next_attempt_at" field.
+	ReanalysisNextAttemptAt *time.Time `json:"reanalysis_next_attempt_at,omitempty"`
+	// ReanalysisWorkerLeaseUntil holds the value of the "reanalysis_worker_lease_until" field.
+	ReanalysisWorkerLeaseUntil *time.Time `json:"reanalysis_worker_lease_until,omitempty"`
 	// ErrorCode holds the value of the "error_code" field.
 	ErrorCode string `json:"error_code,omitempty"`
 	// ErrorMessage holds the value of the "error_message" field.
@@ -142,9 +152,9 @@ func (*AICaptureSession) scanValues(columns []string) ([]any, error) {
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case aicapturesession.FieldDraftRevision, aicapturesession.FieldCaptureRevision, aicapturesession.FieldAnalysisAttempts, aicapturesession.FieldPhotoCount:
 			values[i] = new(sql.NullInt64)
-		case aicapturesession.FieldLocationNameSnapshot, aicapturesession.FieldStatus, aicapturesession.FieldDraftJSON, aicapturesession.FieldErrorCode, aicapturesession.FieldErrorMessage:
+		case aicapturesession.FieldLocationNameSnapshot, aicapturesession.FieldStatus, aicapturesession.FieldDraftJSON, aicapturesession.FieldReanalysisJSON, aicapturesession.FieldReanalysisStatus, aicapturesession.FieldErrorCode, aicapturesession.FieldErrorMessage:
 			values[i] = new(sql.NullString)
-		case aicapturesession.FieldCreatedAt, aicapturesession.FieldUpdatedAt, aicapturesession.FieldWorkerLeaseUntil, aicapturesession.FieldFinishedAt, aicapturesession.FieldAnalyzedAt, aicapturesession.FieldCompletedAt, aicapturesession.FieldExpiresAt:
+		case aicapturesession.FieldCreatedAt, aicapturesession.FieldUpdatedAt, aicapturesession.FieldAnalysisNextAttemptAt, aicapturesession.FieldWorkerLeaseUntil, aicapturesession.FieldReanalysisNextAttemptAt, aicapturesession.FieldReanalysisWorkerLeaseUntil, aicapturesession.FieldFinishedAt, aicapturesession.FieldAnalyzedAt, aicapturesession.FieldCompletedAt, aicapturesession.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
 		case aicapturesession.FieldID, aicapturesession.FieldGroupID, aicapturesession.FieldUserID:
 			values[i] = new(uuid.UUID)
@@ -236,6 +246,13 @@ func (_m *AICaptureSession) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.AnalysisAttempts = int(value.Int64)
 			}
+		case aicapturesession.FieldAnalysisNextAttemptAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field analysis_next_attempt_at", values[i])
+			} else if value.Valid {
+				_m.AnalysisNextAttemptAt = new(time.Time)
+				*_m.AnalysisNextAttemptAt = value.Time
+			}
 		case aicapturesession.FieldPhotoCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field photo_count", values[i])
@@ -248,6 +265,32 @@ func (_m *AICaptureSession) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.WorkerLeaseUntil = new(time.Time)
 				*_m.WorkerLeaseUntil = value.Time
+			}
+		case aicapturesession.FieldReanalysisJSON:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reanalysis_json", values[i])
+			} else if value.Valid {
+				_m.ReanalysisJSON = value.String
+			}
+		case aicapturesession.FieldReanalysisStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field reanalysis_status", values[i])
+			} else if value.Valid {
+				_m.ReanalysisStatus = value.String
+			}
+		case aicapturesession.FieldReanalysisNextAttemptAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field reanalysis_next_attempt_at", values[i])
+			} else if value.Valid {
+				_m.ReanalysisNextAttemptAt = new(time.Time)
+				*_m.ReanalysisNextAttemptAt = value.Time
+			}
+		case aicapturesession.FieldReanalysisWorkerLeaseUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field reanalysis_worker_lease_until", values[i])
+			} else if value.Valid {
+				_m.ReanalysisWorkerLeaseUntil = new(time.Time)
+				*_m.ReanalysisWorkerLeaseUntil = value.Time
 			}
 		case aicapturesession.FieldErrorCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -384,11 +427,32 @@ func (_m *AICaptureSession) String() string {
 	builder.WriteString("analysis_attempts=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AnalysisAttempts))
 	builder.WriteString(", ")
+	if v := _m.AnalysisNextAttemptAt; v != nil {
+		builder.WriteString("analysis_next_attempt_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("photo_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PhotoCount))
 	builder.WriteString(", ")
 	if v := _m.WorkerLeaseUntil; v != nil {
 		builder.WriteString("worker_lease_until=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("reanalysis_json=")
+	builder.WriteString(_m.ReanalysisJSON)
+	builder.WriteString(", ")
+	builder.WriteString("reanalysis_status=")
+	builder.WriteString(_m.ReanalysisStatus)
+	builder.WriteString(", ")
+	if v := _m.ReanalysisNextAttemptAt; v != nil {
+		builder.WriteString("reanalysis_next_attempt_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.ReanalysisWorkerLeaseUntil; v != nil {
+		builder.WriteString("reanalysis_worker_lease_until=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

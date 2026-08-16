@@ -61,8 +61,13 @@ var (
 		{Name: "draft_revision", Type: field.TypeInt, Default: 0},
 		{Name: "capture_revision", Type: field.TypeInt, Default: 0},
 		{Name: "analysis_attempts", Type: field.TypeInt, Default: 0},
+		{Name: "analysis_next_attempt_at", Type: field.TypeTime, Nullable: true},
 		{Name: "photo_count", Type: field.TypeInt, Default: 0},
 		{Name: "worker_lease_until", Type: field.TypeTime, Nullable: true},
+		{Name: "reanalysis_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "reanalysis_status", Type: field.TypeString, Nullable: true, Size: 32},
+		{Name: "reanalysis_next_attempt_at", Type: field.TypeTime, Nullable: true},
+		{Name: "reanalysis_worker_lease_until", Type: field.TypeTime, Nullable: true},
 		{Name: "error_code", Type: field.TypeString, Nullable: true, Size: 64},
 		{Name: "error_message", Type: field.TypeString, Nullable: true, Size: 1000},
 		{Name: "finished_at", Type: field.TypeTime, Nullable: true},
@@ -81,19 +86,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "ai_capture_sessions_entities_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[17]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[22]},
 				RefColumns: []*schema.Column{EntitiesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "ai_capture_sessions_groups_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[18]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[23]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "ai_capture_sessions_users_ai_capture_sessions",
-				Columns:    []*schema.Column{AiCaptureSessionsColumns[19]},
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[24]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -102,17 +107,27 @@ var (
 			{
 				Name:    "aicapturesession_user_id_updated_at",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[19], AiCaptureSessionsColumns[2]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[24], AiCaptureSessionsColumns[2]},
 			},
 			{
 				Name:    "aicapturesession_group_id_user_id_status",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[19], AiCaptureSessionsColumns[4]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[23], AiCaptureSessionsColumns[24], AiCaptureSessionsColumns[4]},
 			},
 			{
 				Name:    "aicapturesession_status_worker_lease_until",
 				Unique:  false,
-				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[10]},
+				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[11]},
+			},
+			{
+				Name:    "aicapturesession_status_analysis_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[9]},
+			},
+			{
+				Name:    "aicapturesession_reanalysis_status_reanalysis_next_attempt_at",
+				Unique:  false,
+				Columns: []*schema.Column{AiCaptureSessionsColumns[13], AiCaptureSessionsColumns[14]},
 			},
 		},
 	}

@@ -22,6 +22,7 @@ var (
 	ErrAIDisabled       = errors.New("AI capture is disabled")
 	ErrAIInvalidRequest = errors.New("invalid AI capture request")
 	ErrAIUpstream       = errors.New("AI provider request failed")
+	ErrAIRetryable      = errors.New("AI provider is temporarily unavailable")
 	ErrAIProvider       = errors.New("AI provider is unavailable")
 	ErrAIGroupContract  = errors.New("AI provider violated the same-item group contract")
 	ErrAIItemContract   = errors.New("AI provider violated the reviewed-item contract")
@@ -273,14 +274,18 @@ func (svc *AICaptureService) AnalyzeWithProvider(ctx context.Context, providerID
 
 	resp, err := svc.client.Do(req)
 	if err != nil {
-		return AICaptureDraft{}, fmt.Errorf("%w: %v", ErrAIUpstream, err)
+		return AICaptureDraft{}, fmt.Errorf("%w: %w: %v", ErrAIUpstream, ErrAIRetryable, err)
 	}
 	defer resp.Body.Close()
 	responseBody, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
 	if err != nil {
-		return AICaptureDraft{}, fmt.Errorf("%w: read response: %v", ErrAIUpstream, err)
+		return AICaptureDraft{}, fmt.Errorf("%w: %w: read response: %v", ErrAIUpstream, ErrAIRetryable, err)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		if resp.StatusCode == http.StatusRequestTimeout || resp.StatusCode == http.StatusTooEarly ||
+			resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
+			return AICaptureDraft{}, fmt.Errorf("%w: %w: provider returned %d: %s", ErrAIUpstream, ErrAIRetryable, resp.StatusCode, truncate(string(responseBody), 512))
+		}
 		return AICaptureDraft{}, fmt.Errorf("%w: provider returned %d: %s", ErrAIUpstream, resp.StatusCode, truncate(string(responseBody), 512))
 	}
 

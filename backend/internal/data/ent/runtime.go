@@ -103,19 +103,23 @@ func init() {
 	// aicapturesession.DefaultAnalysisAttempts holds the default value on creation for the analysis_attempts field.
 	aicapturesession.DefaultAnalysisAttempts = aicapturesessionDescAnalysisAttempts.Default.(int)
 	// aicapturesessionDescPhotoCount is the schema descriptor for photo_count field.
-	aicapturesessionDescPhotoCount := aicapturesessionFields[7].Descriptor()
+	aicapturesessionDescPhotoCount := aicapturesessionFields[8].Descriptor()
 	// aicapturesession.DefaultPhotoCount holds the default value on creation for the photo_count field.
 	aicapturesession.DefaultPhotoCount = aicapturesessionDescPhotoCount.Default.(int)
+	// aicapturesessionDescReanalysisStatus is the schema descriptor for reanalysis_status field.
+	aicapturesessionDescReanalysisStatus := aicapturesessionFields[11].Descriptor()
+	// aicapturesession.ReanalysisStatusValidator is a validator for the "reanalysis_status" field. It is called by the builders before save.
+	aicapturesession.ReanalysisStatusValidator = aicapturesessionDescReanalysisStatus.Validators[0].(func(string) error)
 	// aicapturesessionDescErrorCode is the schema descriptor for error_code field.
-	aicapturesessionDescErrorCode := aicapturesessionFields[9].Descriptor()
+	aicapturesessionDescErrorCode := aicapturesessionFields[14].Descriptor()
 	// aicapturesession.ErrorCodeValidator is a validator for the "error_code" field. It is called by the builders before save.
 	aicapturesession.ErrorCodeValidator = aicapturesessionDescErrorCode.Validators[0].(func(string) error)
 	// aicapturesessionDescErrorMessage is the schema descriptor for error_message field.
-	aicapturesessionDescErrorMessage := aicapturesessionFields[10].Descriptor()
+	aicapturesessionDescErrorMessage := aicapturesessionFields[15].Descriptor()
 	// aicapturesession.ErrorMessageValidator is a validator for the "error_message" field. It is called by the builders before save.
 	aicapturesession.ErrorMessageValidator = aicapturesessionDescErrorMessage.Validators[0].(func(string) error)
 	// aicapturesessionDescExpiresAt is the schema descriptor for expires_at field.
-	aicapturesessionDescExpiresAt := aicapturesessionFields[14].Descriptor()
+	aicapturesessionDescExpiresAt := aicapturesessionFields[19].Descriptor()
 	// aicapturesession.DefaultExpiresAt holds the default value on creation for the expires_at field.
 	aicapturesession.DefaultExpiresAt = aicapturesessionDescExpiresAt.Default.(func() time.Time)
 	// aicapturesessionDescID is the schema descriptor for id field.

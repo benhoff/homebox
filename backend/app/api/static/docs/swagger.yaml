@@ -136,6 +136,10 @@ definitions:
       analysis_attempts:
         description: AnalysisAttempts holds the value of the "analysis_attempts" field.
         type: integer
+      analysis_next_attempt_at:
+        description: AnalysisNextAttemptAt holds the value of the "analysis_next_attempt_at"
+          field.
+        type: string
       analyzed_at:
         description: AnalyzedAt holds the value of the "analyzed_at" field.
         type: string
@@ -188,6 +192,20 @@ definitions:
       photo_count:
         description: PhotoCount holds the value of the "photo_count" field.
         type: integer
+      reanalysis_json:
+        description: ReanalysisJSON holds the value of the "reanalysis_json" field.
+        type: string
+      reanalysis_next_attempt_at:
+        description: ReanalysisNextAttemptAt holds the value of the "reanalysis_next_attempt_at"
+          field.
+        type: string
+      reanalysis_status:
+        description: ReanalysisStatus holds the value of the "reanalysis_status" field.
+        type: string
+      reanalysis_worker_lease_until:
+        description: ReanalysisWorkerLeaseUntil holds the value of the "reanalysis_worker_lease_until"
+          field.
+        type: string
       status:
         allOf:
         - $ref: '#/definitions/aicapturesession.Status'
@@ -2443,6 +2461,43 @@ definitions:
       name:
         type: string
     type: object
+  services.AICaptureReanalysisBatchOut:
+    properties:
+      attempts:
+        type: integer
+      clientIds:
+        items:
+          type: string
+        type: array
+      completed:
+        type: integer
+      completedAt:
+        type: string
+      createdAt:
+        type: string
+      errors:
+        additionalProperties:
+          type: string
+        type: object
+      nextAttemptAt:
+        type: string
+      pendingClientIds:
+        items:
+          type: string
+        type: array
+      provider:
+        type: string
+      status:
+        type: string
+      suggestions:
+        additionalProperties:
+          $ref: '#/definitions/services.AICaptureReanalysisOut'
+        type: object
+      total:
+        type: integer
+      updatedAt:
+        type: string
+    type: object
   services.AICaptureReanalysisOut:
     properties:
       item:
@@ -2458,6 +2513,8 @@ definitions:
     properties:
       analysisAttempts:
         type: integer
+      analysisNextAttemptAt:
+        type: string
       analyzedAt:
         type: string
       captureRevision:
@@ -2492,6 +2549,8 @@ definitions:
         items:
           $ref: '#/definitions/services.AICaptureSessionPhoto'
         type: array
+      reanalysis:
+        $ref: '#/definitions/services.AICaptureReanalysisBatchOut'
       status:
         type: string
       updatedAt:
@@ -2808,6 +2867,19 @@ definitions:
     properties:
       clientId:
         type: string
+      instruction:
+        type: string
+      provider:
+        type: string
+      revision:
+        type: integer
+    type: object
+  v1.aiCaptureSessionReanalysisBatch:
+    properties:
+      clientIds:
+        items:
+          type: string
+        type: array
       instruction:
         type: string
       provider:
@@ -3288,6 +3360,31 @@ paths:
       summary: Reassign or clear a photo's same-item group
       tags:
       - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}:
+    delete:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Draft client ID
+        in: path
+        name: clientId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Dismiss a durable capture-item reanalysis result
+      tags:
+      - AI Capture Sessions
   /v1/ai/capture/sessions/{sessionId}/reanalyze-item:
     post:
       consumes:
@@ -3314,6 +3411,34 @@ paths:
       security:
       - Bearer: []
       summary: Preview provider reanalysis for one reviewed capture item
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/reanalyze-items:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Reviewed items and provider
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionReanalysisBatch'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Queue durable provider reanalysis for reviewed capture items
       tags:
       - AI Capture Sessions
   /v1/ai/capture/sessions/{sessionId}/retry-analysis:

@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
 )
 
 func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
@@ -70,6 +72,48 @@ func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "queued", queued.Status)
 	assert.Equal(t, 1, queued.PhotoCount)
+
+	claimed, found, err := tRepos.AICaptureSessions.ClaimQueued(ctx, 3*time.Minute)
+	require.NoError(t, err)
+	require.True(t, found)
+	nextAttempt := time.Now().Add(time.Hour)
+	require.NoError(t, tRepos.AICaptureSessions.SetAnalysisError(
+		ctx, claimed.ID, true, &nextAttempt, "ANALYSIS_UPSTREAM_FAILED", "waiting",
+	))
+	waiting, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "queued", waiting.Status)
+	require.NotNil(t, waiting.AnalysisNextAttemptAt)
+	_, found, err = tRepos.AICaptureSessions.ClaimQueued(ctx, 3*time.Minute)
+	require.NoError(t, err)
+	assert.False(t, found, "a future retry must not be claimed early")
+
+	_, err = tRepos.AICaptureSessions.db.AICaptureSession.UpdateOneID(session.ID).
+		SetAnalysisNextAttemptAt(time.Now().Add(-time.Second)).Save(ctx)
+	require.NoError(t, err)
+	claimed, found, err = tRepos.AICaptureSessions.ClaimQueued(ctx, 3*time.Minute)
+	require.NoError(t, err)
+	require.True(t, found)
+	require.NoError(t, tRepos.AICaptureSessions.SetAnalysisReady(ctx, claimed.ID, `{"items":[],"warnings":[]}`))
+
+	require.NoError(t, tRepos.AICaptureSessions.QueueReanalysis(
+		ctx, tGroup.ID, tUser.ID, session.ID, 1, `{"status":"queued","items":[{"clientId":"item-1"}]}`,
+	))
+	reanalysis, found, err := tRepos.AICaptureSessions.ClaimQueuedReanalysis(ctx, 3*time.Minute)
+	require.NoError(t, err)
+	require.True(t, found)
+	assert.Equal(t, AICaptureReanalysisProcessing, reanalysis.ReanalysisStatus)
+	reanalysisNext := time.Now().Add(time.Hour)
+	require.NoError(t, tRepos.AICaptureSessions.SetReanalysisState(
+		ctx, session.ID, AICaptureReanalysisWaiting, reanalysis.ReanalysisJSON, &reanalysisNext,
+	))
+	_, found, err = tRepos.AICaptureSessions.ClaimQueuedReanalysis(ctx, 3*time.Minute)
+	require.NoError(t, err)
+	assert.False(t, found, "a reanalysis retry must wait until its scheduled time")
+
+	ready, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusReadyForReview.String(), ready.Status)
 
 	_, _, err = tRepos.AICaptureSessions.CreatePhoto(
 		ctx, tGroup.ID, tUser.ID, session.ID, uuid.New(), uuid.New(), 1, 8,

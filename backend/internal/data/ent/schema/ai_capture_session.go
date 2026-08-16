@@ -36,8 +36,13 @@ func (AICaptureSession) Fields() []ent.Field {
 		field.Int("draft_revision").Default(0),
 		field.Int("capture_revision").Default(0),
 		field.Int("analysis_attempts").Default(0),
+		field.Time("analysis_next_attempt_at").Optional().Nillable(),
 		field.Int("photo_count").Default(0),
 		field.Time("worker_lease_until").Optional().Nillable(),
+		field.Text("reanalysis_json").Optional(),
+		field.String("reanalysis_status").MaxLen(32).Optional(),
+		field.Time("reanalysis_next_attempt_at").Optional().Nillable(),
+		field.Time("reanalysis_worker_lease_until").Optional().Nillable(),
 		field.String("error_code").MaxLen(64).Optional(),
 		field.String("error_message").MaxLen(1000).Optional(),
 		field.Time("finished_at").Optional().Nillable(),
@@ -68,5 +73,7 @@ func (AICaptureSession) Indexes() []ent.Index {
 		index.Fields("user_id", "updated_at"),
 		index.Fields("group_id", "user_id", "status"),
 		index.Fields("status", "worker_lease_until"),
+		index.Fields("status", "analysis_next_attempt_at"),
+		index.Fields("reanalysis_status", "reanalysis_next_attempt_at"),
 	}
 }
