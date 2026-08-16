@@ -253,6 +253,7 @@ func TestAICaptureAnalyzeDoesNotRetryPermanentProviderFailures(t *testing.T) {
 func TestAICapturePromptLimitsAIToVisualMetadata(t *testing.T) {
 	assert.Contains(t, aiCaptureSystemPrompt, "Only identify the item name")
 	assert.Contains(t, aiCaptureSystemPrompt, "Never infer or return serial numbers")
+	assert.Contains(t, aiCaptureSystemPrompt, "Every attached photo must be accounted for")
 	assert.Contains(t, aiCaptureSystemPrompt, "move disposition")
 	assert.NotContains(t, aiCaptureSystemPrompt, `"warrantyExpires"`)
 	assert.NotContains(t, aiCaptureSystemPrompt, `"purchasePrice"`)

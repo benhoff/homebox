@@ -302,6 +302,7 @@ stateDiagram-v2
 - **CAP-030:** Finishing queues analysis and responds without waiting for the AI provider.
 - **CAP-031:** Analysis runs from server-stored photos and uses the existing `AICaptureService` prompt and sanitization.
 - **CAP-031A:** Ungrouped session photos are divided into provider requests of at most `HBOX_AI_MAX_PHOTOS`; an explicit same-item group is capped at that size so all its views remain in one request. Combined results retain stable photo IDs and capture order.
+- **CAP-031B:** Every stored photo must appear in at least one review item. If a provider omits an ungrouped photo, the server retries that photo as a single-item request; a permanent retry failure produces a clearly marked, individually reanalyzable placeholder instead of hiding the photo. Transient failures keep the complete session queued until the provider recovers.
 - **CAP-032:** Only one worker may analyze a session at a time.
 - **CAP-033:** Transient upstream failures remain durably queued and retry with bounded exponential backoff until the provider recovers. Retry activity extends temporary-data retention so an offline provider cannot expire pending work. Invalid requests and permanent provider errors fail without automatic retry.
 - **CAP-034:** A successful result and warnings are persisted as the session draft before the state becomes `ready_for_review`.
@@ -620,6 +621,7 @@ Logs must include `session_id`, `user_id`, `group_id`, state transition, attempt
 20. A conflicting but structurally valid grouped result appears as one `needsReview` item with a clear warning.
 21. During capture, a user can reassign or ungroup a photo without re-uploading it. During review, a user can split, merge, and reassign suggestions before submission.
 22. Enabling same-item mode works with the existing configured OpenAI-compatible model and API defaults; it requires no model retraining or configuration change.
+23. If multi-photo analysis omits a photo, that photo is retried independently and still appears as a review item even when the independent retry cannot identify it.
 
 ## Test plan
 
@@ -630,7 +632,7 @@ Logs must include `session_id`, `user_id`, `group_id`, state transition, attempt
 - Upload tests for content detection, size limits, duplicate `clientPhotoId`, group-ID persistence, ordering, and blob cleanup
 - Capture-revision tests for add, delete, and regroup operations, including a stale finish request
 - Worker tests for success, transient retry, permanent failure, expired lease recovery, location deletion, grouped calls, and mixed grouped/ungrouped sessions
-- AI contract tests for unknown group IDs, missing photo IDs, duplicate results for one group, conflicting-view warnings, and a failed group call that must fail the complete session
+- AI contract tests for unknown group IDs, missing photo IDs, per-photo omission recovery and fallback, duplicate results for one group, conflicting-view warnings, and a failed group call that must fail the complete session
 - Submission tests for partial attachment failure, process restart, duplicate request, and multi-item photo copying
 - Concurrency tests for double finish, regroup-versus-finish, double worker claim, stale draft revision, and double submit
 

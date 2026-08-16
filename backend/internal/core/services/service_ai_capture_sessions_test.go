@@ -213,6 +213,105 @@ func TestPartitionAICapturePhotosChunksUngroupedProviderRequests(t *testing.T) {
 	assert.Equal(t, 4, batches[2].Photos[0].Position)
 }
 
+func TestAnalyzeSessionRecoversOrSurfacesEveryOmittedPhoto(t *testing.T) {
+	ctx := tCtx
+	locationType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, true)
+	require.NoError(t, err)
+	itemType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, false)
+	require.NoError(t, err)
+	location, err := tRepos.Entities.Create(ctx, tGroup.ID, repo.EntityCreate{
+		Name: "Photo coverage test", EntityTypeID: locationType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, location.ID) })
+
+	providerCalls := 0
+	retryableRecoveryFailure := false
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		providerCalls++
+		if providerCalls == 2 {
+			if retryableRecoveryFailure {
+				http.Error(w, "provider is starting", http.StatusServiceUnavailable)
+				return
+			}
+			http.Error(w, "cannot identify this image", http.StatusBadRequest)
+			return
+		}
+		name := "First item"
+		if providerCalls == 3 {
+			name = "Recovered item"
+		}
+		content := fmt.Sprintf(
+			`{"items":[{"clientId":"item-1","name":%q,"quantity":1,"entityTypeId":%q,"tagIds":[],"photoIndexes":[0],"needsReview":false}],"warnings":[]}`,
+			name, itemType.ID.String(),
+		)
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
+		})
+	}))
+	defer server.Close()
+	cfg := config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "vision-model", Timeout: time.Second,
+		MaxPhotos: 8, MaxSessionPhotos: 24, MaxItems: 25,
+	}
+	svc := NewAICaptureSessionService(tRepos, NewAICaptureService(cfg), tSvc.Entities, cfg)
+
+	session, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 5)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		stored, getErr := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
+		if getErr == nil {
+			_ = tRepos.AICaptureSessions.PurgeSessionPhotos(ctx, stored)
+		}
+		_, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, session.ID)
+	})
+	photoIDs := make([]uuid.UUID, 0, 3)
+	for position := range 3 {
+		data := []byte(fmt.Sprintf("photo-%d", position))
+		photoID, path, hash := tRepos.AICaptureSessions.NewPhotoStorage(data, tGroup.ID, session.ID)
+		require.NoError(t, tRepos.AICaptureSessions.WriteBlob(ctx, path, "image/jpeg", data))
+		_, _, err = tRepos.AICaptureSessions.CreatePhoto(
+			ctx, tGroup.ID, tUser.ID, session.ID, photoID, uuid.New(), position, 8, 24, nil,
+			fmt.Sprintf("photo-%d.jpg", position), "image/jpeg", path, int64(len(data)), hash,
+		)
+		require.NoError(t, err)
+		photoIDs = append(photoIDs, photoID)
+	}
+	record, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
+	require.NoError(t, err)
+	metadata, err := svc.metadata(ctx, record)
+	require.NoError(t, err)
+
+	draft, err := svc.analyzeSession(ctx, record, metadata)
+	require.NoError(t, err)
+	assert.Equal(t, 3, providerCalls)
+	require.Len(t, draft.Items, 3)
+	assert.Equal(t, "First item", draft.Items[0].Name)
+	assert.Equal(t, []string{photoIDs[0].String()}, draft.Items[0].PhotoIDs)
+	assert.Equal(t, "Unidentified item (photo 2)", draft.Items[1].Name)
+	assert.Equal(t, []string{photoIDs[1].String()}, draft.Items[1].PhotoIDs)
+	assert.True(t, draft.Items[1].NeedsReview)
+	assert.Equal(t, "Recovered item", draft.Items[2].Name)
+	assert.Equal(t, []string{photoIDs[2].String()}, draft.Items[2].PhotoIDs)
+	assert.Contains(t, draft.Warnings, aiCaptureMissingPhotoWarning)
+
+	repaired, err := svc.validateSessionDraft(ctx, record, AICaptureDraft{Items: []AICaptureItem{{
+		ClientID: "existing-item", Name: "Existing item", Quantity: 1,
+		EntityTypeID: itemType.ID.String(), TagIDs: []string{}, PhotoIDs: []string{photoIDs[0].String()},
+	}}})
+	require.NoError(t, err)
+	require.Len(t, repaired.Items, 3)
+	assert.Equal(t, []string{photoIDs[1].String()}, repaired.Items[1].PhotoIDs)
+	assert.Equal(t, []string{photoIDs[2].String()}, repaired.Items[2].PhotoIDs)
+
+	providerCalls = 0
+	retryableRecoveryFailure = true
+	_, err = svc.analyzeSession(ctx, record, metadata)
+	assert.ErrorIs(t, err, ErrAIRetryable)
+	assert.Equal(t, 2, providerCalls)
+}
+
 func TestValidateDraftCaptureGroupsClearsChangedOrDuplicateAssignments(t *testing.T) {
 	groupID := uuid.New()
 	photoA := uuid.New()

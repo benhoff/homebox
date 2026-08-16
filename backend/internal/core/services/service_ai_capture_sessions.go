@@ -428,6 +428,8 @@ type aiCaptureAnalysisBatch struct {
 	Photos         []repo.AICapturePhotoRecord
 }
 
+const aiCaptureMissingPhotoWarning = "Some photos could not be identified automatically and were added as separate items for review."
+
 func partitionAICapturePhotos(photos []repo.AICapturePhotoRecord, maxUngrouped int) []aiCaptureAnalysisBatch {
 	if maxUngrouped <= 0 {
 		maxUngrouped = 8
@@ -480,6 +482,79 @@ func ensureUniqueAICaptureClientIDs(draft *AICaptureDraft) {
 	}
 }
 
+func missingAICapturePhotoIndexes(draft AICaptureDraft, photoCount int) []int {
+	assigned := make([]bool, photoCount)
+	for _, item := range draft.Items {
+		for _, index := range item.PhotoIndexes {
+			if index >= 0 && index < photoCount {
+				assigned[index] = true
+			}
+		}
+	}
+	missing := make([]int, 0)
+	for index, covered := range assigned {
+		if !covered {
+			missing = append(missing, index)
+		}
+	}
+	return missing
+}
+
+func appendAICaptureWarning(draft *AICaptureDraft, warning string) {
+	if !slices.Contains(draft.Warnings, warning) {
+		draft.Warnings = append(draft.Warnings, warning)
+	}
+}
+
+func defaultAICaptureEntityTypeID(metadata AICaptureContext) string {
+	if len(metadata.EntityTypes) == 0 {
+		return ""
+	}
+	return metadata.EntityTypes[0].ID
+}
+
+// appendMissingAICapturePhotoPlaceholders is the final invariant at persistence
+// boundaries: a provider or stale client draft must never make a capture photo
+// disappear from review. Initial analysis tries the provider again first; this
+// fallback keeps any remaining photo visible and individually reanalyzable.
+func appendMissingAICapturePhotoPlaceholders(
+	draft *AICaptureDraft,
+	photos []repo.AICapturePhotoRecord,
+	metadata AICaptureContext,
+) int {
+	assigned := make(map[string]struct{}, len(photos))
+	for _, item := range draft.Items {
+		for _, photoID := range item.PhotoIDs {
+			assigned[photoID] = struct{}{}
+		}
+	}
+	added := 0
+	for _, photo := range photos {
+		photoID := photo.ID.String()
+		if _, covered := assigned[photoID]; covered {
+			continue
+		}
+		draft.Items = append(draft.Items, AICaptureItem{
+			ClientID:        "unidentified-photo-" + photoID,
+			Name:            fmt.Sprintf("Unidentified item (photo %d)", photo.Position+1),
+			Quantity:        1,
+			EntityTypeID:    defaultAICaptureEntityTypeID(metadata),
+			TagIDs:          []string{},
+			PhotoIDs:        []string{photoID},
+			MoveDisposition: AICaptureMoveDispositionUndecided,
+			NeedsReview:     true,
+			ReviewReason:    "The vision provider omitted this photo. Identify the item or resubmit it to AI.",
+		})
+		assigned[photoID] = struct{}{}
+		added++
+	}
+	if added > 0 {
+		appendAICaptureWarning(draft, aiCaptureMissingPhotoWarning)
+		ensureUniqueAICaptureClientIDs(draft)
+	}
+	return added
+}
+
 func sortAICaptureItemsByFirstPhoto(items []AICaptureItem, photos []repo.AICapturePhotoRecord) {
 	positions := make(map[string]int, len(photos))
 	for _, photo := range photos {
@@ -515,7 +590,29 @@ func (svc *AICaptureSessionService) analyzeSession(ctx context.Context, record r
 		if err != nil {
 			return AICaptureDraft{}, err
 		}
+		missing := missingAICapturePhotoIndexes(draft, len(batch.Photos))
 		mapDraftPhotoIDs(&draft, batch.Photos)
+		if batch.CaptureGroupID == "" {
+			for _, missingIndex := range missing {
+				recovered, recoverErr := svc.ai.Analyze(ctx, AICaptureRequest{
+					Photos:     []AICapturePhoto{photos[missingIndex]},
+					Context:    metadata,
+					SingleItem: true,
+					Instruction: "This separately captured inventory photo was omitted from the previous multi-photo result. " +
+						"Return exactly one item for this photo.",
+				})
+				if recoverErr != nil {
+					if errors.Is(recoverErr, ErrAIRetryable) {
+						return AICaptureDraft{}, recoverErr
+					}
+					continue
+				}
+				mapDraftPhotoIDs(&recovered, batch.Photos[missingIndex:missingIndex+1])
+				draft.Items = append(draft.Items, recovered.Items...)
+				draft.Warnings = append(draft.Warnings, recovered.Warnings...)
+			}
+		}
+		appendMissingAICapturePhotoPlaceholders(&draft, batch.Photos, metadata)
 		if batch.CaptureGroupID != "" {
 			draft.Items[0].ClientID = "group-" + batch.CaptureGroupID
 		}
@@ -675,6 +772,7 @@ func (svc *AICaptureSessionService) validateSessionDraft(ctx context.Context, re
 		return AICaptureDraft{}, err
 	}
 	mapDraftPhotoIDs(&draft, record.Photos)
+	appendMissingAICapturePhotoPlaceholders(&draft, record.Photos, metadata)
 	validateDraftCaptureGroups(&draft, record.Photos)
 	return draft, nil
 }
@@ -1100,6 +1198,7 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 	if err != nil {
 		return AICaptureSessionOut{}, err
 	}
+	appendMissingAICapturePhotoPlaceholders(&corrected, record.Photos, metadata)
 	validateDraftCaptureGroups(&corrected, record.Photos)
 	encoded, err := json.Marshal(corrected)
 	if err != nil {

@@ -351,9 +351,27 @@
     undoDraft.value = null;
   }
 
+  function hasUnassignedCapturePhotos(session: AICaptureSession) {
+    if (session.status !== "ready_for_review" || !session.draft) return false;
+    const assigned = new Set(session.draft.items.flatMap(item => item.photoIds || []));
+    return session.photos.some(photo => !assigned.has(photo.id));
+  }
+
+  async function repairDraftPhotoCoverage(session: AICaptureSession) {
+    if (!session.draft || !hasUnassignedCapturePhotos(session)) return session;
+    const response = await api.aiCapture.saveDraft(session.id, session.draftRevision, cloneDraft(session.draft));
+    return response.error ? session : response.data;
+  }
+
   async function loadSessions() {
     const response = await api.aiCapture.listSessions();
-    if (!response.error) sessions.value = response.data.items || [];
+    if (response.error) return;
+    const loaded = response.data.items || [];
+    sessions.value = loaded;
+    for (const session of loaded.filter(hasUnassignedCapturePhotos)) {
+      const repaired = await repairDraftPhotoCoverage(session);
+      if (repaired !== session) storeSession(repaired);
+    }
   }
 
   function pendingItemPhotos(entry: PendingReviewEntry) {
@@ -503,13 +521,14 @@
     try {
       const response = await api.aiCapture.getSession(session.id);
       if (response.error) throw new Error(responseMessage(response));
-      replaceSession(response.data);
-      if (response.data.status === "capturing") {
-        await restoreQueue(response.data.id);
+      const loaded = await repairDraftPhotoCoverage(response.data);
+      replaceSession(loaded);
+      if (loaded.status === "capturing") {
+        await restoreQueue(loaded.id);
         view.value = "camera";
-      } else if (response.data.status === "ready_for_review") {
+      } else if (loaded.status === "ready_for_review") {
         view.value = "review";
-      } else if (response.data.status === "completed") {
+      } else if (loaded.status === "completed") {
         view.value = "done";
       } else {
         view.value = "processing";
