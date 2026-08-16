@@ -1,20 +1,15 @@
 openapi: 3.0.0
 info:
-  description: Track, Manage, and Organize your Things.
-  title: Homebox API
   contact:
     name: Homebox Team
     url: https://discord.homebox.software
+  description: Track, Manage, and Organize your Things.
+  title: Homebox API
   version: "1.0"
 paths:
   /v1/actions/create-missing-thumbnails:
     post:
-      security:
-        - Bearer: []
       description: Creates thumbnails for items that are missing them
-      tags:
-        - Actions
-      summary: Create Missing Thumbnails
       responses:
         "200":
           description: OK
@@ -22,14 +17,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
+      security:
+        - Bearer: []
+      summary: Create Missing Thumbnails
+      tags:
+        - Actions
   /v1/actions/ensure-asset-ids:
     post:
-      security:
-        - Bearer: []
       description: Ensures all items in the database have an asset ID
-      tags:
-        - Actions
-      summary: Ensure Asset IDs
       responses:
         "200":
           description: OK
@@ -37,14 +32,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
+      security:
+        - Bearer: []
+      summary: Ensure Asset IDs
+      tags:
+        - Actions
   /v1/actions/ensure-import-refs:
     post:
-      security:
-        - Bearer: []
       description: Ensures all items in the database have an import ref
-      tags:
-        - Actions
-      summary: Ensures Import Refs
       responses:
         "200":
           description: OK
@@ -52,14 +47,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
+      security:
+        - Bearer: []
+      summary: Ensures Import Refs
+      tags:
+        - Actions
   /v1/actions/set-primary-photos:
     post:
-      security:
-        - Bearer: []
       description: Sets the first photo of each item as the primary photo
-      tags:
-        - Actions
-      summary: Set Primary Photos
       responses:
         "200":
           description: OK
@@ -67,14 +62,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/wipe-inventory:
-    post:
       security:
         - Bearer: []
-      description: Deletes all items in the inventory
+      summary: Set Primary Photos
       tags:
         - Actions
-      summary: Wipe Inventory
+  /v1/actions/wipe-inventory:
+    post:
+      description: Deletes all items in the inventory
       requestBody:
         content:
           application/json:
@@ -88,14 +83,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/actions/zero-item-time-fields:
-    post:
       security:
         - Bearer: []
-      description: Resets all item date fields to the beginning of the day
+      summary: Wipe Inventory
       tags:
         - Actions
-      summary: Zero Out Time Fields
+  /v1/actions/zero-item-time-fields:
+    post:
+      description: Resets all item date fields to the beginning of the day
       responses:
         "200":
           description: OK
@@ -103,13 +98,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.ActionAmountResult"
-  /v1/ai/capture/analyze:
-    post:
       security:
         - Bearer: []
+      summary: Zero Out Time Fields
       tags:
-        - AI Capture
-      summary: Analyze inventory photos with an OpenAI-compatible vision model
+        - Actions
+  /v1/ai/capture/analyze:
+    post:
       requestBody:
         content:
           multipart/form-data:
@@ -152,13 +147,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  /v1/ai/capture/sessions:
-    get:
       security:
         - Bearer: []
+      summary: Analyze inventory photos with an OpenAI-compatible vision model
       tags:
-        - AI Capture Sessions
-      summary: List the current user's AI capture sessions
+        - AI Capture
+  /v1/ai/capture/sessions:
+    get:
       responses:
         "200":
           description: OK
@@ -166,12 +161,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.Results-services_AICaptureSessionOut"
-    post:
       security:
         - Bearer: []
+      summary: List the current user's AI capture sessions
       tags:
         - AI Capture Sessions
-      summary: Create an AI capture session
+    post:
       requestBody:
         content:
           application/json:
@@ -186,17 +181,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}":
-    get:
       security:
         - Bearer: []
+      summary: Create an AI capture session
       tags:
         - AI Capture Sessions
-      summary: Get an AI capture session
+  "/v1/ai/capture/sessions/{sessionId}":
+    delete:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete an AI capture session
+      tags:
+        - AI Capture Sessions
+    get:
+      parameters:
+        - description: Capture session ID
+          in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -207,32 +218,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-    delete:
       security:
         - Bearer: []
+      summary: Get an AI capture session
       tags:
         - AI Capture Sessions
-      summary: Delete an AI capture session
-      parameters:
-        - description: Capture session ID
-          name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
     patch:
-      security:
-        - Bearer: []
-      tags:
-        - AI Capture Sessions
-      summary: Change an AI capture session location
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -250,17 +245,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/corrections":
-    post:
       security:
         - Bearer: []
+      summary: Change an AI capture session location
       tags:
         - AI Capture Sessions
-      summary: Ask AI to correct a persisted capture draft
+  "/v1/ai/capture/sessions/{sessionId}/corrections":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -278,17 +273,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/draft":
-    put:
       security:
         - Bearer: []
+      summary: Ask AI to correct a persisted capture draft
       tags:
         - AI Capture Sessions
-      summary: Save an edited AI capture draft
+  "/v1/ai/capture/sessions/{sessionId}/draft":
+    put:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -306,17 +301,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/finish":
-    post:
       security:
         - Bearer: []
+      summary: Save an edited AI capture draft
       tags:
         - AI Capture Sessions
-      summary: Seal an AI capture session and queue analysis
+  "/v1/ai/capture/sessions/{sessionId}/finish":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -334,17 +329,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/photos":
-    post:
       security:
         - Bearer: []
+      summary: Seal an AI capture session and queue analysis
       tags:
         - AI Capture Sessions
-      summary: Upload one photo to an AI capture session
+  "/v1/ai/capture/sessions/{sessionId}/photos":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -379,23 +374,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionPhoto"
-  "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}":
-    get:
       security:
         - Bearer: []
+      summary: Upload one photo to an AI capture session
       tags:
         - AI Capture Sessions
-      summary: Read an authorized AI capture session photo
+  "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}":
+    delete:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
         - description: Capture photo ID
-          name: photoId
           in: path
+          name: photoId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete a photo from a capturing session
+      tags:
+        - AI Capture Sessions
+    get:
+      parameters:
+        - description: Capture session ID
+          in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+        - description: Capture photo ID
+          in: path
+          name: photoId
           required: true
           schema:
             type: string
@@ -419,44 +436,22 @@ paths:
               schema:
                 type: string
                 format: binary
-    delete:
       security:
         - Bearer: []
+      summary: Read an authorized AI capture session photo
       tags:
         - AI Capture Sessions
-      summary: Delete a photo from a capturing session
-      parameters:
-        - description: Capture session ID
-          name: sessionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Capture photo ID
-          name: photoId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
     patch:
-      security:
-        - Bearer: []
-      tags:
-        - AI Capture Sessions
-      summary: Reassign or clear a photo's same-item group
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
         - description: Capture photo ID
-          name: photoId
           in: path
+          name: photoId
           required: true
           schema:
             type: string
@@ -474,23 +469,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionPhoto"
-  "/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}":
-    delete:
       security:
         - Bearer: []
+      summary: Reassign or clear a photo's same-item group
       tags:
         - AI Capture Sessions
-      summary: Dismiss a durable capture-item reanalysis result
+  "/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}":
+    delete:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
         - description: Draft client ID
-          name: clientId
           in: path
+          name: clientId
           required: true
           schema:
             type: string
@@ -501,17 +496,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/reanalyze-item":
-    post:
       security:
         - Bearer: []
+      summary: Dismiss a durable capture-item reanalysis result
       tags:
         - AI Capture Sessions
-      summary: Preview provider reanalysis for one reviewed capture item
+  "/v1/ai/capture/sessions/{sessionId}/reanalyze-item":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -529,17 +524,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureReanalysisOut"
-  "/v1/ai/capture/sessions/{sessionId}/reanalyze-items":
-    post:
       security:
         - Bearer: []
+      summary: Preview provider reanalysis for one reviewed capture item
       tags:
         - AI Capture Sessions
-      summary: Queue durable provider reanalysis for reviewed capture items
+  "/v1/ai/capture/sessions/{sessionId}/reanalyze-items":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -557,17 +552,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/retry-analysis":
-    post:
       security:
         - Bearer: []
+      summary: Queue durable provider reanalysis for reviewed capture items
       tags:
         - AI Capture Sessions
-      summary: Retry failed AI capture analysis
+  "/v1/ai/capture/sessions/{sessionId}/retry-analysis":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -578,17 +573,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/ai/capture/sessions/{sessionId}/submit":
-    post:
       security:
         - Bearer: []
+      summary: Retry failed AI capture analysis
       tags:
         - AI Capture Sessions
-      summary: Create reviewed items from an AI capture session
+  "/v1/ai/capture/sessions/{sessionId}/submit":
+    post:
       parameters:
         - description: Capture session ID
-          name: sessionId
           in: path
+          name: sessionId
           required: true
           schema:
             type: string
@@ -606,17 +601,84 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/services.AICaptureSessionOut"
-  "/v1/assets/{id}":
-    get:
       security:
         - Bearer: []
+      summary: Create reviewed items from an AI capture session
       tags:
-        - Items
-      summary: Get Item by Asset ID
+        - AI Capture Sessions
+  "/v1/ai/capture/sessions/{sessionId}/submit-items":
+    post:
+      parameters:
+        - description: Capture session ID
+          in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.aiCaptureSessionItemsSubmit"
+        description: Expected draft revision and selected item IDs
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/services.AICaptureSessionOut"
+      security:
+        - Bearer: []
+      summary: Create selected reviewed items from an AI capture session
+      tags:
+        - AI Capture Sessions
+  "/v1/ai/items/{id}/reanalyze":
+    post:
+      parameters:
+        - description: Item ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/v1.aiItemReanalysisRequest"
+        description: Optional visual-analysis guidance
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/services.AIItemReanalysisOut"
+        "422":
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validate.ErrorResponse"
+        "502":
+          description: Bad Gateway
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/validate.ErrorResponse"
+      security:
+        - Bearer: []
+      summary: Preview Qwen reanalysis for an existing inventory item
+      tags:
+        - AI Capture
+  "/v1/assets/{id}":
+    get:
       parameters:
         - description: Asset ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -627,11 +689,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.PaginationResult-repo_EntitySummary"
+      security:
+        - Bearer: []
+      summary: Get Item by Asset ID
+      tags:
+        - Items
   /v1/currencies:
     get:
-      tags:
-        - Base
-      summary: Currency
       responses:
         "200":
           description: OK
@@ -639,40 +703,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/currencies.Currency"
+      summary: Currency
+      tags:
+        - Base
   /v1/entities:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Query All Entities
       parameters:
         - description: search string
-          name: q
           in: query
+          name: q
           schema:
             type: string
         - description: page number
-          name: page
           in: query
+          name: page
           schema:
             type: integer
         - description: items per page
-          name: pageSize
           in: query
+          name: pageSize
           schema:
             type: integer
         - description: tags Ids
-          name: tags
           in: query
+          name: tags
           explode: true
           schema:
             type: array
             items:
               type: string
         - description: parent Ids
-          name: parentIds
           in: query
+          name: parentIds
           explode: true
           schema:
             type: array
@@ -685,12 +747,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityListResult"
-    post:
       security:
         - Bearer: []
+      summary: Query All Entities
       tags:
         - Entities
-      summary: Create Entity
+    post:
       requestBody:
         content:
           application/json:
@@ -705,178 +767,53 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  /v1/entities/export:
-    get:
       security:
         - Bearer: []
+      summary: Create Entity
       tags:
         - Entities
-      summary: Export Entities
-      responses:
-        "200":
-          description: text/csv
-          content:
-            "*/*":
-              schema:
-                type: string
-  /v1/entities/fields:
-    get:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Get All Custom Field Names
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-  /v1/entities/fields/values:
-    get:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Get All Custom Field Values
-      parameters:
-        - description: Field name
-          name: field
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-  /v1/entities/import:
-    post:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Import Entities
-      requestBody:
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                csv:
-                  description: CSV file to upload
-                  type: string
-                  format: binary
-              required:
-                - csv
-        required: true
-      responses:
-        "204":
-          description: No Content
-  /v1/entities/tree:
-    get:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Get Locations Tree
-      parameters:
-        - description: include items in response tree
-          name: withItems
-          in: query
-          schema:
-            type: boolean
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/repo.TreeItem"
   "/v1/entities/{id}":
-    get:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Get Entity
-      parameters:
-        - description: Entity ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/repo.EntityOut"
-    put:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Update Entity
-      parameters:
-        - description: Entity ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/repo.EntityUpdate"
-        description: Entity Data
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/repo.EntityOut"
     delete:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Delete Entity
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
       responses:
         "204":
           description: No Content
-    patch:
       security:
         - Bearer: []
+      summary: Delete Entity
       tags:
         - Entities
-      summary: Patch Entity
+    get:
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/repo.EntityOut"
+      security:
+        - Bearer: []
+      summary: Get Entity
+      tags:
+        - Entities
+    patch:
+      parameters:
+        - description: Entity ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -894,17 +831,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  "/v1/entities/{id}/attachments":
-    post:
       security:
         - Bearer: []
+      summary: Patch Entity
       tags:
-        - Entities Attachments
-      summary: Create Entity Attachment
+        - Entities
+    put:
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/repo.EntityUpdate"
+        description: Entity Data
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/repo.EntityOut"
+      security:
+        - Bearer: []
+      summary: Update Entity
+      tags:
+        - Entities
+  "/v1/entities/{id}/attachments":
+    post:
+      parameters:
+        - description: Entity ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -944,19 +908,102 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  "/v1/entities/{id}/attachments/external":
-    post:
       security:
         - Bearer: []
-      description: Links an entity to a document or URL in an external system without
-        copying
+      summary: Create Entity Attachment
       tags:
         - Entities Attachments
-      summary: Create External Link Attachment
+  "/v1/entities/{id}/attachments/{attachment_id}":
+    delete:
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: Attachment ID
+          in: path
+          name: attachment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Entity Attachment
+      tags:
+        - Entities Attachments
+    get:
+      parameters:
+        - description: Entity ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: Attachment ID
+          in: path
+          name: attachment_id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+      security:
+        - Bearer: []
+      summary: Get Entity Attachment
+      tags:
+        - Entities Attachments
+    put:
+      parameters:
+        - description: Entity ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - description: Attachment ID
+          in: path
+          name: attachment_id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/repo.ItemAttachmentUpdate"
+        description: Attachment Update
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            "*/*":
+              schema:
+                $ref: "#/components/schemas/repo.EntityOut"
+      security:
+        - Bearer: []
+      summary: Update Entity Attachment
+      tags:
+        - Entities Attachments
+  "/v1/entities/{id}/attachments/external":
+    post:
+      description: Links an entity to a document or URL in an external system without
+        copying
+      parameters:
+        - description: Entity ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -980,100 +1027,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/validate.ErrorResponse"
-  "/v1/entities/{id}/attachments/{attachment_id}":
-    get:
       security:
         - Bearer: []
+      summary: Create External Link Attachment
       tags:
         - Entities Attachments
-      summary: Get Entity Attachment
-      parameters:
-        - description: Entity ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Attachment ID
-          name: attachment_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-    put:
-      security:
-        - Bearer: []
-      tags:
-        - Entities Attachments
-      summary: Update Entity Attachment
-      parameters:
-        - description: Entity ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Attachment ID
-          name: attachment_id
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/repo.ItemAttachmentUpdate"
-        description: Attachment Update
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            "*/*":
-              schema:
-                $ref: "#/components/schemas/repo.EntityOut"
-    delete:
-      security:
-        - Bearer: []
-      tags:
-        - Entities Attachments
-      summary: Delete Entity Attachment
-      parameters:
-        - description: Entity ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - description: Attachment ID
-          name: attachment_id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   "/v1/entities/{id}/duplicate":
     post:
-      security:
-        - Bearer: []
-      tags:
-        - Entities
-      summary: Duplicate Entity
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1091,26 +1055,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  "/v1/entities/{id}/maintenance":
-    get:
       security:
         - Bearer: []
+      summary: Duplicate Entity
       tags:
-        - Item Maintenance
-      summary: Get Maintenance Log
+        - Entities
+  "/v1/entities/{id}/maintenance":
+    get:
       parameters:
         - description: Item ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
-        - x-enum-varnames:
+        - in: query
+          name: status
+          x-enum-varnames:
             - MaintenanceFilterStatusScheduled
             - MaintenanceFilterStatusCompleted
             - MaintenanceFilterStatusBoth
-          name: status
-          in: query
           schema:
             type: string
             enum:
@@ -1123,19 +1087,19 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.MaintenanceEntryWithDetails"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: Get Maintenance Log
       tags:
         - Item Maintenance
-      summary: Create Maintenance Entry
+    post:
       parameters:
         - description: Item ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1153,17 +1117,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.MaintenanceEntry"
-  "/v1/entities/{id}/path":
-    get:
       security:
         - Bearer: []
+      summary: Create Maintenance Entry
       tags:
-        - Entities
-      summary: Get the full path of an entity
+        - Item Maintenance
+  "/v1/entities/{id}/path":
+    get:
       parameters:
         - description: Entity ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1173,31 +1137,129 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.EntityPath"
-  /v1/entity-types:
-    get:
+                type: array
       security:
         - Bearer: []
+      summary: Get the full path of an entity
       tags:
-        - Entity Types
-      summary: Get All Entity Types
+        - Entities
+  /v1/entities/export:
+    get:
+      responses:
+        "200":
+          description: text/csv
+          content:
+            "*/*":
+              schema:
+                type: string
+      security:
+        - Bearer: []
+      summary: Export Entities
+      tags:
+        - Entities
+  /v1/entities/fields:
+    get:
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
-                  $ref: "#/components/schemas/repo.EntityTypeSummary"
-    post:
+                  type: string
+                type: array
       security:
         - Bearer: []
+      summary: Get All Custom Field Names
+      tags:
+        - Entities
+  /v1/entities/fields/values:
+    get:
+      parameters:
+        - description: Field name
+          in: query
+          name: field
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  type: string
+                type: array
+      security:
+        - Bearer: []
+      summary: Get All Custom Field Values
+      tags:
+        - Entities
+  /v1/entities/import:
+    post:
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                csv:
+                  description: CSV file to upload
+                  type: string
+                  format: binary
+              required:
+                - csv
+        required: true
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Import Entities
+      tags:
+        - Entities
+  /v1/entities/tree:
+    get:
+      parameters:
+        - description: include items in response tree
+          in: query
+          name: withItems
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/repo.TreeItem"
+                type: array
+      security:
+        - Bearer: []
+      summary: Get Locations Tree
+      tags:
+        - Entities
+  /v1/entity-types:
+    get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/repo.EntityTypeSummary"
+                type: array
+      security:
+        - Bearer: []
+      summary: Get All Entity Types
       tags:
         - Entity Types
-      summary: Create Entity Type
+    post:
       requestBody:
         content:
           application/json:
@@ -1212,17 +1274,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTypeSummary"
-  "/v1/entity-types/{id}":
-    put:
       security:
         - Bearer: []
+      summary: Create Entity Type
       tags:
         - Entity Types
-      summary: Update Entity Type
+  "/v1/entity-types/{id}":
+    delete:
       parameters:
         - description: Entity Type ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Entity Type
+      tags:
+        - Entity Types
+    put:
+      parameters:
+        - description: Entity Type ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1240,30 +1318,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTypeSummary"
-    delete:
       security:
         - Bearer: []
+      summary: Update Entity Type
       tags:
         - Entity Types
-      summary: Delete Entity Type
-      parameters:
-        - description: Entity Type ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   /v1/group/exports:
     get:
-      security:
-        - Bearer: []
       description: Returns export job rows for the caller's group, newest first.
-      tags:
-        - Group
-      summary: List Collection Exports
       responses:
         "200":
           description: OK
@@ -1271,14 +1333,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.Results-repo_ExportOut"
-    post:
       security:
         - Bearer: []
-      description: Creates a pending export row and enqueues the build job. Poll the
-        listing endpoint or watch the WebSocket for completion.
+      summary: List Collection Exports
       tags:
         - Group
-      summary: Start a Collection Export
+    post:
+      description: Creates a pending export row and enqueues the build job. Poll the
+        listing endpoint or watch the WebSocket for completion.
       responses:
         "202":
           description: Accepted
@@ -1286,17 +1348,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
-  "/v1/group/exports/{id}":
-    get:
       security:
         - Bearer: []
+      summary: Start a Collection Export
       tags:
         - Group
-      summary: Get an Export
+  "/v1/group/exports/{id}":
+    delete:
+      description: Deletes the export row and its blob artifact.
       parameters:
         - description: Export ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete an Export
+      tags:
+        - Group
+    get:
+      parameters:
+        - description: Export ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1307,34 +1386,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
-    delete:
       security:
         - Bearer: []
-      description: Deletes the export row and its blob artifact.
+      summary: Get an Export
       tags:
         - Group
-      summary: Delete an Export
-      parameters:
-        - description: Export ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   "/v1/group/exports/{id}/download":
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Group
-      summary: Download an Export Artifact
       parameters:
         - description: Export ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1346,16 +1408,16 @@ paths:
               schema:
                 type: string
                 format: binary
-  /v1/group/import:
-    post:
       security:
         - Bearer: []
+      summary: Download an Export Artifact
+      tags:
+        - Group
+  /v1/group/import:
+    post:
       description: Uploads a collection-export zip and enqueues the import job. The
         destination group must be empty. Returns the tracked import row so
         clients can poll for progress.
-      tags:
-        - Group
-      summary: Import a Collection Zip
       requestBody:
         content:
           multipart/form-data:
@@ -1376,46 +1438,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ExportOut"
+      security:
+        - Bearer: []
+      summary: Import a Collection Zip
+      tags:
+        - Group
   /v1/groups:
+    delete:
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Group
+      tags:
+        - Group
     get:
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/repo.Group"
       security:
         - Bearer: []
-      tags:
-        - Group
       summary: Get Group
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/repo.Group"
-    put:
-      security:
-        - Bearer: []
       tags:
         - Group
-      summary: Update Group
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/repo.GroupUpdate"
-        description: User Data
-        required: true
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/repo.Group"
     post:
-      security:
-        - Bearer: []
-      tags:
-        - Group
-      summary: Create Group
       requestBody:
         content:
           application/json:
@@ -1430,53 +1481,64 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.Group"
-    delete:
       security:
         - Bearer: []
+      summary: Create Group
       tags:
         - Group
-      summary: Delete Group
+    put:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/repo.GroupUpdate"
+        description: User Data
+        required: true
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/repo.Group"
+      security:
+        - Bearer: []
+      summary: Update Group
+      tags:
+        - Group
   /v1/groups/all:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Group
-      summary: Get All Groups
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.Group"
-  /v1/groups/invitations:
-    get:
+                type: array
       security:
         - Bearer: []
+      summary: Get All Groups
       tags:
         - Group
-      summary: Get All Group Invitations
+  /v1/groups/invitations:
+    get:
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.GroupInvitation"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: Get All Group Invitations
       tags:
         - Group
-      summary: Create Group Invitation
+    post:
       operationId: groupInvitationCreate
       requestBody:
         content:
@@ -1492,18 +1554,34 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.GroupInvitation"
-  "/v1/groups/invitations/{id}":
-    post:
       security:
         - Bearer: []
+      summary: Create Group Invitation
       tags:
         - Group
-      summary: Accept Group Invitation
+  "/v1/groups/invitations/{id}":
+    delete:
+      parameters:
+        - description: Invitation ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Group Invitation
+      tags:
+        - Group
+    post:
       operationId: groupInvitationAccept
       parameters:
         - description: Invitation Token
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1514,62 +1592,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.GroupAcceptInvitationResponse"
-    delete:
       security:
         - Bearer: []
+      summary: Accept Group Invitation
       tags:
         - Group
-      summary: Delete Group Invitation
-      parameters:
-        - description: Invitation ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   /v1/groups/members:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Group
-      summary: Get All Group Members
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.UserSummary"
-  "/v1/groups/members/{user_id}":
-    delete:
+                type: array
       security:
         - Bearer: []
+      summary: Get All Group Members
       tags:
         - Group
-      summary: Remove User from Group
+  "/v1/groups/members/{user_id}":
+    delete:
       parameters:
         - description: User ID
-          name: user_id
           in: path
+          name: user_id
           required: true
           schema:
             type: string
       responses:
         "204":
           description: No Content
-  /v1/groups/statistics:
-    get:
       security:
         - Bearer: []
+      summary: Remove User from Group
       tags:
-        - Statistics
-      summary: Get Group Statistics
+        - Group
+  /v1/groups/statistics:
+    get:
       responses:
         "200":
           description: OK
@@ -1577,38 +1639,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.GroupStatistics"
-  /v1/groups/statistics/locations:
-    get:
       security:
         - Bearer: []
+      summary: Get Group Statistics
       tags:
         - Statistics
-      summary: Get Location Statistics
+  /v1/groups/statistics/locations:
+    get:
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.TotalsByOrganizer"
-  /v1/groups/statistics/purchase-price:
-    get:
+                type: array
       security:
         - Bearer: []
+      summary: Get Location Statistics
       tags:
         - Statistics
-      summary: Get Purchase Price Statistics
+  /v1/groups/statistics/purchase-price:
+    get:
       parameters:
         - description: start date
-          name: start
           in: query
+          name: start
           schema:
             type: string
         - description: end date
-          name: end
           in: query
+          name: end
           schema:
             type: string
       responses:
@@ -1618,39 +1680,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.ValueOverTime"
-  /v1/groups/statistics/tags:
-    get:
       security:
         - Bearer: []
+      summary: Get Purchase Price Statistics
       tags:
         - Statistics
-      summary: Get Tags Statistics
+  /v1/groups/statistics/tags:
+    get:
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.TotalsByOrganizer"
+                type: array
+      security:
+        - Bearer: []
+      summary: Get Tags Statistics
+      tags:
+        - Statistics
   "/v1/labelmaker/asset/{id}":
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Items
-      summary: Get Asset label
       parameters:
         - description: Asset ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
         - description: Print this label, defaults to false
-          name: print
           in: query
+          name: print
           schema:
             type: boolean
       responses:
@@ -1660,23 +1722,23 @@ paths:
             application/json:
               schema:
                 type: string
-  "/v1/labelmaker/item/{id}":
-    get:
       security:
         - Bearer: []
+      summary: Get Asset label
       tags:
         - Items
-      summary: Get Item label
+  "/v1/labelmaker/item/{id}":
+    get:
       parameters:
         - description: Item ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
         - description: Print this label, defaults to false
-          name: print
           in: query
+          name: print
           schema:
             type: boolean
       responses:
@@ -1686,23 +1748,23 @@ paths:
             application/json:
               schema:
                 type: string
+      security:
+        - Bearer: []
+      summary: Get Item label
+      tags:
+        - Items
   "/v1/labelmaker/location/{id}":
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Locations
-      summary: Get Location label
       parameters:
         - description: Location ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
         - description: Print this label, defaults to false
-          name: print
           in: query
+          name: print
           schema:
             type: boolean
       responses:
@@ -1712,20 +1774,20 @@ paths:
             application/json:
               schema:
                 type: string
-  /v1/maintenance:
-    get:
       security:
         - Bearer: []
+      summary: Get Location label
       tags:
-        - Maintenance
-      summary: Query All Maintenance
+        - Locations
+  /v1/maintenance:
+    get:
       parameters:
-        - x-enum-varnames:
+        - in: query
+          name: status
+          x-enum-varnames:
             - MaintenanceFilterStatusScheduled
             - MaintenanceFilterStatusCompleted
             - MaintenanceFilterStatusBoth
-          name: status
-          in: query
           schema:
             type: string
             enum:
@@ -1738,20 +1800,36 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.MaintenanceEntryWithDetails"
-  "/v1/maintenance/{id}":
-    put:
+                type: array
       security:
         - Bearer: []
+      summary: Query All Maintenance
       tags:
         - Maintenance
-      summary: Update Maintenance Entry
+  "/v1/maintenance/{id}":
+    delete:
       parameters:
         - description: Maintenance ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Maintenance Entry
+      tags:
+        - Maintenance
+    put:
+      parameters:
+        - description: Maintenance ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1769,44 +1847,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.MaintenanceEntry"
-    delete:
       security:
         - Bearer: []
+      summary: Update Maintenance Entry
       tags:
         - Maintenance
-      summary: Delete Maintenance Entry
-      parameters:
-        - description: Maintenance ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   /v1/notifiers:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Notifiers
-      summary: Get Notifiers
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.NotifierOut"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: Get Notifiers
       tags:
         - Notifiers
-      summary: Create Notifier
+    post:
       requestBody:
         content:
           application/json:
@@ -1821,34 +1883,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.NotifierOut"
-  /v1/notifiers/test:
-    post:
       security:
         - Bearer: []
+      summary: Create Notifier
       tags:
         - Notifiers
-      summary: Test Notifier
+  "/v1/notifiers/{id}":
+    delete:
       parameters:
-        - description: URL
-          name: url
-          in: query
+        - description: Notifier ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
       responses:
         "204":
           description: No Content
-  "/v1/notifiers/{id}":
-    put:
       security:
         - Bearer: []
+      summary: Delete a Notifier
       tags:
         - Notifiers
-      summary: Update Notifier
+    put:
       parameters:
         - description: Notifier ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -1866,33 +1927,34 @@ paths:
             "*/*":
               schema:
                 $ref: "#/components/schemas/repo.NotifierOut"
-    delete:
       security:
         - Bearer: []
+      summary: Update Notifier
       tags:
         - Notifiers
-      summary: Delete a Notifier
+  /v1/notifiers/test:
+    post:
       parameters:
-        - description: Notifier ID
-          name: id
-          in: path
+        - description: URL
+          in: query
+          name: url
           required: true
           schema:
             type: string
       responses:
         "204":
           description: No Content
-  /v1/products/search-from-barcode:
-    get:
       security:
         - Bearer: []
+      summary: Test Notifier
       tags:
-        - Items
-      summary: Search EAN from Barcode
+        - Notifiers
+  /v1/products/search-from-barcode:
+    get:
       parameters:
         - description: barcode to be searched
-          name: data
           in: query
+          name: data
           schema:
             type: string
       responses:
@@ -1901,20 +1963,20 @@ paths:
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.BarcodeProduct"
-  /v1/qrcode:
-    get:
+                type: array
       security:
         - Bearer: []
+      summary: Search EAN from Barcode
       tags:
         - Items
-      summary: Create QR Code
+  /v1/qrcode:
+    get:
       parameters:
         - description: data to be encoded into qrcode
-          name: data
           in: query
+          name: data
           schema:
             type: string
       responses:
@@ -1924,13 +1986,13 @@ paths:
             application/json:
               schema:
                 type: string
-  /v1/reporting/bill-of-materials:
-    get:
       security:
         - Bearer: []
+      summary: Create QR Code
       tags:
-        - Reporting
-      summary: Export Bill of Materials
+        - Items
+  /v1/reporting/bill-of-materials:
+    get:
       responses:
         "200":
           description: text/csv
@@ -1938,11 +2000,13 @@ paths:
             application/json:
               schema:
                 type: string
+      security:
+        - Bearer: []
+      summary: Export Bill of Materials
+      tags:
+        - Reporting
   /v1/status:
     get:
-      tags:
-        - Base
-      summary: Application Info
       responses:
         "200":
           description: OK
@@ -1950,28 +2014,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.APISummary"
+      summary: Application Info
+      tags:
+        - Base
   /v1/tags:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Tags
-      summary: Get All Tags
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.TagSummary"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: Get All Tags
       tags:
         - Tags
-      summary: Create Tag
+    post:
       requestBody:
         content:
           application/json:
@@ -1986,17 +2048,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-  "/v1/tags/{id}":
-    get:
       security:
         - Bearer: []
+      summary: Create Tag
       tags:
         - Tags
-      summary: Get Tag
+  "/v1/tags/{id}":
+    delete:
       parameters:
         - description: Tag ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Tag
+      tags:
+        - Tags
+    get:
+      parameters:
+        - description: Tag ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -2007,16 +2085,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-    put:
       security:
         - Bearer: []
+      summary: Get Tag
       tags:
         - Tags
-      summary: Update Tag
+    put:
       parameters:
         - description: Tag ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -2034,44 +2112,28 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.TagOut"
-    delete:
       security:
         - Bearer: []
+      summary: Update Tag
       tags:
         - Tags
-      summary: Delete Tag
-      parameters:
-        - description: Tag ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   /v1/templates:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - Entity Templates
-      summary: Get All Entity Templates
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.EntityTemplateSummary"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: Get All Entity Templates
       tags:
         - Entity Templates
-      summary: Create Entity Template
+    post:
       requestBody:
         content:
           application/json:
@@ -2086,17 +2148,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-  "/v1/templates/{id}":
-    get:
       security:
         - Bearer: []
+      summary: Create Entity Template
       tags:
         - Entity Templates
-      summary: Get Entity Template
+  "/v1/templates/{id}":
+    delete:
       parameters:
         - description: Template ID
-          name: id
           in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+        - Bearer: []
+      summary: Delete Entity Template
+      tags:
+        - Entity Templates
+    get:
+      parameters:
+        - description: Template ID
+          in: path
+          name: id
           required: true
           schema:
             type: string
@@ -2107,16 +2185,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-    put:
       security:
         - Bearer: []
+      summary: Get Entity Template
       tags:
         - Entity Templates
-      summary: Update Entity Template
+    put:
       parameters:
         - description: Template ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -2134,33 +2212,17 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityTemplateOut"
-    delete:
       security:
         - Bearer: []
+      summary: Update Entity Template
       tags:
         - Entity Templates
-      summary: Delete Entity Template
-      parameters:
-        - description: Template ID
-          name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        "204":
-          description: No Content
   "/v1/templates/{id}/create-item":
     post:
-      security:
-        - Bearer: []
-      tags:
-        - Entity Templates
-      summary: Create Entity from Template
       parameters:
         - description: Template ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
@@ -2178,13 +2240,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.EntityOut"
-  /v1/users/change-password:
-    put:
       security:
         - Bearer: []
+      summary: Create Entity from Template
       tags:
-        - User
-      summary: Change Password
+        - Entity Templates
+  /v1/users/change-password:
+    put:
       requestBody:
         content:
           application/json:
@@ -2195,6 +2257,11 @@ paths:
       responses:
         "204":
           description: No Content
+      security:
+        - Bearer: []
+      summary: Change Password
+      tags:
+        - User
   /v1/users/forgot-password:
     post:
       description: >-
@@ -2202,9 +2269,6 @@ paths:
         account.
 
         Always returns 204 on success to avoid leaking whether the email is registered.
-      tags:
-        - Authentication
-      summary: Request Password Reset
       requestBody:
         content:
           application/json:
@@ -2233,15 +2297,15 @@ paths:
             application/json:
               schema:
                 type: string
-  /v1/users/login:
-    post:
+      summary: Request Password Reset
       tags:
         - Authentication
-      summary: User Login
+  /v1/users/login:
+    post:
       parameters:
         - description: auth provider
-          name: provider
           in: query
+          name: provider
           schema:
             type: string
       requestBody:
@@ -2261,80 +2325,80 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/v1.TokenResponse"
-  /v1/users/login/oidc:
-    get:
+      summary: User Login
       tags:
         - Authentication
-      summary: OIDC Login Initiation
+  /v1/users/login/oidc:
+    get:
       responses:
         "302":
           description: Found
-  /v1/users/login/oidc/callback:
-    get:
+      summary: OIDC Login Initiation
       tags:
         - Authentication
-      summary: OIDC Callback Handler
+  /v1/users/login/oidc/callback:
+    get:
       parameters:
         - description: Authorization code
-          name: code
           in: query
+          name: code
           required: true
           schema:
             type: string
         - description: State parameter
-          name: state
           in: query
+          name: state
           required: true
           schema:
             type: string
       responses:
         "302":
           description: Found
-  /v1/users/logout:
-    post:
-      security:
-        - Bearer: []
+      summary: OIDC Callback Handler
       tags:
         - Authentication
-      summary: User Logout
+  /v1/users/logout:
+    post:
       responses:
         "204":
           description: No Content
-  /v1/users/logout/all:
-    post:
       security:
         - Bearer: []
+      summary: User Logout
+      tags:
+        - Authentication
+  /v1/users/logout/all:
+    post:
       description: |-
         Revokes every session token for the authenticated user across all
         devices, including the current one. Use this to invalidate a session
         token that may have been leaked or stolen. API keys are stored
         separately and are not affected; revoke them from the API keys page.
-      tags:
-        - Authentication
-      summary: Log Out Of All Sessions
       responses:
         "204":
           description: No Content
-  /v1/users/refresh:
-    get:
       security:
         - Bearer: []
+      summary: Log Out Of All Sessions
+      tags:
+        - Authentication
+  /v1/users/refresh:
+    get:
       description: >-
         handleAuthRefresh returns a handler that will issue a new token from an
         existing token.
 
         This does not validate that the user still exists within the database.
-      tags:
-        - Authentication
-      summary: User Token Refresh
       responses:
         "200":
           description: OK
+      security:
+        - Bearer: []
+      summary: User Token Refresh
+      tags:
+        - Authentication
   /v1/users/register:
     post:
-      tags:
-        - User
-      summary: Register New User
       requestBody:
         content:
           application/json:
@@ -2351,14 +2415,14 @@ paths:
             application/json:
               schema:
                 type: string
+      summary: Register New User
+      tags:
+        - User
   /v1/users/reset-password:
     post:
       description: |-
         Consumes a single-use reset token and changes the user's password.
         On success, all existing sessions for the user are revoked.
-      tags:
-        - Authentication
-      summary: Reset Password
       requestBody:
         content:
           application/json:
@@ -2388,13 +2452,20 @@ paths:
             application/json:
               schema:
                 type: string
+      summary: Reset Password
+      tags:
+        - Authentication
   /v1/users/self:
-    get:
+    delete:
+      responses:
+        "204":
+          description: No Content
       security:
         - Bearer: []
+      summary: Delete Account
       tags:
         - User
-      summary: Get User Self
+    get:
       responses:
         "200":
           description: OK
@@ -2403,16 +2474,16 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/v1.Wrapped"
-                  - type: object
-                    properties:
+                  - properties:
                       item:
                         $ref: "#/components/schemas/repo.UserOut"
-    put:
+                    type: object
       security:
         - Bearer: []
+      summary: Get User Self
       tags:
         - User
-      summary: Update Account
+    put:
       requestBody:
         content:
           application/json:
@@ -2428,41 +2499,32 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/v1.Wrapped"
-                  - type: object
-                    properties:
+                  - properties:
                       item:
                         $ref: "#/components/schemas/repo.UserUpdate"
-    delete:
+                    type: object
       security:
         - Bearer: []
+      summary: Update Account
       tags:
         - User
-      summary: Delete Account
-      responses:
-        "204":
-          description: No Content
   /v1/users/self/api-keys:
     get:
-      security:
-        - Bearer: []
-      tags:
-        - User
-      summary: List API Keys
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                type: array
                 items:
                   $ref: "#/components/schemas/repo.APIKeyOut"
-    post:
+                type: array
       security:
         - Bearer: []
+      summary: List API Keys
       tags:
         - User
-      summary: Create API Key
+    post:
       requestBody:
         content:
           application/json:
@@ -2477,30 +2539,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/repo.APIKeyCreatedOut"
-  "/v1/users/self/api-keys/{id}":
-    delete:
       security:
         - Bearer: []
+      summary: Create API Key
       tags:
         - User
-      summary: Delete API Key
+  "/v1/users/self/api-keys/{id}":
+    delete:
       parameters:
         - description: API Key ID
-          name: id
           in: path
+          name: id
           required: true
           schema:
             type: string
       responses:
         "204":
           description: No Content
-  /v1/users/self/settings:
-    get:
       security:
         - Bearer: []
+      summary: Delete API Key
       tags:
         - User
-      summary: Get user settings
+  /v1/users/self/settings:
+    get:
       responses:
         "200":
           description: OK
@@ -2509,23 +2571,23 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/v1.Wrapped"
-                  - type: object
-                    properties:
+                  - properties:
                       item:
-                        type: object
                         additionalProperties: true
-    put:
+                        type: object
+                    type: object
       security:
         - Bearer: []
+      summary: Get user settings
       tags:
         - User
-      summary: Update user settings
+    put:
       requestBody:
         content:
           application/json:
             schema:
-              type: object
               additionalProperties: true
+              type: object
         description: Settings Data
         required: true
       responses:
@@ -2536,23 +2598,27 @@ paths:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/v1.Wrapped"
-                  - type: object
-                    properties:
+                  - properties:
                       item:
-                        type: object
                         additionalProperties: true
+                        type: object
+                    type: object
+      security:
+        - Bearer: []
+      summary: Update user settings
+      tags:
+        - User
 servers:
   - url: /api
 components:
   securitySchemes:
     Bearer:
       description: "\"Type 'Bearer TOKEN' to correctly set the API Key\""
-      type: apiKey
-      name: Authorization
       in: header
+      name: Authorization
+      type: apiKey
   schemas:
     aicapturesession.Status:
-      type: string
       enum:
         - capturing
         - capturing
@@ -2562,6 +2628,7 @@ components:
         - ready_for_review
         - submitting
         - completed
+      type: string
       x-enum-varnames:
         - DefaultStatus
         - StatusCapturing
@@ -2572,7 +2639,6 @@ components:
         - StatusSubmitting
         - StatusCompleted
     aicapturesessionitem.Status:
-      type: string
       enum:
         - pending
         - pending
@@ -2580,6 +2646,7 @@ components:
         - attaching
         - completed
         - failed
+      type: string
       x-enum-varnames:
         - DefaultStatus
         - StatusPending
@@ -2588,7 +2655,6 @@ components:
         - StatusCompleted
         - StatusFailed
     attachment.Type:
-      type: string
       enum:
         - attachment
         - photo
@@ -2597,6 +2663,7 @@ components:
         - attachment
         - receipt
         - thumbnail
+      type: string
       x-enum-varnames:
         - DefaultType
         - TypePhoto
@@ -2606,19 +2673,18 @@ components:
         - TypeReceipt
         - TypeThumbnail
     authroles.Role:
-      type: string
       enum:
         - user
         - admin
         - user
         - attachments
+      type: string
       x-enum-varnames:
         - DefaultRole
         - RoleAdmin
         - RoleUser
         - RoleAttachments
     currencies.Currency:
-      type: object
       properties:
         code:
           type: string
@@ -2630,8 +2696,8 @@ components:
           type: string
         symbol:
           type: string
-    ent.AICapturePhoto:
       type: object
+    ent.AICapturePhoto:
       properties:
         capture_group_id:
           description: CaptureGroupID holds the value of the "capture_group_id" field.
@@ -2646,12 +2712,12 @@ components:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AICapturePhotoEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AICapturePhotoQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AICapturePhotoEdges"
         id:
           description: ID of the ent.
           type: string
@@ -2676,15 +2742,15 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.AICapturePhotoEdges:
       type: object
+    ent.AICapturePhotoEdges:
       properties:
         session:
-          description: Session holds the value of the session edge.
           allOf:
             - $ref: "#/components/schemas/ent.AICaptureSession"
-    ent.AICaptureSession:
+          description: Session holds the value of the session edge.
       type: object
+    ent.AICaptureSession:
       properties:
         analysis_attempts:
           description: AnalysisAttempts holds the value of the "analysis_attempts" field.
@@ -2712,12 +2778,12 @@ components:
           description: DraftRevision holds the value of the "draft_revision" field.
           type: integer
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AICaptureSessionEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AICaptureSessionQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AICaptureSessionEdges"
         error_code:
           description: ErrorCode holds the value of the "error_code" field.
           type: string
@@ -2761,9 +2827,9 @@ components:
             "reanalysis_worker_lease_until" field.
           type: string
         status:
-          description: Status holds the value of the "status" field.
           allOf:
             - $ref: "#/components/schemas/aicapturesession.Status"
+          description: Status holds the value of the "status" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
@@ -2773,33 +2839,33 @@ components:
         worker_lease_until:
           description: WorkerLeaseUntil holds the value of the "worker_lease_until" field.
           type: string
-    ent.AICaptureSessionEdges:
       type: object
+    ent.AICaptureSessionEdges:
       properties:
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         items:
           description: Items holds the value of the items edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AICaptureSessionItem"
+          type: array
         location:
-          description: Location holds the value of the location edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
+          description: Location holds the value of the location edge.
         photos:
           description: Photos holds the value of the photos edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AICapturePhoto"
+          type: array
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
-    ent.AICaptureSessionItem:
+          description: User holds the value of the user edge.
       type: object
+    ent.AICaptureSessionItem:
       properties:
         client_id:
           description: ClientID holds the value of the "client_id" field.
@@ -2808,12 +2874,12 @@ components:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AICaptureSessionItemEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AICaptureSessionItemQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AICaptureSessionItemEdges"
         entity_id:
           description: EntityID holds the value of the "entity_id" field.
           type: string
@@ -2827,35 +2893,35 @@ components:
           description: SessionID holds the value of the "session_id" field.
           type: string
         status:
-          description: Status holds the value of the "status" field.
           allOf:
             - $ref: "#/components/schemas/aicapturesessionitem.Status"
+          description: Status holds the value of the "status" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
         uploaded_photo_ids:
           description: UploadedPhotoIds holds the value of the "uploaded_photo_ids" field.
           type: string
-    ent.AICaptureSessionItemEdges:
       type: object
+    ent.AICaptureSessionItemEdges:
       properties:
         session:
-          description: Session holds the value of the session edge.
           allOf:
             - $ref: "#/components/schemas/ent.AICaptureSession"
-    ent.APIKey:
+          description: Session holds the value of the session edge.
       type: object
+    ent.APIKey:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.APIKeyEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the APIKeyQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.APIKeyEdges"
         expires_at:
           description: ExpiresAt holds the value of the "expires_at" field.
           type: string
@@ -2874,26 +2940,26 @@ components:
         user_id:
           description: UserID holds the value of the "user_id" field.
           type: string
-    ent.APIKeyEdges:
       type: object
+    ent.APIKeyEdges:
       properties:
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
-    ent.Attachment:
+          description: User holds the value of the user edge.
       type: object
+    ent.Attachment:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AttachmentEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AttachmentQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AttachmentEdges"
         id:
           description: ID of the ent.
           type: string
@@ -2910,60 +2976,60 @@ components:
           description: Title holds the value of the "title" field.
           type: string
         type:
-          description: Type holds the value of the "type" field.
           allOf:
             - $ref: "#/components/schemas/attachment.Type"
+          description: Type holds the value of the "type" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.AttachmentEdges:
       type: object
+    ent.AttachmentEdges:
       properties:
         entity:
-          description: Entity holds the value of the entity edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
+          description: Entity holds the value of the entity edge.
         thumbnail:
-          description: Thumbnail holds the value of the thumbnail edge.
           allOf:
             - $ref: "#/components/schemas/ent.Attachment"
-    ent.AuthRoles:
+          description: Thumbnail holds the value of the thumbnail edge.
       type: object
+    ent.AuthRoles:
       properties:
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AuthRolesEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AuthRolesQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AuthRolesEdges"
         id:
           description: ID of the ent.
           type: integer
         role:
-          description: Role holds the value of the "role" field.
           allOf:
             - $ref: "#/components/schemas/authroles.Role"
-    ent.AuthRolesEdges:
+          description: Role holds the value of the "role" field.
       type: object
+    ent.AuthRolesEdges:
       properties:
         token:
-          description: Token holds the value of the token edge.
           allOf:
             - $ref: "#/components/schemas/ent.AuthTokens"
-    ent.AuthTokens:
+          description: Token holds the value of the token edge.
       type: object
+    ent.AuthTokens:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.AuthTokensEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the AuthTokensQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.AuthTokensEdges"
         expires_at:
           description: ExpiresAt holds the value of the "expires_at" field.
           type: string
@@ -2972,25 +3038,25 @@ components:
           type: string
         token:
           description: Token holds the value of the "token" field.
-          type: array
           items:
             type: integer
+          type: array
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.AuthTokensEdges:
       type: object
+    ent.AuthTokensEdges:
       properties:
         roles:
-          description: Roles holds the value of the roles edge.
           allOf:
             - $ref: "#/components/schemas/ent.AuthRoles"
+          description: Roles holds the value of the roles edge.
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
-    ent.Entity:
+          description: User holds the value of the user edge.
       type: object
+    ent.Entity:
       properties:
         archived:
           description: Archived holds the value of the "archived" field.
@@ -3005,12 +3071,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.EntityEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the EntityQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.EntityEdges"
         id:
           description: ID of the ent.
           type: string
@@ -3075,53 +3141,53 @@ components:
         warranty_expires:
           description: WarrantyExpires holds the value of the "warranty_expires" field.
           type: string
-    ent.EntityEdges:
       type: object
+    ent.EntityEdges:
       properties:
         ai_capture_sessions:
           description: AiCaptureSessions holds the value of the ai_capture_sessions edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AICaptureSession"
+          type: array
         attachments:
           description: Attachments holds the value of the attachments edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Attachment"
+          type: array
         children:
           description: Children holds the value of the children edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Entity"
+          type: array
         entity_type:
-          description: EntityType holds the value of the entity_type edge.
           allOf:
             - $ref: "#/components/schemas/ent.EntityType"
+          description: EntityType holds the value of the entity_type edge.
         fields:
           description: Fields holds the value of the fields edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.EntityField"
+          type: array
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         maintenance_entries:
           description: MaintenanceEntries holds the value of the maintenance_entries edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.MaintenanceEntry"
+          type: array
         parent:
-          description: Parent holds the value of the parent edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
+          description: Parent holds the value of the parent edge.
         tag:
           description: Tag holds the value of the tag edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Tag"
-    ent.EntityField:
+          type: array
       type: object
+    ent.EntityField:
       properties:
         boolean_value:
           description: BooleanValue holds the value of the "boolean_value" field.
@@ -3133,12 +3199,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.EntityFieldEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the EntityFieldQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.EntityFieldEdges"
         id:
           description: ID of the ent.
           type: string
@@ -3155,21 +3221,21 @@ components:
           description: TimeValue holds the value of the "time_value" field.
           type: string
         type:
-          description: Type holds the value of the "type" field.
           allOf:
             - $ref: "#/components/schemas/entityfield.Type"
+          description: Type holds the value of the "type" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.EntityFieldEdges:
       type: object
+    ent.EntityFieldEdges:
       properties:
         entity:
-          description: Entity holds the value of the entity edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
-    ent.EntityTemplate:
+          description: Entity holds the value of the entity edge.
       type: object
+    ent.EntityTemplate:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
@@ -3199,9 +3265,9 @@ components:
           type: number
         default_tag_ids:
           description: Default tag IDs for items created from this template
-          type: array
           items:
             type: string
+          type: array
         default_warranty_details:
           description: DefaultWarrantyDetails holds the value of the
             "default_warranty_details" field.
@@ -3210,12 +3276,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.EntityTemplateEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the EntityTemplateQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.EntityTemplateEdges"
         id:
           description: ID of the ent.
           type: string
@@ -3239,24 +3305,24 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.EntityTemplateEdges:
       type: object
+    ent.EntityTemplateEdges:
       properties:
         fields:
           description: Fields holds the value of the fields edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.TemplateField"
+          type: array
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         location:
-          description: Location holds the value of the location edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
-    ent.EntityType:
+          description: Location holds the value of the location edge.
       type: object
+    ent.EntityType:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
@@ -3265,12 +3331,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.EntityTypeEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the EntityTypeQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.EntityTypeEdges"
         icon:
           description: Icon holds the value of the "icon" field.
           type: string
@@ -3286,24 +3352,24 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.EntityTypeEdges:
       type: object
+    ent.EntityTypeEdges:
       properties:
         default_template:
-          description: DefaultTemplate holds the value of the default_template edge.
           allOf:
             - $ref: "#/components/schemas/ent.EntityTemplate"
+          description: DefaultTemplate holds the value of the default_template edge.
         entities:
           description: Entities holds the value of the entities edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Entity"
+          type: array
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
-    ent.Export:
+          description: Group holds the value of the group edge.
       type: object
+    ent.Export:
       properties:
         artifact_path:
           description: ArtifactPath holds the value of the "artifact_path" field.
@@ -3312,12 +3378,12 @@ components:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.ExportEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the ExportQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.ExportEdges"
         error:
           description: Error holds the value of the "error" field.
           type: string
@@ -3328,9 +3394,9 @@ components:
           description: ID of the ent.
           type: string
         kind:
-          description: Kind holds the value of the "kind" field.
           allOf:
             - $ref: "#/components/schemas/export.Kind"
+          description: Kind holds the value of the "kind" field.
         progress:
           description: Progress holds the value of the "progress" field.
           type: integer
@@ -3338,21 +3404,21 @@ components:
           description: SizeBytes holds the value of the "size_bytes" field.
           type: integer
         status:
-          description: Status holds the value of the "status" field.
           allOf:
             - $ref: "#/components/schemas/export.Status"
+          description: Status holds the value of the "status" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.ExportEdges:
       type: object
+    ent.ExportEdges:
       properties:
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
-    ent.Group:
+          description: Group holds the value of the group edge.
       type: object
+    ent.Group:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
@@ -3361,12 +3427,12 @@ components:
           description: Currency holds the value of the "currency" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.GroupEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the GroupQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.GroupEdges"
         id:
           description: ID of the ent.
           type: string
@@ -3376,72 +3442,72 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.GroupEdges:
       type: object
+    ent.GroupEdges:
       properties:
         ai_capture_sessions:
           description: AiCaptureSessions holds the value of the ai_capture_sessions edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AICaptureSession"
+          type: array
         entities:
           description: Entities holds the value of the entities edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Entity"
+          type: array
         entity_templates:
           description: EntityTemplates holds the value of the entity_templates edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.EntityTemplate"
+          type: array
         entity_types:
           description: EntityTypes holds the value of the entity_types edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.EntityType"
+          type: array
         exports:
           description: Exports holds the value of the exports edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Export"
+          type: array
         invitation_tokens:
           description: InvitationTokens holds the value of the invitation_tokens edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.GroupInvitationToken"
+          type: array
         notifiers:
           description: Notifiers holds the value of the notifiers edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Notifier"
+          type: array
         tags:
           description: Tags holds the value of the tags edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Tag"
+          type: array
         user_groups:
           description: UserGroups holds the value of the user_groups edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.UserGroup"
+          type: array
         users:
           description: Users holds the value of the users edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.User"
-    ent.GroupInvitationToken:
+          type: array
       type: object
+    ent.GroupInvitationToken:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.GroupInvitationTokenEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the GroupInvitationTokenQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.GroupInvitationTokenEdges"
         expires_at:
           description: ExpiresAt holds the value of the "expires_at" field.
           type: string
@@ -3450,24 +3516,24 @@ components:
           type: string
         token:
           description: Token holds the value of the "token" field.
-          type: array
           items:
             type: integer
+          type: array
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
         uses:
           description: Uses holds the value of the "uses" field.
           type: integer
-    ent.GroupInvitationTokenEdges:
       type: object
+    ent.GroupInvitationTokenEdges:
       properties:
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
-    ent.MaintenanceEntry:
+          description: Group holds the value of the group edge.
       type: object
+    ent.MaintenanceEntry:
       properties:
         cost:
           description: Cost holds the value of the "cost" field.
@@ -3482,12 +3548,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.MaintenanceEntryEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the MaintenanceEntryQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.MaintenanceEntryEdges"
         entity_id:
           description: EntityID holds the value of the "entity_id" field.
           type: string
@@ -3503,26 +3569,26 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.MaintenanceEntryEdges:
       type: object
+    ent.MaintenanceEntryEdges:
       properties:
         entity:
-          description: Entity holds the value of the entity edge.
           allOf:
             - $ref: "#/components/schemas/ent.Entity"
-    ent.Notifier:
+          description: Entity holds the value of the entity edge.
       type: object
+    ent.Notifier:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.NotifierEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the NotifierQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.NotifierEdges"
         group_id:
           description: GroupID holds the value of the "group_id" field.
           type: string
@@ -3541,30 +3607,30 @@ components:
         user_id:
           description: UserID holds the value of the "user_id" field.
           type: string
-    ent.NotifierEdges:
       type: object
+    ent.NotifierEdges:
       properties:
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
-    ent.PasswordResetTokens:
+          description: User holds the value of the user edge.
       type: object
+    ent.PasswordResetTokens:
       properties:
         created_at:
           description: CreatedAt holds the value of the "created_at" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.PasswordResetTokensEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the PasswordResetTokensQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.PasswordResetTokensEdges"
         expires_at:
           description: ExpiresAt holds the value of the "expires_at" field.
           type: string
@@ -3573,9 +3639,9 @@ components:
           type: string
         token:
           description: Token holds the value of the "token" field.
-          type: array
           items:
             type: integer
+          type: array
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
@@ -3585,15 +3651,15 @@ components:
         user_id:
           description: UserID holds the value of the "user_id" field.
           type: string
-    ent.PasswordResetTokensEdges:
       type: object
+    ent.PasswordResetTokensEdges:
       properties:
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
-    ent.Tag:
+          description: User holds the value of the user edge.
       type: object
+    ent.Tag:
       properties:
         color:
           description: Color holds the value of the "color" field.
@@ -3605,12 +3671,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.TagEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the TagQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.TagEdges"
         icon:
           description: Icon holds the value of the "icon" field.
           type: string
@@ -3623,29 +3689,29 @@ components:
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.TagEdges:
       type: object
+    ent.TagEdges:
       properties:
         children:
           description: Children holds the value of the children edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Tag"
+          type: array
         entities:
           description: Entities holds the value of the entities edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Entity"
+          type: array
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         parent:
-          description: Parent holds the value of the parent edge.
           allOf:
             - $ref: "#/components/schemas/ent.Tag"
-    ent.TemplateField:
+          description: Parent holds the value of the parent edge.
       type: object
+    ent.TemplateField:
       properties:
         boolean_value:
           description: BooleanValue holds the value of the "boolean_value" field.
@@ -3657,12 +3723,12 @@ components:
           description: Description holds the value of the "description" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.TemplateFieldEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the TemplateFieldQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.TemplateFieldEdges"
         id:
           description: ID of the ent.
           type: string
@@ -3679,21 +3745,21 @@ components:
           description: TimeValue holds the value of the "time_value" field.
           type: string
         type:
-          description: Type holds the value of the "type" field.
           allOf:
             - $ref: "#/components/schemas/templatefield.Type"
+          description: Type holds the value of the "type" field.
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.TemplateFieldEdges:
       type: object
+    ent.TemplateFieldEdges:
       properties:
         entity_template:
-          description: EntityTemplate holds the value of the entity_template edge.
           allOf:
             - $ref: "#/components/schemas/ent.EntityTemplate"
-    ent.User:
+          description: EntityTemplate holds the value of the entity_template edge.
       type: object
+    ent.User:
       properties:
         activated_on:
           description: ActivatedOn holds the value of the "activated_on" field.
@@ -3705,12 +3771,12 @@ components:
           description: DefaultGroupID holds the value of the "default_group_id" field.
           type: string
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.UserEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the UserQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.UserEdges"
         email:
           description: Email holds the value of the "email" field.
           type: string
@@ -3730,115 +3796,116 @@ components:
           description: OidcSubject holds the value of the "oidc_subject" field.
           type: string
         settings:
+          additionalProperties: true
           description: Settings holds the value of the "settings" field.
           type: object
-          additionalProperties: true
         superuser:
           description: Superuser holds the value of the "superuser" field.
           type: boolean
         updated_at:
           description: UpdatedAt holds the value of the "updated_at" field.
           type: string
-    ent.UserEdges:
       type: object
+    ent.UserEdges:
       properties:
         ai_capture_sessions:
           description: AiCaptureSessions holds the value of the ai_capture_sessions edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AICaptureSession"
+          type: array
         api_keys:
           description: APIKeys holds the value of the api_keys edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.APIKey"
+          type: array
         auth_tokens:
           description: AuthTokens holds the value of the auth_tokens edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.AuthTokens"
+          type: array
         groups:
           description: Groups holds the value of the groups edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Group"
+          type: array
         notifiers:
           description: Notifiers holds the value of the notifiers edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.Notifier"
+          type: array
         password_reset_tokens:
           description: PasswordResetTokens holds the value of the password_reset_tokens
             edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.PasswordResetTokens"
+          type: array
         user_groups:
           description: UserGroups holds the value of the user_groups edge.
-          type: array
           items:
             $ref: "#/components/schemas/ent.UserGroup"
-    ent.UserGroup:
+          type: array
       type: object
+    ent.UserGroup:
       properties:
         edges:
+          allOf:
+            - $ref: "#/components/schemas/ent.UserGroupEdges"
           description: >-
             Edges holds the relations/edges for other nodes in the graph.
 
             The values are being populated by the UserGroupQuery when eager-loading is set.
-          allOf:
-            - $ref: "#/components/schemas/ent.UserGroupEdges"
         group_id:
           description: GroupID holds the value of the "group_id" field.
           type: string
         role:
-          description: Role holds the value of the "role" field.
           allOf:
             - $ref: "#/components/schemas/usergroup.Role"
+          description: Role holds the value of the "role" field.
         user_id:
           description: UserID holds the value of the "user_id" field.
           type: string
-    ent.UserGroupEdges:
       type: object
+    ent.UserGroupEdges:
       properties:
         group:
-          description: Group holds the value of the group edge.
           allOf:
             - $ref: "#/components/schemas/ent.Group"
+          description: Group holds the value of the group edge.
         user:
-          description: User holds the value of the user edge.
           allOf:
             - $ref: "#/components/schemas/ent.User"
+          description: User holds the value of the user edge.
+      type: object
     entityfield.Type:
-      type: string
       enum:
         - text
         - number
         - boolean
         - time
+      type: string
       x-enum-varnames:
         - TypeText
         - TypeNumber
         - TypeBoolean
         - TypeTime
     export.Kind:
-      type: string
       enum:
         - export
         - export
         - import
+      type: string
       x-enum-varnames:
         - DefaultKind
         - KindExport
         - KindImport
     export.Status:
-      type: string
       enum:
         - pending
         - pending
         - running
         - completed
         - failed
+      type: string
       x-enum-varnames:
         - DefaultStatus
         - StatusPending
@@ -3846,19 +3913,18 @@ components:
         - StatusCompleted
         - StatusFailed
     repo.APIKeyCreate:
-      type: object
-      required:
-        - name
       properties:
         expiresAt:
           type: string
           nullable: true
         name:
-          type: string
           maxLength: 255
           minLength: 1
-    repo.APIKeyCreatedOut:
+          type: string
+      required:
+        - name
       type: object
+    repo.APIKeyCreatedOut:
       properties:
         createdAt:
           type: string
@@ -3876,8 +3942,8 @@ components:
           type: string
         userId:
           type: string
-    repo.APIKeyOut:
       type: object
+    repo.APIKeyOut:
       properties:
         createdAt:
           type: string
@@ -3893,8 +3959,8 @@ components:
           type: string
         userId:
           type: string
-    repo.BarcodeProduct:
       type: object
+    repo.BarcodeProduct:
       properties:
         barcode:
           type: string
@@ -3914,8 +3980,8 @@ components:
           type: string
         search_engine_name:
           type: string
-    repo.DuplicateOptions:
       type: object
+    repo.DuplicateOptions:
       properties:
         copyAttachments:
           type: boolean
@@ -3925,33 +3991,31 @@ components:
           type: boolean
         copyPrefix:
           type: string
-    repo.EntityCreate:
       type: object
-      required:
-        - name
+    repo.EntityCreate:
       properties:
         description:
-          type: string
           maxLength: 1000
+          type: string
         entityTypeId:
           type: string
         manufacturer:
-          type: string
           maxLength: 255
+          type: string
           x-omitempty: true
           nullable: true
         modelNumber:
           description: |-
             Identifications — optional at create time; populated e.g. by the
             barcode product-search import flow (#1578).
-          type: string
           maxLength: 255
+          type: string
           x-omitempty: true
           nullable: true
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         parentId:
           type: string
           nullable: true
@@ -3959,11 +4023,13 @@ components:
           type: number
         tagIds:
           description: Edges
-          type: array
           items:
             type: string
-    repo.EntityFieldData:
+          type: array
+      required:
+        - name
       type: object
+    repo.EntityFieldData:
       properties:
         booleanValue:
           type: boolean
@@ -3977,13 +4043,13 @@ components:
           type: string
         type:
           type: string
-    repo.EntityListResult:
       type: object
+    repo.EntityListResult:
       properties:
         items:
-          type: array
           items:
             $ref: "#/components/schemas/repo.EntitySummary"
+          type: array
         page:
           type: integer
         pageSize:
@@ -3992,24 +4058,24 @@ components:
           type: integer
         totalPrice:
           type: number
-    repo.EntityOut:
       type: object
+    repo.EntityOut:
       properties:
         archived:
           type: boolean
         assetId:
-          type: string
           example: "0"
+          type: string
         attachments:
-          type: array
           items:
             $ref: "#/components/schemas/repo.ItemAttachment"
+          type: array
         children:
           description: Container-specific fields (for entities whose
             entity_type.is_location = true)
-          type: array
           items:
             $ref: "#/components/schemas/repo.EntitySummary"
+          type: array
         createdAt:
           type: string
         description:
@@ -4020,9 +4086,9 @@ components:
           x-omitempty: true
           nullable: true
         fields:
-          type: array
           items:
             $ref: "#/components/schemas/repo.EntityFieldData"
+          type: array
         id:
           type: string
         imageId:
@@ -4038,13 +4104,13 @@ components:
           description: Warranty
           type: boolean
         location:
+          allOf:
+            - $ref: "#/components/schemas/repo.EntitySummary"
           description: |-
             Location is the nearest ancestor whose entity type is a location.
             When the direct parent is already a location it equals Parent; when
             the entity is nested inside other items it is the location those
             items ultimately live in. Nil for top-level entities.
-          allOf:
-            - $ref: "#/components/schemas/repo.EntitySummary"
           x-omitempty: true
           nullable: true
         manufacturer:
@@ -4057,9 +4123,9 @@ components:
           description: Extras
           type: string
         parent:
-          description: Edges
           allOf:
             - $ref: "#/components/schemas/repo.EntitySummary"
+          description: Edges
           x-omitempty: true
           nullable: true
         purchaseDate:
@@ -4085,9 +4151,9 @@ components:
         syncChildEntityLocations:
           type: boolean
         tags:
-          type: array
           items:
             $ref: "#/components/schemas/repo.TagSummary"
+          type: array
         thumbnailId:
           type: string
           x-omitempty: true
@@ -4100,8 +4166,8 @@ components:
           type: string
         warrantyExpires:
           type: string
-    repo.EntityPatch:
       type: object
+    repo.EntityPatch:
       properties:
         entityTypeId:
           type: string
@@ -4118,13 +4184,13 @@ components:
           x-omitempty: true
           nullable: true
         tagIds:
-          type: array
           items:
             type: string
+          type: array
           x-omitempty: true
           nullable: true
-    repo.EntityPath:
       type: object
+    repo.EntityPath:
       properties:
         id:
           type: string
@@ -4132,22 +4198,22 @@ components:
           type: string
         type:
           $ref: "#/components/schemas/repo.EntityPathType"
+      type: object
     repo.EntityPathType:
-      type: string
       enum:
         - location
         - item
+      type: string
       x-enum-varnames:
         - EntityPathTypeLocation
         - EntityPathTypeItem
     repo.EntitySummary:
-      type: object
       properties:
         archived:
           type: boolean
         assetId:
-          type: string
           example: "0"
+          type: string
         createdAt:
           type: string
         description:
@@ -4171,9 +4237,9 @@ components:
         name:
           type: string
         parent:
-          description: Edges
           allOf:
             - $ref: "#/components/schemas/repo.EntitySummary"
+          description: Edges
           x-omitempty: true
           nullable: true
         purchasePrice:
@@ -4184,23 +4250,21 @@ components:
           description: Sale details
           type: string
         tags:
-          type: array
           items:
             $ref: "#/components/schemas/repo.TagSummary"
+          type: array
         thumbnailId:
           type: string
           x-omitempty: true
           nullable: true
         updatedAt:
           type: string
-    repo.EntityTemplateCreate:
       type: object
-      required:
-        - name
+    repo.EntityTemplateCreate:
       properties:
         defaultDescription:
-          type: string
           maxLength: 1000
+          type: string
           nullable: true
         defaultInsured:
           type: boolean
@@ -4211,38 +4275,38 @@ components:
           type: string
           nullable: true
         defaultManufacturer:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultModelNumber:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultName:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultQuantity:
           description: Default values for entities
           type: number
           nullable: true
         defaultTagIds:
-          type: array
           items:
             type: string
+          type: array
           nullable: true
         defaultWarrantyDetails:
-          type: string
           maxLength: 1000
+          type: string
           nullable: true
         description:
-          type: string
           maxLength: 1000
+          type: string
         fields:
           description: Custom fields
-          type: array
           items:
             $ref: "#/components/schemas/repo.TemplateField"
+          type: array
         includePurchaseFields:
           type: boolean
         includeSoldFields:
@@ -4251,14 +4315,16 @@ components:
           description: Metadata flags
           type: boolean
         name:
-          type: string
           maxLength: 255
           minLength: 1
-        notes:
           type: string
+        notes:
           maxLength: 1000
-    repo.EntityTemplateOut:
+          type: string
+      required:
+        - name
       type: object
+    repo.EntityTemplateOut:
       properties:
         createdAt:
           type: string
@@ -4269,9 +4335,9 @@ components:
         defaultLifetimeWarranty:
           type: boolean
         defaultLocation:
-          description: Default location and tags
           allOf:
             - $ref: "#/components/schemas/repo.TemplateLocationSummary"
+          description: Default location and tags
         defaultManufacturer:
           type: string
         defaultModelNumber:
@@ -4282,18 +4348,18 @@ components:
           description: Default values for entities
           type: number
         defaultTags:
-          type: array
           items:
             $ref: "#/components/schemas/repo.TemplateTagSummary"
+          type: array
         defaultWarrantyDetails:
           type: string
         description:
           type: string
         fields:
           description: Custom fields
-          type: array
           items:
             $ref: "#/components/schemas/repo.TemplateField"
+          type: array
         id:
           type: string
         includePurchaseFields:
@@ -4309,8 +4375,8 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.EntityTemplateSummary:
       type: object
+    repo.EntityTemplateSummary:
       properties:
         createdAt:
           type: string
@@ -4322,14 +4388,12 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.EntityTemplateUpdate:
       type: object
-      required:
-        - name
+    repo.EntityTemplateUpdate:
       properties:
         defaultDescription:
-          type: string
           maxLength: 1000
+          type: string
           nullable: true
         defaultInsured:
           type: boolean
@@ -4340,38 +4404,38 @@ components:
           type: string
           nullable: true
         defaultManufacturer:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultModelNumber:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultName:
-          type: string
           maxLength: 255
+          type: string
           nullable: true
         defaultQuantity:
           description: Default values for entities
           type: number
           nullable: true
         defaultTagIds:
-          type: array
           items:
             type: string
+          type: array
           nullable: true
         defaultWarrantyDetails:
-          type: string
           maxLength: 1000
+          type: string
           nullable: true
         description:
-          type: string
           maxLength: 1000
+          type: string
         fields:
           description: Custom fields
-          type: array
           items:
             $ref: "#/components/schemas/repo.TemplateField"
+          type: array
         id:
           type: string
         includePurchaseFields:
@@ -4382,14 +4446,16 @@ components:
           description: Metadata flags
           type: boolean
         name:
-          type: string
           maxLength: 255
           minLength: 1
-        notes:
           type: string
+        notes:
           maxLength: 1000
-    repo.EntityTypeCreate:
+          type: string
+      required:
+        - name
       type: object
+    repo.EntityTypeCreate:
       properties:
         defaultTemplateId:
           type: string
@@ -4399,8 +4465,8 @@ components:
           type: boolean
         name:
           type: string
-    repo.EntityTypeSummary:
       type: object
+    repo.EntityTypeSummary:
       properties:
         createdAt:
           type: string
@@ -4420,8 +4486,8 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.EntityTypeUpdate:
       type: object
+    repo.EntityTypeUpdate:
       properties:
         defaultTemplateId:
           type: string
@@ -4433,24 +4499,22 @@ components:
           type: boolean
         name:
           type: string
-    repo.EntityUpdate:
       type: object
-      required:
-        - name
+    repo.EntityUpdate:
       properties:
         archived:
           type: boolean
         assetId:
           type: string
         description:
-          type: string
           maxLength: 1000
+          type: string
         entityTypeId:
           type: string
         fields:
-          type: array
           items:
             $ref: "#/components/schemas/repo.EntityFieldData"
+          type: array
         id:
           type: string
         insured:
@@ -4463,9 +4527,9 @@ components:
         modelNumber:
           type: string
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         notes:
           description: Extras
           type: string
@@ -4477,8 +4541,8 @@ components:
           description: Purchase
           type: string
         purchaseFrom:
-          type: string
           maxLength: 255
+          type: string
         purchasePrice:
           type: number
           x-omitempty: true
@@ -4498,21 +4562,23 @@ components:
           x-omitempty: true
           nullable: true
         soldTo:
-          type: string
           maxLength: 255
+          type: string
         syncChildEntityLocations:
           type: boolean
         tagIds:
           description: Edges
-          type: array
           items:
             type: string
+          type: array
         warrantyDetails:
           type: string
         warrantyExpires:
           type: string
-    repo.ExportOut:
+      required:
+        - name
       type: object
+    repo.ExportOut:
       properties:
         artifactPath:
           type: string
@@ -4538,8 +4604,8 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.Group:
       type: object
+    repo.Group:
       properties:
         createdAt:
           type: string
@@ -4551,8 +4617,8 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.GroupInvitation:
       type: object
+    repo.GroupInvitation:
       properties:
         expiresAt:
           type: string
@@ -4562,8 +4628,8 @@ components:
           type: string
         uses:
           type: integer
-    repo.GroupStatistics:
       type: object
+    repo.GroupStatistics:
       properties:
         totalItemPrice:
           type: number
@@ -4577,15 +4643,15 @@ components:
           type: integer
         totalWithWarranty:
           type: integer
-    repo.GroupUpdate:
       type: object
+    repo.GroupUpdate:
       properties:
         currency:
           type: string
         name:
           type: string
-    repo.ItemAttachment:
       type: object
+    repo.ItemAttachment:
       properties:
         createdAt:
           type: string
@@ -4605,8 +4671,8 @@ components:
           type: string
         updatedAt:
           type: string
-    repo.ItemAttachmentUpdate:
       type: object
+    repo.ItemAttachmentUpdate:
       properties:
         primary:
           type: boolean
@@ -4614,14 +4680,14 @@ components:
           type: string
         type:
           type: string
-    repo.MaintenanceEntry:
       type: object
+    repo.MaintenanceEntry:
       properties:
         completedDate:
           type: string
         cost:
-          type: string
           example: "0"
+          type: string
         description:
           type: string
         id:
@@ -4630,44 +4696,44 @@ components:
           type: string
         scheduledDate:
           type: string
-    repo.MaintenanceEntryCreate:
       type: object
+    repo.MaintenanceEntryCreate:
+      properties:
+        completedDate:
+          type: string
+        cost:
+          example: "0"
+          type: string
+        description:
+          type: string
+        name:
+          type: string
+        scheduledDate:
+          type: string
       required:
         - name
-      properties:
-        completedDate:
-          type: string
-        cost:
-          type: string
-          example: "0"
-        description:
-          type: string
-        name:
-          type: string
-        scheduledDate:
-          type: string
+      type: object
     repo.MaintenanceEntryUpdate:
-      type: object
       properties:
         completedDate:
           type: string
         cost:
-          type: string
           example: "0"
+          type: string
         description:
           type: string
         name:
           type: string
         scheduledDate:
           type: string
-    repo.MaintenanceEntryWithDetails:
       type: object
+    repo.MaintenanceEntryWithDetails:
       properties:
         completedDate:
           type: string
         cost:
-          type: string
           example: "0"
+          type: string
         description:
           type: string
         id:
@@ -4680,32 +4746,32 @@ components:
           type: string
         scheduledDate:
           type: string
+      type: object
     repo.MaintenanceFilterStatus:
-      type: string
       enum:
         - scheduled
         - completed
         - both
+      type: string
       x-enum-varnames:
         - MaintenanceFilterStatusScheduled
         - MaintenanceFilterStatusCompleted
         - MaintenanceFilterStatusBoth
     repo.NotifierCreate:
-      type: object
-      required:
-        - name
-        - url
       properties:
         isActive:
           type: boolean
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         url:
           type: string
-    repo.NotifierOut:
+      required:
+        - name
+        - url
       type: object
+    repo.NotifierOut:
       properties:
         createdAt:
           type: string
@@ -4723,60 +4789,60 @@ components:
           type: string
         userId:
           type: string
-    repo.NotifierUpdate:
       type: object
-      required:
-        - name
+    repo.NotifierUpdate:
       properties:
         isActive:
           type: boolean
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         url:
           type: string
           nullable: true
-    repo.PaginationResult-repo_EntitySummary:
+      required:
+        - name
       type: object
+    repo.PaginationResult-repo_EntitySummary:
       properties:
         items:
-          type: array
           items:
             $ref: "#/components/schemas/repo.EntitySummary"
+          type: array
         page:
           type: integer
         pageSize:
           type: integer
         total:
           type: integer
-    repo.TagCreate:
       type: object
-      required:
-        - name
+    repo.TagCreate:
       properties:
         color:
           type: string
         description:
-          type: string
           maxLength: 1000
+          type: string
         icon:
-          type: string
           maxLength: 255
-        name:
           type: string
+        name:
           maxLength: 255
           minLength: 1
+          type: string
         parentId:
           type: string
           nullable: true
-    repo.TagOut:
+      required:
+        - name
       type: object
+    repo.TagOut:
       properties:
         children:
-          type: array
           items:
             $ref: "#/components/schemas/repo.TagSummary"
+          type: array
         color:
           type: string
         createdAt:
@@ -4798,8 +4864,8 @@ components:
           nullable: true
         updatedAt:
           type: string
-    repo.TagSummary:
       type: object
+    repo.TagSummary:
       properties:
         color:
           type: string
@@ -4818,30 +4884,30 @@ components:
           nullable: true
         updatedAt:
           type: string
-    repo.TagUpdate:
       type: object
-      required:
-        - name
+    repo.TagUpdate:
       properties:
         color:
           type: string
         description:
-          type: string
           maxLength: 1000
-        icon:
           type: string
+        icon:
           maxLength: 255
+          type: string
         id:
           type: string
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         parentId:
           type: string
           nullable: true
-    repo.TemplateField:
+      required:
+        - name
       type: object
+    repo.TemplateField:
       properties:
         booleanValue:
           type: boolean
@@ -4857,22 +4923,22 @@ components:
           type: string
         type:
           type: string
+      type: object
     repo.TemplateLocationSummary:
-      type: object
       properties:
         id:
           type: string
         name:
           type: string
+      type: object
     repo.TemplateTagSummary:
-      type: object
       properties:
         id:
           type: string
         name:
           type: string
-    repo.TotalsByOrganizer:
       type: object
+    repo.TotalsByOrganizer:
       properties:
         id:
           type: string
@@ -4880,30 +4946,30 @@ components:
           type: string
         total:
           type: number
-    repo.TreeItem:
       type: object
+    repo.TreeItem:
       properties:
         children:
-          type: array
           items:
             $ref: "#/components/schemas/repo.TreeItem"
+          type: array
         id:
           type: string
         name:
           type: string
         type:
           type: string
-    repo.UserOut:
       type: object
+    repo.UserOut:
       properties:
         defaultGroupId:
           type: string
         email:
           type: string
         groupIds:
-          type: array
           items:
             type: string
+          type: array
         id:
           type: string
         isSuperuser:
@@ -4914,8 +4980,8 @@ components:
           type: string
         oidcSubject:
           type: string
-    repo.UserSummary:
       type: object
+    repo.UserSummary:
       properties:
         email:
           type: string
@@ -4923,30 +4989,30 @@ components:
           type: string
         name:
           type: string
-    repo.UserUpdate:
       type: object
+    repo.UserUpdate:
       properties:
         email:
           type: string
         name:
           type: string
-    repo.ValueOverTime:
       type: object
+    repo.ValueOverTime:
       properties:
         end:
           type: string
         entries:
-          type: array
           items:
             $ref: "#/components/schemas/repo.ValueOverTimeEntry"
+          type: array
         start:
           type: string
         valueAtEnd:
           type: number
         valueAtStart:
           type: number
-    repo.ValueOverTimeEntry:
       type: object
+    repo.ValueOverTimeEntry:
       properties:
         date:
           type: string
@@ -4954,26 +5020,28 @@ components:
           type: string
         value:
           type: number
-    services.AICaptureCreatedItem:
       type: object
+    services.AICaptureCreatedItem:
       properties:
+        clientId:
+          type: string
         id:
           type: string
         name:
           type: string
-    services.AICaptureDraft:
       type: object
+    services.AICaptureDraft:
       properties:
         items:
-          type: array
           items:
             $ref: "#/components/schemas/services.AICaptureItem"
-        warnings:
           type: array
+        warnings:
           items:
             type: string
-    services.AICaptureItem:
+          type: array
       type: object
+    services.AICaptureItem:
       properties:
         captureGroupId:
           type: string
@@ -4998,30 +5066,42 @@ components:
         needsReview:
           type: boolean
         photoIds:
-          type: array
           items:
             type: string
-        photoIndexes:
           type: array
+        photoIndexes:
           items:
             type: integer
+          type: array
         quantity:
           type: number
         reviewReason:
           type: string
         tagIds:
-          type: array
           items:
             type: string
-    services.AICaptureOption:
+          type: array
       type: object
+    services.AICaptureItemSubmission:
+      properties:
+        clientId:
+          type: string
+        entityId:
+          type: string
+          nullable: true
+        errorCode:
+          type: string
+        status:
+          type: string
+      type: object
+    services.AICaptureOption:
       properties:
         id:
           type: string
         name:
           type: string
-    services.AICaptureProviderStatus:
       type: object
+    services.AICaptureProviderStatus:
       properties:
         enabled:
           type: boolean
@@ -5031,15 +5111,15 @@ components:
           type: string
         name:
           type: string
-    services.AICaptureReanalysisBatchOut:
       type: object
+    services.AICaptureReanalysisBatchOut:
       properties:
         attempts:
           type: integer
         clientIds:
-          type: array
           items:
             type: string
+          type: array
         completed:
           type: integer
         completedAt:
@@ -5047,40 +5127,40 @@ components:
         createdAt:
           type: string
         errors:
-          type: object
           additionalProperties:
             type: string
+          type: object
         nextAttemptAt:
           type: string
         pendingClientIds:
-          type: array
           items:
             type: string
+          type: array
         provider:
           type: string
         status:
           type: string
         suggestions:
-          type: object
           additionalProperties:
             $ref: "#/components/schemas/services.AICaptureReanalysisOut"
+          type: object
         total:
           type: integer
         updatedAt:
           type: string
-    services.AICaptureReanalysisOut:
       type: object
+    services.AICaptureReanalysisOut:
       properties:
         item:
           $ref: "#/components/schemas/services.AICaptureItem"
         provider:
           type: string
         warnings:
-          type: array
           items:
             type: string
-    services.AICaptureSessionOut:
+          type: array
       type: object
+    services.AICaptureSessionOut:
       properties:
         analysisAttempts:
           type: integer
@@ -5095,9 +5175,9 @@ components:
         createdAt:
           type: string
         createdItems:
-          type: array
           items:
             $ref: "#/components/schemas/services.AICaptureCreatedItem"
+          type: array
         draft:
           $ref: "#/components/schemas/services.AICaptureDraft"
         draftRevision:
@@ -5117,19 +5197,23 @@ components:
         photoCount:
           type: integer
         photos:
-          type: array
           items:
             $ref: "#/components/schemas/services.AICaptureSessionPhoto"
+          type: array
         reanalysis:
           $ref: "#/components/schemas/services.AICaptureReanalysisBatchOut"
         status:
           type: string
+        submissions:
+          items:
+            $ref: "#/components/schemas/services.AICaptureItemSubmission"
+          type: array
         updatedAt:
           type: string
         uploadedPhotoCount:
           type: integer
-    services.AICaptureSessionPhoto:
       type: object
+    services.AICaptureSessionPhoto:
       properties:
         captureGroupId:
           type: string
@@ -5148,15 +5232,28 @@ components:
           type: integer
         sizeBytes:
           type: integer
-    services.Latest:
       type: object
+    services.AIItemReanalysisOut:
+      properties:
+        item:
+          $ref: "#/components/schemas/services.AICaptureItem"
+        photoCount:
+          type: integer
+        provider:
+          type: string
+        warnings:
+          items:
+            type: string
+          type: array
+      type: object
+    services.Latest:
       properties:
         date:
           type: string
         version:
           type: string
-    services.UserRegistration:
       type: object
+    services.UserRegistration:
       properties:
         email:
           type: string
@@ -5166,43 +5263,45 @@ components:
           type: string
         token:
           type: string
+      type: object
     templatefield.Type:
-      type: string
       enum:
         - text
         - number
         - boolean
         - time
+      type: string
       x-enum-varnames:
         - TypeText
         - TypeNumber
         - TypeBoolean
         - TypeTime
     usergroup.Role:
-      type: string
       enum:
         - user
         - user
         - owner
+      type: string
       x-enum-varnames:
         - DefaultRole
         - RoleUser
         - RoleOwner
     v1.AIStatus:
-      type: object
       properties:
         enabled:
           type: boolean
         maxPhotos:
           type: integer
+        maxSessionPhotos:
+          type: integer
         model:
           type: string
         providers:
-          type: array
           items:
             $ref: "#/components/schemas/services.AICaptureProviderStatus"
-    v1.APISummary:
+          type: array
       type: object
+    v1.APISummary:
       properties:
         ai:
           $ref: "#/components/schemas/v1.AIStatus"
@@ -5227,16 +5326,16 @@ components:
         title:
           type: string
         versions:
-          type: array
           items:
             type: string
-    v1.ActionAmountResult:
+          type: array
       type: object
+    v1.ActionAmountResult:
       properties:
         completed:
           type: integer
-    v1.Build:
       type: object
+    v1.Build:
       properties:
         buildTime:
           type: string
@@ -5244,29 +5343,26 @@ components:
           type: string
         version:
           type: string
-    v1.ChangePassword:
       type: object
+    v1.ChangePassword:
       properties:
         current:
           type: string
         new:
           type: string
-    v1.CreateRequest:
       type: object
-      required:
-        - name
+    v1.CreateRequest:
       properties:
         name:
           type: string
-    v1.EntityTemplateCreateItemRequest:
-      type: object
       required:
         - name
-        - parentId
+      type: object
+    v1.EntityTemplateCreateItemRequest:
       properties:
         description:
-          type: string
           maxLength: 1000
+          type: string
         entityTypeId:
           description: >-
             EntityTypeID is the entity type selected by the user. When set it
@@ -5275,34 +5371,37 @@ components:
             precedence; when empty the repository falls back to the group's default.
           type: string
         name:
-          type: string
           maxLength: 255
           minLength: 1
+          type: string
         parentId:
           type: string
         quantity:
           type: number
         tagIds:
-          type: array
           items:
             type: string
-    v1.ForgotPasswordRequest:
-      type: object
+          type: array
       required:
-        - email
+        - name
+        - parentId
+      type: object
+    v1.ForgotPasswordRequest:
       properties:
         email:
-          type: string
           example: user@example.com
-    v1.GroupAcceptInvitationResponse:
+          type: string
+      required:
+        - email
       type: object
+    v1.GroupAcceptInvitationResponse:
       properties:
         id:
           type: string
         name:
           type: string
-    v1.GroupInvitation:
       type: object
+    v1.GroupInvitation:
       properties:
         expiresAt:
           type: string
@@ -5312,30 +5411,30 @@ components:
           type: string
         uses:
           type: integer
-    v1.GroupInvitationCreate:
       type: object
-      required:
-        - uses
+    v1.GroupInvitationCreate:
       properties:
         expiresAt:
           type: string
         uses:
-          type: integer
           maximum: 100
           minimum: 1
-    v1.LoginForm:
+          type: integer
+      required:
+        - uses
       type: object
+    v1.LoginForm:
       properties:
         password:
-          type: string
           example: admin
+          type: string
         stayLoggedIn:
           type: boolean
         username:
-          type: string
           example: admin@admin.com
-    v1.OIDCStatus:
+          type: string
       type: object
+    v1.OIDCStatus:
       properties:
         allowLocal:
           type: boolean
@@ -5345,39 +5444,39 @@ components:
           type: string
         enabled:
           type: boolean
-    v1.ResetPasswordRequest:
       type: object
+    v1.ResetPasswordRequest:
+      properties:
+        password:
+          minLength: 6
+          type: string
+        token:
+          minLength: 20
+          type: string
       required:
         - password
         - token
-      properties:
-        password:
-          type: string
-          minLength: 6
-        token:
-          type: string
-          minLength: 20
-    v1.Results-repo_ExportOut:
       type: object
+    v1.Results-repo_ExportOut:
       properties:
         items:
-          type: array
           items:
             $ref: "#/components/schemas/repo.ExportOut"
-    v1.Results-services_AICaptureSessionOut:
+          type: array
       type: object
+    v1.Results-services_AICaptureSessionOut:
       properties:
         items:
-          type: array
           items:
             $ref: "#/components/schemas/services.AICaptureSessionOut"
-    v1.TelemetryStatus:
+          type: array
       type: object
+    v1.TelemetryStatus:
       properties:
         enabled:
           type: boolean
-    v1.TokenResponse:
       type: object
+    v1.TokenResponse:
       properties:
         attachmentToken:
           type: string
@@ -5385,8 +5484,8 @@ components:
           type: string
         token:
           type: string
-    v1.WipeInventoryOptions:
       type: object
+    v1.WipeInventoryOptions:
       properties:
         wipeLocations:
           type: boolean
@@ -5394,49 +5493,58 @@ components:
           type: boolean
         wipeTags:
           type: boolean
-    v1.Wrapped:
       type: object
+    v1.Wrapped:
       properties:
         item: {}
-    v1.aiCaptureSessionCorrection:
       type: object
+    v1.aiCaptureSessionCorrection:
       properties:
         instruction:
           type: string
         revision:
           type: integer
-    v1.aiCaptureSessionCreate:
       type: object
+    v1.aiCaptureSessionCreate:
       properties:
         locationId:
           type: string
-    v1.aiCaptureSessionDraftUpdate:
       type: object
+    v1.aiCaptureSessionDraftUpdate:
       properties:
         draft:
           $ref: "#/components/schemas/services.AICaptureDraft"
         revision:
           type: integer
-    v1.aiCaptureSessionFinish:
       type: object
+    v1.aiCaptureSessionFinish:
       properties:
         expectedCaptureRevision:
           type: integer
         expectedPhotoCount:
           type: integer
-    v1.aiCaptureSessionLocationUpdate:
       type: object
+    v1.aiCaptureSessionItemsSubmit:
+      properties:
+        clientIds:
+          items:
+            type: string
+          type: array
+        revision:
+          type: integer
+      type: object
+    v1.aiCaptureSessionLocationUpdate:
       properties:
         locationId:
           type: string
-    v1.aiCaptureSessionPhotoUpdate:
       type: object
+    v1.aiCaptureSessionPhotoUpdate:
       properties:
         captureGroupId:
           type: string
           nullable: true
-    v1.aiCaptureSessionReanalysis:
       type: object
+    v1.aiCaptureSessionReanalysis:
       properties:
         clientId:
           type: string
@@ -5446,26 +5554,31 @@ components:
           type: string
         revision:
           type: integer
-    v1.aiCaptureSessionReanalysisBatch:
       type: object
+    v1.aiCaptureSessionReanalysisBatch:
       properties:
         clientIds:
-          type: array
           items:
             type: string
+          type: array
         instruction:
           type: string
         provider:
           type: string
         revision:
           type: integer
-    v1.aiCaptureSessionSubmit:
       type: object
+    v1.aiCaptureSessionSubmit:
       properties:
         revision:
           type: integer
-    v1.externalAttachmentRequest:
       type: object
+    v1.aiItemReanalysisRequest:
+      properties:
+        instruction:
+          type: string
+      type: object
+    v1.externalAttachmentRequest:
       properties:
         attachment_type:
           type: string
@@ -5475,10 +5588,11 @@ components:
           type: string
         title:
           type: string
-    validate.ErrorResponse:
       type: object
+    validate.ErrorResponse:
       properties:
         error:
           type: string
         fields:
           type: string
+      type: object

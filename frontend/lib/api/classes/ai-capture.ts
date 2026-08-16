@@ -32,6 +32,10 @@ export interface AICaptureReanalysis {
   warnings: string[];
 }
 
+export interface AIItemReanalysis extends AICaptureReanalysis {
+  photoCount: number;
+}
+
 export type AICaptureReanalysisStatus = "queued" | "processing" | "waiting" | "completed";
 
 export interface AICaptureReanalysisBatch {
@@ -240,6 +244,13 @@ export class AICaptureAPI extends BaseAPI {
     >({
       url: route(`/ai/capture/sessions/${sessionId}/reanalyze-item`),
       body: { revision, clientId, provider, instruction },
+    });
+  }
+
+  reanalyzeInventoryItem(itemId: string, instruction = "") {
+    return this.http.post<{ instruction: string }, AIItemReanalysis>({
+      url: route(`/ai/items/${itemId}/reanalyze`),
+      body: { instruction: instruction.trim() },
     });
   }
 

@@ -18,6 +18,7 @@ describe("AICaptureAPI", () => {
           entityTypeId: "type-1",
           tagIds: [],
           photoIndexes: [0, 1],
+          moveDisposition: "undecided",
           needsReview: false,
         },
       ],
@@ -175,6 +176,31 @@ describe("AICaptureAPI", () => {
     expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
       revision: 4,
       clientIds: ["item-2", "item-4"],
+    });
+  });
+
+  test("requests a Qwen preview for an existing inventory item", async () => {
+    const response = {
+      item: { name: "Gray polo" },
+      provider: "default",
+      warnings: [],
+      photoCount: 2,
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(response), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    const api = new AICaptureAPI(new Requests("http://homebox.test", "Bearer token"));
+
+    await api.reanalyzeInventoryItem("item-1", " Focus on the label ");
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("http://homebox.test/api/v1/ai/items/item-1/reanalyze");
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe("POST");
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      instruction: "Focus on the label",
     });
   });
 });

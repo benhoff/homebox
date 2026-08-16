@@ -6,6 +6,7 @@
 | Multiple views of the same item | Implemented | 2026-08-16 |
 | Manual pre-move disposition planning | Implemented | 2026-08-16 |
 | Unified pending-item review | Implemented | 2026-08-16 |
+| Existing-item Qwen reanalysis | Implemented | 2026-08-16 |
 
 ## Summary
 
@@ -51,6 +52,7 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 18. One same-item group has one disposition regardless of how many photographs are attached to it. Splitting a draft copies the current plan to both resulting items so the user can revise either; merging keeps the destination item's plan.
 19. Review is item-centric across capture sessions. Sessions remain the durability, retry, and photo-ownership boundary but are shown primarily as background activity.
 20. Reviewed items may be created individually or as a selection. A session remains reviewable until every draft item is created, and partial submission never duplicates completed items.
+21. An existing inventory item can be reanalyzed from its edit page using the configured primary Qwen endpoint. This produces a field-by-field preview from the item's normal photo attachments; it never updates the item until the user applies suggestions in the editor and presses **Save**.
 
 ## Goals
 
@@ -223,6 +225,14 @@ Submitting is performed by the server so that the browser does not need to downl
 
 On submission, HomeBox stores the plan on the created inventory item as text custom fields named **Move disposition** and, when supplied, **Move planning notes**. This keeps the plan durable and searchable without treating a future sale, donation, or disposal as already completed.
 
+### Existing-item Qwen reanalysis
+
+The item detail overflow menu and item editor expose **Re-analyze with Qwen**. The editor sends the item's local photo attachments, primary photo first, to the configured primary vision provider. An optional instruction can direct attention to a label, model number, or other visible evidence.
+
+The response is a preview limited to name, quantity, description, manufacturer, model number, item type, and existing tags. The user compares current and suggested values and may apply one changed field or all changed fields to the editor. Applying a suggestion does not call the item update API; the ordinary **Save** action remains the only persistence boundary. Serial numbers, purchase and sale data, warranty data, insurance, notes, custom fields, attachments, location, and move-planning fields are never changed by reanalysis.
+
+All supported attached views are considered in primary-first order, up to `HBOX_AI_MAX_PHOTOS`. Unsupported or over-limit photos produce visible warnings. Existing-item reanalysis is synchronous preview work rather than a durable capture-session batch; if Qwen is unavailable, the item remains unchanged and the user can retry from the editor.
+
 ## State model
 
 ```mermaid
@@ -330,6 +340,9 @@ stateDiagram-v2
 - **CAP-048:** No item is created during capture, upload, analysis, or correction.
 - **CAP-049:** Review initially preserves explicit group photo assignments but permits the user to split, merge, or reassign draft items before submission.
 - **CAP-049A:** Review lists pending items across ready sessions and supports individual or selected partial submission. Completed draft rows are immutable and omitted from the pending queue.
+- **CAP-050:** Existing-item reanalysis uses the configured primary provider, reads only collection-authorized local photo attachments, and returns an unpersisted preview of the allowed visual metadata fields.
+- **CAP-051:** Existing-item reanalysis considers attached photos in primary-first order, caps the request at `HBOX_AI_MAX_PHOTOS`, and reports skipped or over-limit evidence without changing the item.
+- **CAP-052:** Applying one or all existing-item suggestions changes only the local editor state. The item update endpoint is invoked only when the user explicitly saves.
 
 ## API design
 
@@ -354,6 +367,7 @@ All routes use the existing authenticated active-collection middleware. Resource
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/reanalyze-items` | Queue durable reanalysis for one or more reviewed items |
 | `DELETE` | `/v1/ai/capture/sessions/{sessionId}/reanalysis/{clientId}` | Dismiss a persisted item suggestion or error |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/submit` | Idempotently create inventory items and attachments |
+| `POST` | `/v1/ai/items/{id}/reanalyze` | Preview visual metadata for an existing item from its attached photos using the primary Qwen provider |
 
 The existing `POST /v1/ai/capture/analyze` route remains available during rollout. The session UI must use only session routes. The direct route can be deprecated after session stability is proven.
 
@@ -622,6 +636,7 @@ Logs must include `session_id`, `user_id`, `group_id`, state transition, attempt
 21. During capture, a user can reassign or ungroup a photo without re-uploading it. During review, a user can split, merge, and reassign suggestions before submission.
 22. Enabling same-item mode works with the existing configured OpenAI-compatible model and API defaults; it requires no model retraining or configuration change.
 23. If multi-photo analysis omits a photo, that photo is retried independently and still appears as a review item even when the independent retry cannot identify it.
+24. Reanalyzing an existing item shows field-level Qwen suggestions without modifying stored item data; only fields applied in the editor and explicitly saved are persisted.
 
 ## Test plan
 

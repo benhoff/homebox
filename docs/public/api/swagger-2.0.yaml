@@ -2390,6 +2390,8 @@ definitions:
     type: object
   services.AICaptureCreatedItem:
     properties:
+      clientId:
+        type: string
       id:
         type: string
       name:
@@ -2446,6 +2448,18 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  services.AICaptureItemSubmission:
+    properties:
+      clientId:
+        type: string
+      entityId:
+        type: string
+        x-nullable: true
+      errorCode:
+        type: string
+      status:
+        type: string
     type: object
   services.AICaptureOption:
     properties:
@@ -2557,6 +2571,10 @@ definitions:
         $ref: '#/definitions/services.AICaptureReanalysisBatchOut'
       status:
         type: string
+      submissions:
+        items:
+          $ref: '#/definitions/services.AICaptureItemSubmission'
+        type: array
       updatedAt:
         type: string
       uploadedPhotoCount:
@@ -2581,6 +2599,19 @@ definitions:
         type: integer
       sizeBytes:
         type: integer
+    type: object
+  services.AIItemReanalysisOut:
+    properties:
+      item:
+        $ref: '#/definitions/services.AICaptureItem'
+      photoCount:
+        type: integer
+      provider:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
     type: object
   services.Latest:
     properties:
@@ -2627,6 +2658,8 @@ definitions:
       enabled:
         type: boolean
       maxPhotos:
+        type: integer
+      maxSessionPhotos:
         type: integer
       model:
         type: string
@@ -2856,6 +2889,15 @@ definitions:
       expectedPhotoCount:
         type: integer
     type: object
+  v1.aiCaptureSessionItemsSubmit:
+    properties:
+      clientIds:
+        items:
+          type: string
+        type: array
+      revision:
+        type: integer
+    type: object
   v1.aiCaptureSessionLocationUpdate:
     properties:
       locationId:
@@ -2895,6 +2937,11 @@ definitions:
     properties:
       revision:
         type: integer
+    type: object
+  v1.aiItemReanalysisRequest:
+    properties:
+      instruction:
+        type: string
     type: object
   v1.externalAttachmentRequest:
     properties:
@@ -3493,6 +3540,69 @@ paths:
       summary: Create reviewed items from an AI capture session
       tags:
       - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/submit-items:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Expected draft revision and selected item IDs
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionItemsSubmit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Create selected reviewed items from an AI capture session
+      tags:
+      - AI Capture Sessions
+  /v1/ai/items/{id}/reanalyze:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Optional visual-analysis guidance
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/v1.aiItemReanalysisRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AIItemReanalysisOut'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Preview Qwen reanalysis for an existing inventory item
+      tags:
+      - AI Capture
   /v1/assets/{id}:
     get:
       parameters:

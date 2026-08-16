@@ -11,6 +11,7 @@
   import MdiPlusBoxMultipleOutline from "~icons/mdi/plus-box-multiple-outline";
   import MdiContentSaveEdit from "~icons/mdi/content-save-edit";
   import MdiDotsVertical from "~icons/mdi/dots-vertical";
+  import MdiMagicStaff from "~icons/mdi/magic-staff";
   import { Separator } from "@/components/ui/separator";
   import {
     DropdownMenu,
@@ -458,6 +459,10 @@
     return route.path;
   });
 
+  function openQwenReanalysis() {
+    navigateTo({ path: `/item/${itemId.value}/edit`, query: { reanalyze: "qwen" } });
+  }
+
   const tabs = computed(() => {
     return [
       {
@@ -726,6 +731,10 @@
                   <DropdownMenuItem @click="saveAsTemplate">
                     <MdiContentSaveEdit class="mr-2 size-4" />
                     {{ $t("components.template.save_as_template") }}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="openQwenReanalysis">
+                    <MdiMagicStaff class="mr-2 size-4" />
+                    {{ $t("items.ai_reanalysis.action") }}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem class="text-destructive focus:text-destructive" @click="deleteItem">

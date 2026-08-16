@@ -1477,6 +1477,7 @@ export interface ValueOverTimeEntry {
 }
 
 export interface AICaptureCreatedItem {
+  clientId: string;
   id: string;
   name: string;
 }
@@ -1502,6 +1503,13 @@ export interface AICaptureItem {
   quantity: number;
   reviewReason: string;
   tagIds: string[];
+}
+
+export interface AICaptureItemSubmission {
+  clientId: string;
+  entityId?: string | null;
+  errorCode: string;
+  status: string;
 }
 
 export interface AICaptureOption {
@@ -1558,6 +1566,7 @@ export interface AICaptureSessionOut {
   photos: AICaptureSessionPhoto[];
   reanalysis: AICaptureReanalysisBatchOut;
   status: string;
+  submissions: AICaptureItemSubmission[];
   updatedAt: Date | string;
   uploadedPhotoCount: number;
 }
@@ -1571,6 +1580,13 @@ export interface AICaptureSessionPhoto {
   originalName: string;
   position: number;
   sizeBytes: number;
+}
+
+export interface AIItemReanalysisOut {
+  item: AICaptureItem;
+  photoCount: number;
+  provider: string;
+  warnings: string[];
 }
 
 export interface Latest {
@@ -1740,6 +1756,11 @@ export interface AiCaptureSessionFinish {
   expectedPhotoCount: number;
 }
 
+export interface AiCaptureSessionItemsSubmit {
+  clientIds: string[];
+  revision: number;
+}
+
 export interface AiCaptureSessionLocationUpdate {
   locationId: string;
 }
@@ -1764,6 +1785,10 @@ export interface AiCaptureSessionReanalysisBatch {
 
 export interface AiCaptureSessionSubmit {
   revision: number;
+}
+
+export interface AiItemReanalysisRequest {
+  instruction: string;
 }
 
 export interface ExternalAttachmentRequest {

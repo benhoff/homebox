@@ -2600,6 +2600,19 @@ definitions:
       sizeBytes:
         type: integer
     type: object
+  services.AIItemReanalysisOut:
+    properties:
+      item:
+        $ref: '#/definitions/services.AICaptureItem'
+      photoCount:
+        type: integer
+      provider:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
   services.Latest:
     properties:
       date:
@@ -2924,6 +2937,11 @@ definitions:
     properties:
       revision:
         type: integer
+    type: object
+  v1.aiItemReanalysisRequest:
+    properties:
+      instruction:
+        type: string
     type: object
   v1.externalAttachmentRequest:
     properties:
@@ -3550,6 +3568,41 @@ paths:
       summary: Create selected reviewed items from an AI capture session
       tags:
       - AI Capture Sessions
+  /v1/ai/items/{id}/reanalyze:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Item ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Optional visual-analysis guidance
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/v1.aiItemReanalysisRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AIItemReanalysisOut'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+        "502":
+          description: Bad Gateway
+          schema:
+            $ref: '#/definitions/validate.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Preview Qwen reanalysis for an existing inventory item
+      tags:
+      - AI Capture
   /v1/assets/{id}:
     get:
       parameters:

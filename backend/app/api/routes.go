@@ -189,6 +189,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Delete("/ai/capture/sessions/{sessionId}/reanalysis/{clientId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionReanalysisDismiss(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/submit", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionSubmit(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/submit-items", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionItemsSubmit(), userMW...))
+		r.Post("/ai/items/{id}/reanalyze", chain.ToHandlerFunc(v1Ctrl.HandleAIItemReanalysis(), append(userMW, a.aiCaptureLimiter.middleware)...))
 
 		// Tags endpoints
 		r.Get("/tags", chain.ToHandlerFunc(v1Ctrl.HandleTagsGetAll(), userMW...))

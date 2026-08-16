@@ -319,6 +319,34 @@ func (r *AttachmentRepo) GetConnString() string {
 	return r.storage.ConnString
 }
 
+// ReadBlob reads a stored attachment by its repository-relative path. Callers
+// must obtain the path through a group-scoped entity or attachment lookup.
+func (r *AttachmentRepo) ReadBlob(ctx context.Context, relativePath string, maxBytes int64) ([]byte, error) {
+	bucket, err := blob.OpenBucket(ctx, r.GetConnString())
+	if err != nil {
+		return nil, err
+	}
+	defer bucket.Close()
+
+	reader, err := bucket.NewReader(ctx, r.fullPath(relativePath), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	if maxBytes <= 0 {
+		maxBytes = 20 << 20
+	}
+	data, err := io.ReadAll(io.LimitReader(reader, maxBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, fmt.Errorf("attachment exceeds the %d MB AI analysis limit", maxBytes>>20)
+	}
+	return data, nil
+}
+
 func (r *AttachmentRepo) Create(ctx context.Context, itemID uuid.UUID, doc ItemCreateAttachment, typ attachment.Type, primary bool) (*ent.Attachment, error) {
 	ctx, span := otel.Tracer("data").Start(ctx, "repo.AttachmentRepo.Create")
 	defer span.End()

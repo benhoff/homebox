@@ -3,6 +3,7 @@
   import { useI18n } from "vue-i18n";
   import { toast } from "@/components/ui/sonner";
   import type { ItemAttachment, EntityFieldData, EntityOut, EntityUpdate } from "~~/lib/api/types/data-contracts";
+  import type { AICaptureItem, AIItemReanalysis } from "~~/lib/api/classes/ai-capture";
   import { AttachmentTypes } from "~~/lib/api/types/non-generated";
   import { useTagStore } from "~/stores/tags";
   import MdiLoading from "~icons/mdi/loading";
@@ -11,6 +12,7 @@
   import MdiContentSaveOutline from "~icons/mdi/content-save-outline";
   import MdiImageOutline from "~icons/mdi/image-outline";
   import MdiOpenInNew from "~icons/mdi/open-in-new";
+  import MdiMagicStaff from "~icons/mdi/magic-staff";
   import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
   import { Button } from "@/components/ui/button";
   import { useDialog } from "@/components/ui/dialog-provider";
@@ -94,6 +96,146 @@
   });
 
   const saving = ref(false);
+  const aiReanalyzing = ref(false);
+  const aiInstruction = ref("");
+  const aiSuggestion = ref<AIItemReanalysis | null>(null);
+
+  type AIReanalysisFieldKey =
+    "name" | "quantity" | "entityTypeId" | "manufacturer" | "modelNumber" | "description" | "tagIds";
+
+  const aiReanalysisFieldKeys: AIReanalysisFieldKey[] = [
+    "name",
+    "quantity",
+    "entityTypeId",
+    "manufacturer",
+    "modelNumber",
+    "description",
+    "tagIds",
+  ];
+
+  const aiPhotoCount = computed(
+    () => item.value?.attachments?.filter(a => a.type === "photo" && a.mimeType !== "link/url").length ?? 0
+  );
+
+  function aiFieldLabel(field: AIReanalysisFieldKey) {
+    const keys: Record<AIReanalysisFieldKey, string> = {
+      name: "items.name",
+      quantity: "items.quantity",
+      entityTypeId: "global.entity_type",
+      manufacturer: "items.manufacturer",
+      modelNumber: "items.model_number",
+      description: "items.description",
+      tagIds: "global.tags",
+    };
+    return t(keys[field]);
+  }
+
+  function currentAIFieldValue(field: AIReanalysisFieldKey): AICaptureItem[AIReanalysisFieldKey] {
+    switch (field) {
+      case "entityTypeId":
+        return item.value.entityType?.id ?? "";
+      case "tagIds":
+        return item.value.tagIds;
+      default:
+        return item.value[field];
+    }
+  }
+
+  function aiValuesEqual(
+    field: AIReanalysisFieldKey,
+    current: AICaptureItem[AIReanalysisFieldKey],
+    suggested: AICaptureItem[AIReanalysisFieldKey]
+  ) {
+    if (field === "tagIds") {
+      return JSON.stringify([...(current as string[])].sort()) === JSON.stringify([...(suggested as string[])].sort());
+    }
+    return current === suggested;
+  }
+
+  const aiReanalysisChanges = computed(() => {
+    if (!aiSuggestion.value) return [];
+    return aiReanalysisFieldKeys
+      .filter(field => !aiValuesEqual(field, currentAIFieldValue(field), aiSuggestion.value!.item[field]))
+      .map(field => ({ field, label: aiFieldLabel(field) }));
+  });
+
+  function formatAIFieldValue(field: AIReanalysisFieldKey, value: AICaptureItem[AIReanalysisFieldKey]) {
+    if (field === "entityTypeId") {
+      return entityTypeStore.findById(String(value))?.name || String(value || t("global.unknown"));
+    }
+    if (field === "tagIds") {
+      const ids = value as string[];
+      return ids.length ? ids.map(id => tags.value.find(tag => tag.id === id)?.name || id).join(", ") : "—";
+    }
+    return value === "" || value === null || value === undefined ? "—" : String(value);
+  }
+
+  function openAIReanalysisDialog() {
+    if (aiPhotoCount.value === 0) {
+      toast.error(t("items.ai_reanalysis.photos_required"));
+      return;
+    }
+    aiSuggestion.value = null;
+    openDialog(DialogID.ItemAIReanalysis);
+  }
+
+  async function reanalyzeWithQwen() {
+    if (aiPhotoCount.value === 0) {
+      toast.error(t("items.ai_reanalysis.photos_required"));
+      return;
+    }
+    aiReanalyzing.value = true;
+    const response = await api.aiCapture.reanalyzeInventoryItem(itemId.value, aiInstruction.value);
+    aiReanalyzing.value = false;
+    if (response.error) {
+      toast.error(t("items.ai_reanalysis.failed"));
+      return;
+    }
+    aiSuggestion.value = response.data;
+  }
+
+  function applyAIField(field: AIReanalysisFieldKey) {
+    const suggested = aiSuggestion.value?.item;
+    if (!suggested) return;
+    switch (field) {
+      case "name":
+        item.value.name = suggested.name;
+        break;
+      case "quantity":
+        item.value.quantity = suggested.quantity;
+        break;
+      case "entityTypeId": {
+        const entityType = entityTypeStore.findById(suggested.entityTypeId);
+        if (entityType) item.value.entityType = entityType;
+        break;
+      }
+      case "manufacturer":
+        item.value.manufacturer = suggested.manufacturer;
+        break;
+      case "modelNumber":
+        item.value.modelNumber = suggested.modelNumber;
+        break;
+      case "description":
+        item.value.description = suggested.description;
+        break;
+      case "tagIds":
+        item.value.tagIds = [...suggested.tagIds];
+        break;
+    }
+  }
+
+  function applyAllAIFields() {
+    for (const change of [...aiReanalysisChanges.value]) applyAIField(change.field);
+    closeDialog(DialogID.ItemAIReanalysis);
+    toast.success(t("items.ai_reanalysis.applied"));
+  }
+
+  const aiRouteRequestHandled = ref(false);
+  watchEffect(() => {
+    if (aiRouteRequestHandled.value || !nullableItem.value || route.query.reanalyze !== "qwen") return;
+    aiRouteRequestHandled.value = true;
+    nextTick(openAIReanalysisDialog);
+  });
 
   async function saveItem(redirect: boolean) {
     if (!location.value?.id && !parent.value?.id) {
@@ -644,6 +786,92 @@
       </DialogContent>
     </Dialog>
 
+    <Dialog :dialog-id="DialogID.ItemAIReanalysis">
+      <DialogContent class="sm:max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>{{ $t("items.ai_reanalysis.title") }}</DialogTitle>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("items.ai_reanalysis.help") }}
+          </p>
+        </DialogHeader>
+
+        <FormTextArea
+          v-model="aiInstruction"
+          :label="$t('items.ai_reanalysis.instruction')"
+          :placeholder="$t('items.ai_reanalysis.instruction_placeholder')"
+          :max-length="2000"
+        />
+
+        <div v-if="aiReanalyzing" class="flex min-h-32 items-center justify-center gap-2 text-muted-foreground">
+          <MdiLoading class="animate-spin" />
+          {{ $t("items.ai_reanalysis.analyzing") }}
+        </div>
+
+        <div v-else-if="aiSuggestion" class="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
+          <p class="text-sm text-muted-foreground">
+            {{ $t("items.ai_reanalysis.photos_used", { count: aiSuggestion.photoCount }) }}
+          </p>
+          <p
+            v-for="warning in aiSuggestion.warnings"
+            :key="warning"
+            class="rounded-md bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            {{ warning }}
+          </p>
+          <p
+            v-if="aiSuggestion.item.needsReview && aiSuggestion.item.reviewReason"
+            class="rounded-md bg-amber-50 p-2 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            {{ aiSuggestion.item.reviewReason }}
+          </p>
+          <p v-if="aiReanalysisChanges.length === 0" class="rounded-md border p-4 text-sm text-muted-foreground">
+            {{ $t("items.ai_reanalysis.no_changes") }}
+          </p>
+          <div
+            v-for="change in aiReanalysisChanges"
+            :key="change.field"
+            class="grid gap-2 rounded-md border p-3 sm:grid-cols-[8rem_1fr_1fr_auto] sm:items-center"
+          >
+            <strong class="text-sm">{{ change.label }}</strong>
+            <div class="min-w-0 text-sm">
+              <span class="block text-xs text-muted-foreground">{{ $t("items.ai_reanalysis.current") }}</span>
+              <span class="break-words">{{ formatAIFieldValue(change.field, currentAIFieldValue(change.field)) }}</span>
+            </div>
+            <div class="min-w-0 text-sm">
+              <span class="block text-xs text-muted-foreground">{{ $t("items.ai_reanalysis.suggested") }}</span>
+              <span class="break-words">
+                {{ formatAIFieldValue(change.field, aiSuggestion.item[change.field]) }}
+              </span>
+            </div>
+            <Button size="sm" variant="outline" @click="applyAIField(change.field)">
+              {{ $t("items.ai_reanalysis.use_suggestion") }}
+            </Button>
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ $t("items.ai_reanalysis.unsaved_help") }}
+          </p>
+        </div>
+
+        <p v-else class="rounded-md border p-4 text-sm text-muted-foreground">
+          {{ $t("items.ai_reanalysis.ready", { count: aiPhotoCount }) }}
+        </p>
+
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" :disabled="aiReanalyzing" @click="closeDialog(DialogID.ItemAIReanalysis)">
+            {{ aiSuggestion ? $t("global.close") : $t("global.cancel") }}
+          </Button>
+          <Button variant="outline" :disabled="aiReanalyzing" @click="reanalyzeWithQwen">
+            <MdiLoading v-if="aiReanalyzing" class="animate-spin" />
+            <MdiMagicStaff v-else />
+            {{ aiSuggestion ? $t("items.ai_reanalysis.analyze_again") : $t("items.ai_reanalysis.analyze") }}
+          </Button>
+          <Button v-if="aiSuggestion && aiReanalysisChanges.length" :disabled="aiReanalyzing" @click="applyAllAIFields">
+            {{ $t("items.ai_reanalysis.apply_all") }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <section class="relative">
       <div
         class="sticky z-10 my-4 flex items-center justify-between gap-2"
@@ -664,11 +892,19 @@
             <TooltipContent>{{ $t("items.show_advanced_view_options") }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Button size="sm" :disabled="saving" @click="saveItem(true)">
-          <MdiLoading v-if="saving" class="animate-spin" />
-          <MdiContentSaveOutline v-else />
-          {{ $t("global.save") }}
-        </Button>
+        <div class="flex items-center gap-2">
+          <Button size="sm" variant="outline" :disabled="aiReanalyzing" @click="openAIReanalysisDialog">
+            <MdiLoading v-if="aiReanalyzing" class="animate-spin" />
+            <MdiMagicStaff v-else />
+            <span class="hidden sm:inline">{{ $t("items.ai_reanalysis.action") }}</span>
+            <span class="sm:hidden">{{ $t("items.ai_reanalysis.action_short") }}</span>
+          </Button>
+          <Button size="sm" :disabled="saving" @click="saveItem(true)">
+            <MdiLoading v-if="saving" class="animate-spin" />
+            <MdiContentSaveOutline v-else />
+            {{ $t("global.save") }}
+          </Button>
+        </div>
       </div>
       <div v-if="!requestPending" class="space-y-6">
         <BaseCard class="overflow-visible">

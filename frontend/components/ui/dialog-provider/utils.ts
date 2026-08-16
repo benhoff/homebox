@@ -26,6 +26,7 @@ export enum DialogID {
   EditMaintenance = "edit-maintenance",
   Import = "import",
   ItemImage = "item-image",
+  ItemAIReanalysis = "item-ai-reanalysis",
   ItemTableSettings = "item-table-settings",
   PrintLabel = "print-label",
   ProductImport = "product-import",

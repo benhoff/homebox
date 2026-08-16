@@ -18,6 +18,7 @@ type AllServices struct {
 	Exports           *ExportService
 	AICapture         *AICaptureService
 	AICaptureSessions *AICaptureSessionService
+	AIItems           *AIItemService
 	Currencies        *currencies.CurrencyRegistry
 }
 
@@ -141,5 +142,6 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		Currencies: currencies.NewCurrencyService(options.currencies),
 	}
 	all.AICaptureSessions = NewAICaptureSessionService(repos, aiCapture, entityService, options.aiConfig)
+	all.AIItems = NewAIItemService(repos, aiCapture)
 	return all
 }

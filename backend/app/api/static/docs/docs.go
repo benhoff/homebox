@@ -982,6 +982,62 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/ai/items/{id}/reanalyze": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture"
+                ],
+                "summary": "Preview Qwen reanalysis for an existing inventory item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Item ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Optional visual-analysis guidance",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiItemReanalysisRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AIItemReanalysisOut"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/validate.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
+                        "schema": {
+                            "$ref": "#/definitions/validate.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/assets/{id}": {
             "get": {
                 "security": [
@@ -7765,6 +7821,26 @@ const docTemplate = `{
                 }
             }
         },
+        "services.AIItemReanalysisOut": {
+            "type": "object",
+            "properties": {
+                "item": {
+                    "$ref": "#/definitions/services.AICaptureItem"
+                },
+                "photoCount": {
+                    "type": "integer"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "services.Latest": {
             "type": "object",
             "properties": {
@@ -8250,6 +8326,14 @@ const docTemplate = `{
             "properties": {
                 "revision": {
                     "type": "integer"
+                }
+            }
+        },
+        "v1.aiItemReanalysisRequest": {
+            "type": "object",
+            "properties": {
+                "instruction": {
+                    "type": "string"
                 }
             }
         },

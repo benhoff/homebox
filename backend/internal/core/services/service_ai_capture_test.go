@@ -51,6 +51,15 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	assert.Empty(t, draft.Items[0].MoveDispositionNote)
 	assert.Equal(t, "vision-model", got.Model)
 	assert.Equal(t, "none", got.ReasoningEffort)
+	assert.Equal(t, "json_object", got.ResponseFormat["type"])
+	schema, ok := got.ResponseFormat["schema"].(map[string]any)
+	require.True(t, ok, "the primary Qwen request must include llama.cpp's schema member")
+	assert.Equal(t, "object", schema["type"])
+	assert.Equal(t, false, schema["additionalProperties"])
+	properties, ok := schema["properties"].(map[string]any)
+	require.True(t, ok)
+	assert.Contains(t, properties, "items")
+	assert.Contains(t, properties, "warnings")
 	require.Len(t, got.Messages, 2)
 	userContent, err := json.Marshal(got.Messages[1].Content)
 	require.NoError(t, err)
@@ -84,12 +93,95 @@ func TestAICaptureAnalyzeWithGeminiProvider(t *testing.T) {
 	require.Len(t, draft.Items, 1)
 	assert.Equal(t, "gemini-model", got.Model)
 	assert.Equal(t, "Drill", draft.Items[0].Name)
+	assert.Equal(t, "json_object", got.ResponseFormat["type"])
+	assert.NotContains(t, got.ResponseFormat, "schema", "secondary providers retain the standard OpenAI request")
 
 	providers := svc.Providers()
 	require.Len(t, providers, 2)
 	assert.Equal(t, AICaptureProviderDefault, providers[0].ID)
 	assert.Equal(t, AICaptureProviderGemini, providers[1].ID)
 	assert.True(t, providers[1].Enabled)
+}
+
+func TestExtractSingleJSONObject(t *testing.T) {
+	const observedRegression = "Based on the user instruction and the visible item, here is the corrected JSON response.\n\n```json\n{\n  \"name\": \"Grey Banana Republic Polo Shirt\"\n}\n```"
+	tests := []struct {
+		name     string
+		response string
+		wantJSON string
+		wantErr  error
+	}{
+		{name: "bare object", response: ` {"items":[],"warnings":[]} `, wantJSON: `{"items":[],"warnings":[]}`},
+		{name: "JSON fence at start", response: "```json\n{\"items\":[],\"warnings\":[]}\n```", wantJSON: `{"items":[],"warnings":[]}`},
+		{name: "observed explanatory prose before fence", response: observedRegression, wantJSON: `{"name":"Grey Banana Republic Polo Shirt"}`},
+		{name: "prose after fence", response: "```json\n{\"items\":[]}\n```\nThat is the draft.", wantJSON: `{"items":[]}`},
+		{name: "unlabelled fence", response: "```\n{\"items\":[]}\n```", wantJSON: `{"items":[]}`},
+		{name: "valid JSON and non-JSON fences", response: "```text\nnot JSON\n```\n```json\n{\"items\":[]}\n```", wantJSON: `{"items":[]}`},
+		{name: "two valid objects", response: "```json\n{\"items\":[1]}\n```\n```json\n{\"items\":[2]}\n```", wantErr: errAIAmbiguousJSON},
+		{name: "two identical valid objects", response: "```json\n{\"items\":[]}\n```\n```json\n{\"items\":[]}\n```", wantErr: errAIAmbiguousJSON},
+		{name: "malformed fenced JSON", response: "```json\n{\"items\":\n```", wantErr: errAINoJSONObject},
+		{name: "unfenced JSON in prose", response: `The answer is {"items":[]}.`, wantErr: errAINoJSONObject},
+		{name: "array", response: `[{"items":[]}]`, wantErr: errAINoJSONObject},
+		{name: "scalar", response: `"item"`, wantErr: errAINoJSONObject},
+		{name: "null", response: `null`, wantErr: errAINoJSONObject},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := extractSingleJSONObject(tc.response)
+			if tc.wantErr != nil {
+				require.ErrorIs(t, err, tc.wantErr)
+				assert.Nil(t, got)
+				return
+			}
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.wantJSON, string(got))
+		})
+	}
+}
+
+func TestAICaptureAnalyzeAcceptsExplanationBeforeFencedDraft(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		content := "Based on the user instruction and the visible item, here is the corrected JSON response.\n\n```json\n{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Grey Banana Republic Polo Shirt\",\"quantity\":1,\"description\":\"Grey polo shirt\",\"manufacturer\":\"Banana Republic\",\"modelNumber\":\"\",\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}\n```"
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
+		}))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "qwen-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos:  []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+	})
+	require.NoError(t, err)
+	require.Len(t, draft.Items, 1)
+	assert.Equal(t, "Grey Banana Republic Polo Shirt", draft.Items[0].Name)
+}
+
+func TestAICaptureAnalyzeRejectsAmbiguousFencedDrafts(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		content := "```json\n{\"items\":[{\"name\":\"First\"}]}\n```\n```json\n{\"items\":[{\"name\":\"Second\"}]}\n```"
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{
+			"choices": []any{map[string]any{"message": map[string]any{"content": content}}},
+		}))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "qwen-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos:  []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+	})
+	assert.ErrorIs(t, err, ErrAIUpstream)
+	assert.ErrorIs(t, err, errAIAmbiguousJSON)
+	assert.Empty(t, draft.Items)
 }
 
 func TestAICaptureAnalyzeReviewedItemUsesEveryView(t *testing.T) {
