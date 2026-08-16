@@ -1,6 +1,8 @@
 import { BaseAPI, route } from "../base";
 import type { Requests } from "../../requests";
 
+export type AICaptureMoveDisposition = "undecided" | "keep" | "sell" | "give_away" | "donate" | "recycle" | "trash";
+
 export interface AICaptureItem {
   clientId: string;
   name: string;
@@ -13,6 +15,8 @@ export interface AICaptureItem {
   photoIndexes: number[];
   photoIds?: string[];
   captureGroupId?: string;
+  moveDisposition: AICaptureMoveDisposition;
+  moveDispositionNote?: string;
   needsReview: boolean;
   reviewReason?: string;
 }

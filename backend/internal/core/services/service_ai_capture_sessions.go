@@ -189,6 +189,10 @@ func (svc *AICaptureSessionService) mapOut(record repo.AICaptureSessionRecord) (
 		if err := json.Unmarshal([]byte(record.DraftJSON), draft); err != nil {
 			return AICaptureSessionOut{}, fmt.Errorf("decode capture draft: %w", err)
 		}
+		for index := range draft.Items {
+			draft.Items[index].MoveDisposition = sanitizeMoveDisposition(draft.Items[index].MoveDisposition)
+			draft.Items[index].MoveDispositionNote = truncate(strings.TrimSpace(draft.Items[index].MoveDispositionNote), 500)
+		}
 		out.Draft = draft
 	}
 	names := map[string]string{}
@@ -728,6 +732,8 @@ func (svc *AICaptureSessionService) reanalyzeItemRecord(
 	item := suggested.Items[0]
 	item.ClientID = original.ClientID
 	item.CaptureGroupID = original.CaptureGroupID
+	item.MoveDisposition = original.MoveDisposition
+	item.MoveDispositionNote = original.MoveDispositionNote
 	item.PhotoIDs = slices.Clone(original.PhotoIDs)
 	item.PhotoIndexes = nil
 	return AICaptureReanalysisOut{Item: item, Provider: providerID, Warnings: suggested.Warnings}, nil
@@ -965,10 +971,12 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 	}
 	mapDraftPhotoIndexes(&current, record.Photos)
 	groupsByClientID := make(map[string]string, len(current.Items))
+	movePlansByClientID := make(map[string][2]string, len(current.Items))
 	allowedGroups := make([]string, 0)
 	seenGroups := make(map[string]struct{})
 	for _, item := range current.Items {
 		groupsByClientID[item.ClientID] = item.CaptureGroupID
+		movePlansByClientID[item.ClientID] = [2]string{item.MoveDisposition, item.MoveDispositionNote}
 		if item.CaptureGroupID != "" {
 			if _, seen := seenGroups[item.CaptureGroupID]; !seen {
 				seenGroups[item.CaptureGroupID] = struct{}{}
@@ -986,6 +994,10 @@ func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedR
 	for index := range corrected.Items {
 		if corrected.Items[index].CaptureGroupID == "" {
 			corrected.Items[index].CaptureGroupID = groupsByClientID[corrected.Items[index].ClientID]
+		}
+		if movePlan, ok := movePlansByClientID[corrected.Items[index].ClientID]; ok {
+			corrected.Items[index].MoveDisposition = movePlan[0]
+			corrected.Items[index].MoveDispositionNote = movePlan[1]
 		}
 	}
 	mapDraftPhotoIDs(&corrected, record.Photos)
@@ -1020,6 +1032,28 @@ func encodeUploadedPhotoIDs(ids map[string]struct{}) string {
 	return string(encoded)
 }
 
+func aiCaptureMoveFields(item AICaptureItem) []repo.EntityFieldData {
+	dispositionLabels := map[string]string{
+		AICaptureMoveDispositionUndecided: "Undecided",
+		AICaptureMoveDispositionKeep:      "Keep for move",
+		AICaptureMoveDispositionSell:      "Sell",
+		AICaptureMoveDispositionGiveAway:  "Give away",
+		AICaptureMoveDispositionDonate:    "Donate",
+		AICaptureMoveDispositionRecycle:   "Recycle",
+		AICaptureMoveDispositionTrash:     "Trash",
+	}
+	disposition := sanitizeMoveDisposition(item.MoveDisposition)
+	fields := []repo.EntityFieldData{{
+		Type: "text", Name: "Move disposition", TextValue: dispositionLabels[disposition],
+	}}
+	if note := truncate(strings.TrimSpace(item.MoveDispositionNote), 500); note != "" {
+		fields = append(fields, repo.EntityFieldData{
+			Type: "text", Name: "Move planning notes", TextValue: note,
+		})
+	}
+	return fields
+}
+
 func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptureSessionRecord, item AICaptureItem) error {
 	progress, err := svc.repos.AICaptureSessions.GetOrCreateSubmissionItem(ctx, session.ID, item.ClientID)
 	if err != nil {
@@ -1048,6 +1082,7 @@ func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptu
 		created, err := svc.entities.Create(ctx, repo.EntityCreate{
 			ParentID: *session.LocationID, Name: item.Name, Quantity: item.Quantity, Description: item.Description,
 			Manufacturer: item.Manufacturer, ModelNumber: item.ModelNumber, EntityTypeID: entityTypeID, TagIDs: tagIDs,
+			Fields: aiCaptureMoveFields(item),
 		})
 		if err != nil {
 			return err

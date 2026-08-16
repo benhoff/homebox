@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | Durable capture sessions | Implemented | 2026-08-16 |
 | Multiple views of the same item | Implemented | 2026-08-16 |
+| Manual pre-move disposition planning | Implemented | 2026-08-16 |
 
 ## Summary
 
@@ -44,6 +45,9 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 13. Turning grouping off closes the active group but does not remove grouping from photos already captured. Turning it on never silently changes earlier ungrouped photos.
 14. A same-item group represents one physical inventory item, not one unit of quantity. AI may still suggest a visible quantity greater than one for a package or set, but it emits one draft row for the group.
 15. Grouping changes the AI prompt, request orchestration, and response schema; it does not require model retraining, fine-tuning, or a different configured model.
+16. Every draft item has a manual pre-move disposition: **Undecided** (default), **Keep for move**, **Sell**, **Give away**, **Donate**, **Recycle**, or **Trash**.
+17. Disposition is a human decision. AI analysis, correction, and provider reanalysis cannot suggest or overwrite it.
+18. One same-item group has one disposition regardless of how many photographs are attached to it. Splitting a draft copies the current plan to both resulting items so the user can revise either; merging keeps the destination item's plan.
 
 ## Goals
 
@@ -63,7 +67,7 @@ Even with durable sessions, the AI cannot reliably know whether two similar phot
 
 - Unlimited photos in one AI analysis.
 - Video capture or extracting items from video.
-- Warranty, purchase, insurance, serial-number, asset-ID, sold, or custom-field inference.
+- Warranty, purchase, insurance, serial-number, asset-ID, sold, custom-field, or move-disposition inference.
 - Real-time AI detection while the camera is open.
 - Automatic item creation without review.
 - Sharing an unfinished session with other collection members.
@@ -201,11 +205,15 @@ The user can:
 - Ask AI for a correction
 - Reanalyze one item or a selected set with the primary provider, or explicitly choose an enabled secondary provider
 - Compare reanalysis suggestions field by field before applying them
+- Choose a disposition and optional planning note for each item
+- Select multiple item cards and apply one disposition in bulk
 - Undo the most recent AI correction
 - Leave and resume review later
 - Submit the reviewed draft
 
 Submitting is performed by the server so that the browser does not need to download and re-upload session photos. Repeating a submit request must not create duplicate items.
+
+On submission, HomeBox stores the plan on the created inventory item as text custom fields named **Move disposition** and, when supplied, **Move planning notes**. This keeps the plan durable and searchable without treating a future sale, donation, or disposal as already completed.
 
 ## State model
 
@@ -436,13 +444,15 @@ No separate group table is required for the first version. A group exists when o
 
 ### Group-aware draft fields
 
-`AICaptureItem` adds an optional `captureGroupId`. It is set only for an item initially derived from an explicit same-item group. `photoIds` remains the authoritative attachment assignment.
+`AICaptureItem` adds an optional `captureGroupId` plus manual `moveDisposition` and `moveDispositionNote` values. `captureGroupId` is set only for an item initially derived from an explicit same-item group. `photoIds` remains the authoritative attachment assignment.
 
 | Field | Notes |
 | --- | --- |
 | `clientId` | Stable draft and submission idempotency key |
 | `captureGroupId` | Nullable source group; exactly one initial draft item may reference each explicit group |
 | `photoIds` | Stable server photo IDs assigned to the draft item |
+| `moveDisposition` | Manual enum; defaults to `undecided` and is never populated by AI |
+| `moveDispositionNote` | Optional human-entered selling, recipient, donation, moving, recycling, or disposal plan |
 | `needsReview` / `reviewReason` | Used when views conflict or grouping appears incorrect |
 
 Splitting or merging cards during review may clear `captureGroupId` from the affected draft items because the user's reviewed structure supersedes the initial capture hint. The sealed photos retain their original `capture_group_id` until temporary cleanup.

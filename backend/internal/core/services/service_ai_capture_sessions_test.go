@@ -68,7 +68,7 @@ func TestRunNextReanalysisWaitsForProviderAndResumesBatch(t *testing.T) {
 	claimed, found, err := tRepos.AICaptureSessions.ClaimQueued(ctx, 3*time.Minute)
 	require.NoError(t, err)
 	require.True(t, found)
-	draft := fmt.Sprintf(`{"items":[{"clientId":"item-1","name":"Drill","quantity":1,"entityTypeId":"%s","tagIds":[],"photoIds":["%s"],"needsReview":false}],"warnings":[]}`, itemType.ID, photoID)
+	draft := fmt.Sprintf(`{"items":[{"clientId":"item-1","name":"Drill","quantity":1,"entityTypeId":"%s","tagIds":[],"photoIds":["%s"],"moveDisposition":"sell","moveDispositionNote":"List locally","needsReview":false}],"warnings":[]}`, itemType.ID, photoID)
 	require.NoError(t, tRepos.AICaptureSessions.SetAnalysisReady(ctx, claimed.ID, draft))
 
 	queued, err := svc.QueueReanalysis(ctx, session.ID, 1, []string{"item-1"}, AICaptureProviderDefault, "")
@@ -94,6 +94,24 @@ func TestRunNextReanalysisWaitsForProviderAndResumesBatch(t *testing.T) {
 	assert.Equal(t, repo.AICaptureReanalysisCompleted, completed.Reanalysis.Status)
 	assert.Equal(t, 1, completed.Reanalysis.Completed)
 	assert.Equal(t, "Recovered drill", completed.Reanalysis.Suggestions["item-1"].Item.Name)
+	assert.Equal(t, AICaptureMoveDispositionSell, completed.Reanalysis.Suggestions["item-1"].Item.MoveDisposition)
+	assert.Equal(t, "List locally", completed.Reanalysis.Suggestions["item-1"].Item.MoveDispositionNote)
+}
+
+func TestAICaptureMoveFieldsPersistDispositionAndOptionalNotes(t *testing.T) {
+	fields := aiCaptureMoveFields(AICaptureItem{
+		MoveDisposition:     AICaptureMoveDispositionGiveAway,
+		MoveDispositionNote: "  Jamie will collect it  ",
+	})
+	require.Len(t, fields, 2)
+	assert.Equal(t, "Move disposition", fields[0].Name)
+	assert.Equal(t, "Give away", fields[0].TextValue)
+	assert.Equal(t, "Move planning notes", fields[1].Name)
+	assert.Equal(t, "Jamie will collect it", fields[1].TextValue)
+
+	fields = aiCaptureMoveFields(AICaptureItem{MoveDisposition: "not-valid"})
+	require.Len(t, fields, 1)
+	assert.Equal(t, "Undecided", fields[0].TextValue)
 }
 
 func TestPartitionAICapturePhotosKeepsGroupsAndUngroupedBatchInFirstPhotoOrder(t *testing.T) {

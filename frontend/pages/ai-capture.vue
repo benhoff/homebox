@@ -15,6 +15,7 @@
   import type {
     AICaptureDraft,
     AICaptureItem,
+    AICaptureMoveDisposition,
     AICaptureReanalysis,
     AICaptureSession,
     AICaptureSessionPhoto,
@@ -66,6 +67,15 @@
     "description",
     "tagIds",
   ];
+  const moveDispositionOptions: AICaptureMoveDisposition[] = [
+    "undecided",
+    "keep",
+    "sell",
+    "give_away",
+    "donate",
+    "recycle",
+    "trash",
+  ];
 
   const api = useUserApi();
   const publicApi = usePublicApi();
@@ -83,6 +93,7 @@
   const correction = ref("");
   const reanalysisInstruction = ref("");
   const reanalysisProvider = ref("default");
+  const bulkMoveDisposition = ref<AICaptureMoveDisposition>("undecided");
   const selectedReviewItemIds = ref<string[]>([]);
   const reanalyzingItemIds = ref<string[]>([]);
   const reanalysisSuggestions = ref<Record<string, AICaptureReanalysis>>({});
@@ -240,6 +251,32 @@
 
   function toggleAllReviewItems(checked: boolean) {
     selectedReviewItemIds.value = checked ? draft.value?.items.map(item => item.clientId) || [] : [];
+  }
+
+  function moveDispositionLabel(value: AICaptureMoveDisposition) {
+    return t(`ai_capture.review.move_disposition_${value}`);
+  }
+
+  function moveDispositionNoteLabel(value: AICaptureMoveDisposition) {
+    return t(`ai_capture.review.move_note_${value}`);
+  }
+
+  function moveDispositionNotePlaceholder(value: AICaptureMoveDisposition) {
+    return t(`ai_capture.review.move_note_${value}_placeholder`);
+  }
+
+  function applyBulkMoveDisposition() {
+    if (!activeSession.value?.draft || selectedReviewItemIds.value.length === 0) return;
+    const selected = new Set(selectedReviewItemIds.value);
+    for (const item of activeSession.value.draft.items) {
+      if (selected.has(item.clientId)) item.moveDisposition = bulkMoveDisposition.value;
+    }
+    toast.success(
+      t("ai_capture.review.move_bulk_applied", {
+        count: selectedReviewItemIds.value.length,
+        disposition: moveDispositionLabel(bulkMoveDisposition.value),
+      })
+    );
   }
 
   function resetReviewReanalysis() {
@@ -592,6 +629,8 @@
       tagIds: [],
       photoIndexes: [],
       photoIds: sessionPhotos.value.map(photo => photo.id),
+      moveDisposition: "undecided",
+      moveDispositionNote: "",
       needsReview: true,
       reviewReason: t("ai_capture.manual_item"),
     });
@@ -1338,6 +1377,47 @@
               </Button>
             </div>
           </div>
+          <div class="space-y-3 rounded-lg border p-3">
+            <div>
+              <h3 class="font-medium">
+                {{ $t("ai_capture.review.move_plan_title") }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ $t("ai_capture.review.move_plan_help") }}
+              </p>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <Checkbox
+                :model-value="allReviewItemsSelected"
+                @update:model-value="value => toggleAllReviewItems(value === true)"
+              />
+              {{ $t("ai_capture.review.select_all") }}
+            </label>
+            <div class="grid gap-2 sm:grid-cols-[12rem_auto] sm:items-end sm:justify-start">
+              <div class="space-y-1">
+                <Label for="bulk-move-disposition">{{ $t("ai_capture.review.move_disposition") }}</Label>
+                <Select id="bulk-move-disposition" v-model="bulkMoveDisposition">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="disposition in moveDispositionOptions" :key="disposition" :value="disposition">
+                      {{ moveDispositionLabel(disposition) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="outline"
+                :disabled="selectedReviewItemIds.length === 0 || saving || submitting"
+                @click="applyBulkMoveDisposition"
+              >
+                {{
+                  $t("ai_capture.review.move_apply_selected", {
+                    count: selectedReviewItemIds.length,
+                  })
+                }}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -1497,6 +1577,42 @@
                 }}</SelectItem></SelectContent
               ></Select
             >
+          </div>
+          <div class="space-y-3 rounded-lg border bg-muted/30 p-3 sm:col-span-2">
+            <div>
+              <h3 class="font-medium">
+                {{ $t("ai_capture.review.move_plan_item_title") }}
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                {{ $t("ai_capture.review.move_plan_item_help") }}
+              </p>
+            </div>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="space-y-1">
+                <Label :for="`item-move-disposition-${itemIndex}`">
+                  {{ $t("ai_capture.review.move_disposition") }}
+                </Label>
+                <Select :id="`item-move-disposition-${itemIndex}`" v-model="item.moveDisposition">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="disposition in moveDispositionOptions" :key="disposition" :value="disposition">
+                      {{ moveDispositionLabel(disposition) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-1">
+                <Label :for="`item-move-note-${itemIndex}`">
+                  {{ moveDispositionNoteLabel(item.moveDisposition) }}
+                </Label>
+                <Input
+                  :id="`item-move-note-${itemIndex}`"
+                  v-model="item.moveDispositionNote"
+                  maxlength="500"
+                  :placeholder="moveDispositionNotePlaceholder(item.moveDisposition)"
+                />
+              </div>
+            </div>
           </div>
           <div class="space-y-1">
             <Label :for="`item-manufacturer-${itemIndex}`">{{ $t("ai_capture.review.manufacturer") }}</Label

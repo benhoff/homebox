@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
+	ententity "github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/types"
 )
 
@@ -122,6 +123,36 @@ func TestEntityRepository_GetOne(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, e.ID, result.ID)
 	}
+}
+
+func TestEntityRepository_CreatePersistsCustomFields(t *testing.T) {
+	itemType := useItemEntityType(t)
+	created, err := tRepos.Entities.Create(context.Background(), tGroup.ID, EntityCreate{
+		Name: "Move planning test",
+		Fields: []EntityFieldData{
+			{Type: "text", Name: "Move disposition", TextValue: "Sell"},
+			{Type: "text", Name: "Move planning notes", TextValue: "List locally"},
+		},
+		EntityTypeID: itemType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(context.Background(), created.ID) })
+
+	require.Len(t, created.Fields, 2)
+	assert.Equal(t, "Move disposition", created.Fields[0].Name)
+	assert.Equal(t, "Sell", created.Fields[0].TextValue)
+	assert.Equal(t, "Move planning notes", created.Fields[1].Name)
+	assert.Equal(t, "List locally", created.Fields[1].TextValue)
+
+	rollbackName := "Move planning rollback " + uuid.NewString()
+	_, err = tRepos.Entities.Create(context.Background(), tGroup.ID, EntityCreate{
+		Name: rollbackName, EntityTypeID: itemType.ID,
+		Fields: []EntityFieldData{{Type: "not-a-field-type", Name: "Invalid"}},
+	})
+	require.Error(t, err)
+	exists, err := tClient.Entity.Query().Where(ententity.NameEQ(rollbackName)).Exist(context.Background())
+	require.NoError(t, err)
+	assert.False(t, exists, "the entity row must roll back when a custom field cannot be created")
 }
 
 func TestEntityRepository_GetAll(t *testing.T) {

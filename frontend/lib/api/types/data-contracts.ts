@@ -1493,6 +1493,8 @@ export interface AICaptureItem {
   entityTypeId: string;
   manufacturer: string;
   modelNumber: string;
+  moveDisposition: string;
+  moveDispositionNote: string;
   name: string;
   needsReview: boolean;
   photoIds: string[];

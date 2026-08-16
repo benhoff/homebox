@@ -20,7 +20,7 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 		assert.Equal(t, "Bearer secret", r.Header.Get("Authorization"))
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Cordless drill\",\"quantity\":1,\"description\":\"Blue drill\",\"manufacturer\":\"Makita\",\"modelNumber\":\"\",\"entityTypeId\":\"type-1\",\"tagIds\":[\"tag-1\",\"made-up\"],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Cordless drill\",\"quantity\":1,\"description\":\"Blue drill\",\"manufacturer\":\"Makita\",\"modelNumber\":\"\",\"entityTypeId\":\"type-1\",\"tagIds\":[\"tag-1\",\"made-up\"],\"photoIndexes\":[0],\"moveDisposition\":\"trash\",\"moveDispositionNote\":\"model decided\",\"needsReview\":false}],\"warnings\":[]}"}}]}`))
 	}))
 	defer server.Close()
 
@@ -47,6 +47,8 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	require.Len(t, draft.Items, 1)
 	assert.Equal(t, "Cordless drill", draft.Items[0].Name)
 	assert.Equal(t, []string{"tag-1"}, draft.Items[0].TagIDs)
+	assert.Equal(t, AICaptureMoveDispositionUndecided, draft.Items[0].MoveDisposition)
+	assert.Empty(t, draft.Items[0].MoveDispositionNote)
 	assert.Equal(t, "vision-model", got.Model)
 	assert.Equal(t, "none", got.ReasoningEffort)
 	require.Len(t, got.Messages, 2)
@@ -95,7 +97,7 @@ func TestAICaptureAnalyzeReviewedItemUsesEveryView(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"changed\",\"name\":\"Cordless drill\",\"quantity\":1,\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"kept\",\"name\":\"Cordless drill\",\"quantity\":1,\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"moveDisposition\":\"trash\",\"moveDispositionNote\":\"model changed it\",\"needsReview\":false}],\"warnings\":[]}"}}]}`))
 	}))
 	defer server.Close()
 
@@ -107,13 +109,18 @@ func TestAICaptureAnalyzeReviewedItemUsesEveryView(t *testing.T) {
 			{MIMEType: "image/jpeg", Data: []byte("front")},
 			{MIMEType: "image/jpeg", Data: []byte("label")},
 		},
-		Context:    AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
-		Draft:      &AICaptureDraft{Items: []AICaptureItem{{ClientID: "kept", Name: "Drill", Quantity: 1}}},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+		Draft: &AICaptureDraft{Items: []AICaptureItem{{
+			ClientID: "kept", Name: "Drill", Quantity: 1,
+			MoveDisposition: AICaptureMoveDispositionSell, MoveDispositionNote: "List locally",
+		}}},
 		SingleItem: true,
 	})
 	require.NoError(t, err)
 	require.Len(t, draft.Items, 1)
 	assert.Equal(t, []int{0, 1}, draft.Items[0].PhotoIndexes)
+	assert.Equal(t, AICaptureMoveDispositionSell, draft.Items[0].MoveDisposition)
+	assert.Equal(t, "List locally", draft.Items[0].MoveDispositionNote)
 	userContent, err := json.Marshal(got.Messages[1].Content)
 	require.NoError(t, err)
 	assert.Contains(t, string(userContent), "REVIEWED ITEM")
@@ -246,6 +253,24 @@ func TestAICaptureAnalyzeDoesNotRetryPermanentProviderFailures(t *testing.T) {
 func TestAICapturePromptLimitsAIToVisualMetadata(t *testing.T) {
 	assert.Contains(t, aiCaptureSystemPrompt, "Only identify the item name")
 	assert.Contains(t, aiCaptureSystemPrompt, "Never infer or return serial numbers")
+	assert.Contains(t, aiCaptureSystemPrompt, "move disposition")
 	assert.NotContains(t, aiCaptureSystemPrompt, `"warrantyExpires"`)
 	assert.NotContains(t, aiCaptureSystemPrompt, `"purchasePrice"`)
+}
+
+func TestSanitizeAICaptureDraftNormalizesManualMovePlanning(t *testing.T) {
+	draft, err := sanitizeAICaptureDraft(AICaptureDraft{Items: []AICaptureItem{{
+		Name: "Chair", Quantity: 1, EntityTypeID: "type-1", PhotoIndexes: []int{0},
+		MoveDisposition: " SELL ", MoveDispositionNote: "  List locally  ",
+	}}}, AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}}, 1, 5)
+	require.NoError(t, err)
+	assert.Equal(t, AICaptureMoveDispositionSell, draft.Items[0].MoveDisposition)
+	assert.Equal(t, "List locally", draft.Items[0].MoveDispositionNote)
+
+	draft.Items[0].MoveDisposition = "model-invented-value"
+	draft, err = sanitizeAICaptureDraft(draft, AICaptureContext{
+		EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}},
+	}, 1, 5)
+	require.NoError(t, err)
+	assert.Equal(t, AICaptureMoveDispositionUndecided, draft.Items[0].MoveDisposition)
 }

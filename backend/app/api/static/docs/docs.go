@@ -7450,6 +7450,12 @@ const docTemplate = `{
                 "modelNumber": {
                     "type": "string"
                 },
+                "moveDisposition": {
+                    "type": "string"
+                },
+                "moveDispositionNote": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },

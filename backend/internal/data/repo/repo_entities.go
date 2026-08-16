@@ -102,7 +102,8 @@ type (
 		Manufacturer string `json:"manufacturer" validate:"max=255" extensions:"x-nullable,x-omitempty"`
 
 		// Edges
-		TagIDs []uuid.UUID `json:"tagIds"`
+		TagIDs []uuid.UUID       `json:"tagIds"`
+		Fields []EntityFieldData `json:"-"`
 	}
 
 	EntityUpdate struct {
@@ -1038,6 +1039,7 @@ func (r *EntityRepository) Create(ctx context.Context, gid uuid.UUID, data Entit
 			attribute.Bool("entity.parent_id.set", data.ParentID != uuid.Nil),
 			attribute.Bool("entity.entity_type_id.set", data.EntityTypeID != uuid.Nil),
 			attribute.Int("entity.tags.count", len(data.TagIDs)),
+			attribute.Int("entity.fields.count", len(data.Fields)),
 			attribute.Int64("entity.asset_id", int64(data.AssetID)),
 		))
 	defer span.End()
@@ -1062,6 +1064,11 @@ func (r *EntityRepository) Create(ctx context.Context, gid uuid.UUID, data Entit
 	if err := assertTagsInGroup(ctx, r.db.Tag, gid, data.TagIDs); err != nil {
 		recordSpanError(span, err)
 		return EntityOut{}, err
+	}
+	if len(data.Fields) > 0 {
+		out, err := r.createWithFields(ctx, gid, data)
+		recordSpanError(span, err)
+		return out, err
 	}
 
 	q := r.db.Entity.Create().
@@ -1105,6 +1112,72 @@ func (r *EntityRepository) Create(ctx context.Context, gid uuid.UUID, data Entit
 	out, err := r.GetOne(ctx, result.ID)
 	recordSpanError(span, err)
 	return out, err
+}
+
+// createWithFields keeps the initial entity and its custom fields atomic. The
+// ordinary no-field create path remains unchanged for existing callers.
+func (r *EntityRepository) createWithFields(ctx context.Context, gid uuid.UUID, data EntityCreate) (EntityOut, error) {
+	if data.EntityTypeID == uuid.Nil {
+		entityTypeID, err := r.resolveDefaultEntityType(ctx, gid, false)
+		if err != nil {
+			return EntityOut{}, err
+		}
+		data.EntityTypeID = entityTypeID
+	}
+
+	tx, err := r.db.Tx(ctx)
+	if err != nil {
+		return EntityOut{}, err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			if rollbackErr := tx.Rollback(); rollbackErr != nil {
+				log.Warn().Err(rollbackErr).Msg("failed to rollback transaction during entity creation")
+			}
+		}
+	}()
+
+	entityID := uuid.New()
+	q := tx.Entity.Create().
+		SetID(entityID).
+		SetImportRef(data.ImportRef).
+		SetName(data.Name).
+		SetQuantity(data.Quantity).
+		SetDescription(data.Description).
+		SetModelNumber(data.ModelNumber).
+		SetManufacturer(data.Manufacturer).
+		SetGroupID(gid).
+		SetAssetID(int64(data.AssetID)).
+		SetEntityTypeID(data.EntityTypeID)
+	if data.ParentID != uuid.Nil {
+		q.SetParentID(data.ParentID)
+	}
+	if len(data.TagIDs) > 0 {
+		q.AddTagIDs(data.TagIDs...)
+	}
+	if _, err = q.Save(ctx); err != nil {
+		return EntityOut{}, err
+	}
+
+	for _, field := range data.Fields {
+		if _, err = tx.EntityField.Create().
+			SetEntityID(entityID).
+			SetType(entityfield.Type(field.Type)).
+			SetName(field.Name).
+			SetTextValue(field.TextValue).
+			SetNumberValue(field.NumberValue).
+			SetBooleanValue(field.BooleanValue).
+			Save(ctx); err != nil {
+			return EntityOut{}, fmt.Errorf("failed to create field %s: %w", field.Name, err)
+		}
+	}
+	if err = tx.Commit(); err != nil {
+		return EntityOut{}, err
+	}
+	committed = true
+	r.publishMutationEvent(gid)
+	return r.GetOne(ctx, entityID)
 }
 
 // EntityCreateFromTemplate contains all data needed to create an entity from a template.
