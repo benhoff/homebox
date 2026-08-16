@@ -8,6 +8,14 @@
         @update:model-value="tableRow.toggleSelected()"
       />
     </div>
+    <Badge
+      v-if="organized"
+      class="absolute right-2 top-2 z-10 shadow-sm"
+      :class="dispositionClass"
+      :title="$t('closet.disposition')"
+    >
+      {{ organizationMetadata.disposition }}
+    </Badge>
     <NuxtLink :to="`/item/${item.id}`">
       <div class="relative h-[200px]">
         <img
@@ -34,7 +42,23 @@
         </div>
       </div>
       <div class="col-span-4 flex grow flex-col gap-y-1 p-4 pt-2">
-        <h2 class="line-clamp-2 text-ellipsis text-wrap text-lg font-bold">{{ item.name }}</h2>
+        <h2 class="line-clamp-2 text-ellipsis text-wrap text-lg font-bold">
+          {{ item.name }}
+        </h2>
+        <p v-if="organized && item.manufacturer" class="truncate text-sm text-muted-foreground">
+          {{ item.manufacturer }}
+        </p>
+        <div v-if="organized && organizationChips.length" class="flex flex-wrap gap-1 pb-1">
+          <Badge
+            v-for="chip in organizationChips"
+            :key="chip.key"
+            variant="outline"
+            class="font-normal"
+            :title="chip.inferred ? $t('closet.inferred') : undefined"
+          >
+            {{ chip.value }}<span v-if="chip.inferred" class="ml-0.5 text-muted-foreground">*</span>
+          </Badge>
+        </div>
         <Separator class="mb-1" />
         <TooltipProvider :delay-duration="0">
           <div class="flex items-center gap-2">
@@ -67,7 +91,10 @@
             </Tooltip>
           </div>
         </TooltipProvider>
-        <Markdown class="mb-2 line-clamp-3 text-ellipsis" :source="item.description" />
+        <Markdown
+          :class="organized ? 'mb-2 line-clamp-2 text-ellipsis' : 'mb-2 line-clamp-3 text-ellipsis'"
+          :source="item.description"
+        />
         <div class="-mr-1 mt-auto flex flex-wrap justify-end gap-2">
           <TagChip v-for="tag in itemTags" :key="tag.id" :tag="tag" size="sm" :ancestors="tag.ancestors" />
         </div>
@@ -88,6 +115,7 @@
   import TagChip from "@/components/Tag/Chip.vue";
   import type { Row } from "@tanstack/vue-table";
   import { Checkbox } from "@/components/ui/checkbox";
+  import { clothingMetadata } from "~/lib/closet-organization";
 
   const api = useUserApi();
   const preferences = useViewPreferences();
@@ -122,6 +150,47 @@
       required: false,
       default: () => null,
     },
+    organized: {
+      type: Boolean,
+      default: false,
+    },
+  });
+
+  const organizationMetadata = computed(() => clothingMetadata(props.item as EntitySummary));
+  const organizationChips = computed(() => {
+    const values = [
+      { key: "garmentType", value: organizationMetadata.value.garmentType },
+      { key: "primaryColor", value: organizationMetadata.value.primaryColor },
+      { key: "size", value: organizationMetadata.value.size },
+      { key: "season", value: organizationMetadata.value.season },
+      { key: "condition", value: organizationMetadata.value.condition },
+    ];
+    return values
+      .filter(chip => chip.value)
+      .slice(0, 4)
+      .map(chip => ({
+        ...chip,
+        inferred: organizationMetadata.value.inferred.includes(chip.key as "garmentType" | "primaryColor" | "season"),
+      }));
+  });
+
+  const dispositionClass = computed(() => {
+    switch (organizationMetadata.value.disposition.toLocaleLowerCase()) {
+      case "trash":
+        return "bg-destructive text-destructive-foreground";
+      case "sell":
+        return "bg-blue-600 text-white";
+      case "give away":
+      case "donate":
+        return "bg-emerald-600 text-white";
+      case "recycle":
+        return "bg-teal-600 text-white";
+      case "keep":
+      case "keep for move":
+        return "bg-primary text-primary-foreground";
+      default:
+        return "bg-secondary text-secondary-foreground";
+    }
   });
 
   const objectContain = computed(() => imageUrl.value !== "/no-image.jpg" && !preferences.value.legacyImageFit);

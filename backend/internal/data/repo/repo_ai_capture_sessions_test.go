@@ -153,3 +153,48 @@ func TestAICaptureSessionRepository_ReadyForReviewDoesNotUseInFlightSlot(t *test
 	require.NoError(t, err, "sessions awaiting review must not prevent another capture")
 	t.Cleanup(func() { _, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, second.ID) })
 }
+
+func TestAICaptureSessionRepository_RecoversOnlyStaleSubmissions(t *testing.T) {
+	ctx := context.Background()
+	locationType := useContainerEntityType(t)
+	location, err := tRepos.Entities.Create(ctx, tGroup.ID, EntityCreate{
+		Name: "AI capture recovery test location", EntityTypeID: locationType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, location.ID) })
+
+	stale, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 5)
+	require.NoError(t, err)
+	fresh, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 5)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, stale.ID)
+		_, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, fresh.ID)
+	})
+
+	_, err = tRepos.AICaptureSessions.db.AICaptureSession.UpdateOneID(stale.ID).
+		SetStatus(aicapturesession.StatusSubmitting).
+		SetUpdatedAt(time.Now().Add(-10 * time.Minute)).
+		Save(ctx)
+	require.NoError(t, err)
+	_, err = tRepos.AICaptureSessions.db.AICaptureSession.UpdateOneID(fresh.ID).
+		SetStatus(aicapturesession.StatusSubmitting).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	require.NoError(t, err)
+
+	recovered, err := tRepos.AICaptureSessions.RecoverInterruptedSubmissions(
+		ctx, time.Now().Add(-5*time.Minute), "SUBMISSION_INTERRUPTED", "retry safely",
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 1, recovered)
+
+	staleAfter, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, stale.ID)
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusReadyForReview.String(), staleAfter.Status)
+	assert.Equal(t, "SUBMISSION_INTERRUPTED", staleAfter.ErrorCode)
+	assert.Equal(t, "retry safely", staleAfter.ErrorMessage)
+	freshAfter, err := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, fresh.ID)
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusSubmitting.String(), freshAfter.Status)
+}

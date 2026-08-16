@@ -8,6 +8,8 @@
   import MdiPlus from "~icons/mdi/plus";
   import MdiPencil from "~icons/mdi/pencil";
   import MdiDelete from "~icons/mdi/delete";
+  import MdiHanger from "~icons/mdi/hanger";
+  import MdiViewList from "~icons/mdi/view-list";
   import { useDialog } from "@/components/ui/dialog-provider";
   import { Card } from "@/components/ui/card";
   import {
@@ -17,7 +19,7 @@
     BreadcrumbList,
     BreadcrumbSeparator,
   } from "@/components/ui/breadcrumb";
-  import { Button } from "@/components/ui/button";
+  import { Button, ButtonGroup } from "@/components/ui/button";
   import { Badge } from "@/components/ui/badge";
   import { Separator } from "@/components/ui/separator";
   import { DialogID } from "~/components/ui/dialog-provider/utils";
@@ -29,10 +31,12 @@
   import DetailsSection from "~/components/global/DetailsSection/DetailsSection.vue";
   import BaseSectionHeader from "@/components/Base/SectionHeader.vue";
   import ItemViewSelectable from "~/components/Item/View/Selectable.vue";
+  import ClosetOrganizer from "~/components/Item/View/ClosetOrganizer.vue";
   import ItemAttachmentsList from "~/components/Item/AttachmentsList.vue";
   import ItemImageDialog from "~/components/Item/ImageDialog.vue";
   import LocationCard from "~/components/Location/Card.vue";
   import TagChip from "~/components/Tag/Chip.vue";
+  import { isLikelyClothing } from "~/lib/closet-organization";
 
   definePageMeta({
     middleware: ["auth"],
@@ -214,6 +218,21 @@
       watch: [locationId],
     }
   );
+
+  const locationItemView = ref<"organized" | "inventory">("inventory");
+  const initializedViewForLocation = ref("");
+  const closetViewAvailable = computed(() => {
+    if (!location.value || !items.value?.length) return false;
+    if (/\b(?:closet|wardrobe)\b/i.test(location.value.name)) return true;
+    const clothingCount = items.value.filter(isLikelyClothing).length;
+    return items.value.length >= 3 && clothingCount / items.value.length >= 0.6;
+  });
+
+  watchEffect(() => {
+    if (!location.value || !items.value || initializedViewForLocation.value === locationId.value) return;
+    locationItemView.value = closetViewAvailable.value ? "organized" : "inventory";
+    initializedViewForLocation.value = locationId.value;
+  });
 </script>
 
 <template>
@@ -343,12 +362,39 @@
 
       <!-- Items in this location -->
       <section v-if="location && items">
-        <ItemViewSelectable :items="items" @refresh="refreshItemList" />
+        <div v-if="closetViewAvailable" class="mt-6 flex justify-end">
+          <ButtonGroup>
+            <Button
+              size="sm"
+              :variant="locationItemView === 'organized' ? 'default' : 'outline'"
+              @click="locationItemView = 'organized'"
+            >
+              <MdiHanger />
+              {{ $t("closet.organized_view") }}
+            </Button>
+            <Button
+              size="sm"
+              :variant="locationItemView === 'inventory' ? 'default' : 'outline'"
+              @click="locationItemView = 'inventory'"
+            >
+              <MdiViewList />
+              {{ $t("closet.inventory_view") }}
+            </Button>
+          </ButtonGroup>
+        </div>
+        <ClosetOrganizer
+          v-if="closetViewAvailable && locationItemView === 'organized'"
+          :items="items"
+          @refresh="refreshItemList"
+        />
+        <ItemViewSelectable v-else :items="items" @refresh="refreshItemList" />
       </section>
 
       <!-- Child locations -->
       <section v-if="location && location.children && location.children.length > 0" class="mt-6">
-        <BaseSectionHeader class="mb-5"> {{ $t("locations.child_locations") }} </BaseSectionHeader>
+        <BaseSectionHeader class="mb-5">
+          {{ $t("locations.child_locations") }}
+        </BaseSectionHeader>
         <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <LocationCard v-for="child in location.children" :key="child.id" :location="child" />
         </div>

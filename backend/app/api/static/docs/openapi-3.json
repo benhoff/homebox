@@ -6655,6 +6655,12 @@
                         "x-omitempty": true,
                         "nullable": true
                     },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/repo.EntityFieldData"
+                        }
+                    },
                     "id": {
                         "type": "string"
                     },
@@ -6669,6 +6675,9 @@
                     "itemCount": {
                         "description": "Container-specific (populated when querying locations)",
                         "type": "number"
+                    },
+                    "manufacturer": {
+                        "type": "string"
                     },
                     "name": {
                         "type": "string"

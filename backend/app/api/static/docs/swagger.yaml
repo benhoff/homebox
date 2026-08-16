@@ -1590,6 +1590,10 @@ definitions:
         - $ref: '#/definitions/repo.EntityTypeSummary'
         x-nullable: true
         x-omitempty: true
+      fields:
+        items:
+          $ref: '#/definitions/repo.EntityFieldData'
+        type: array
       id:
         type: string
       imageId:
@@ -1601,6 +1605,8 @@ definitions:
       itemCount:
         description: Container-specific (populated when querying locations)
         type: number
+      manufacturer:
+        type: string
       name:
         type: string
       parent:

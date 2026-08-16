@@ -57,6 +57,9 @@ func registerRecurringTasks(app *app, cfg *config.Config, runner *graceful.Runne
 	}))
 
 	runner.AddPlugin(NewTask("ai-capture-session-worker", 2*time.Second, func(ctx context.Context) {
+		if err := app.services.AICaptureSessions.RecoverInterruptedSubmissions(ctx); err != nil {
+			log.Error().Err(err).Msg("AI capture submission recovery failed")
+		}
 		if err := app.services.AICaptureSessions.RunNextAnalysis(ctx); err != nil {
 			log.Error().Err(err).Msg("AI capture session worker failed")
 		}

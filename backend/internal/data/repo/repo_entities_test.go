@@ -155,6 +155,34 @@ func TestEntityRepository_CreatePersistsCustomFields(t *testing.T) {
 	assert.False(t, exists, "the entity row must roll back when a custom field cannot be created")
 }
 
+func TestEntityRepository_QueryByGroupIncludesOrganizationMetadata(t *testing.T) {
+	itemType := useItemEntityType(t)
+	name := "Closet summary " + uuid.NewString()
+	created, err := tRepos.Entities.Create(context.Background(), tGroup.ID, EntityCreate{
+		Name: name, Manufacturer: "Example Brand", EntityTypeID: itemType.ID,
+		Fields: []EntityFieldData{
+			{Type: "text", Name: "Garment type", TextValue: "Polo"},
+			{Type: "text", Name: "Primary color", TextValue: "Navy"},
+		},
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(context.Background(), created.ID) })
+
+	result, err := tRepos.Entities.QueryByGroup(context.Background(), tGroup.ID, EntityQuery{
+		Search: name, Page: 1, PageSize: 10,
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Items, 1)
+	assert.Equal(t, "Example Brand", result.Items[0].Manufacturer)
+	require.Len(t, result.Items[0].Fields, 2)
+	fieldValues := make(map[string]string, len(result.Items[0].Fields))
+	for _, field := range result.Items[0].Fields {
+		fieldValues[field.Name] = field.TextValue
+	}
+	assert.Equal(t, "Polo", fieldValues["Garment type"])
+	assert.Equal(t, "Navy", fieldValues["Primary color"])
+}
+
 func TestEntityRepository_GetAll(t *testing.T) {
 	length := 10
 	expected := useEntities(t, length)

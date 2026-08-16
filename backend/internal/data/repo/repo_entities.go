@@ -151,16 +151,17 @@ type (
 	}
 
 	EntitySummary struct {
-		ImportRef   string    `json:"-"`
-		ID          uuid.UUID `json:"id"`
-		AssetID     AssetID   `json:"assetId,string"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Quantity    float64   `json:"quantity"`
-		Insured     bool      `json:"insured"`
-		Archived    bool      `json:"archived"`
-		CreatedAt   time.Time `json:"createdAt"`
-		UpdatedAt   time.Time `json:"updatedAt"`
+		ImportRef    string    `json:"-"`
+		ID           uuid.UUID `json:"id"`
+		AssetID      AssetID   `json:"assetId,string"`
+		Name         string    `json:"name"`
+		Description  string    `json:"description"`
+		Manufacturer string    `json:"manufacturer"`
+		Quantity     float64   `json:"quantity"`
+		Insured      bool      `json:"insured"`
+		Archived     bool      `json:"archived"`
+		CreatedAt    time.Time `json:"createdAt"`
+		UpdatedAt    time.Time `json:"updatedAt"`
 
 		PurchasePrice float64 `json:"purchasePrice"`
 
@@ -168,6 +169,7 @@ type (
 		Parent     *EntitySummary     `json:"parent,omitempty"     extensions:"x-nullable,x-omitempty"`
 		EntityType *EntityTypeSummary `json:"entityType,omitempty" extensions:"x-nullable,x-omitempty"`
 		Tags       []TagSummary       `json:"tags"`
+		Fields     []EntityFieldData  `json:"fields"`
 
 		ImageID     *uuid.UUID `json:"imageId,omitempty"     extensions:"x-nullable,x-omitempty"`
 		ThumbnailId *uuid.UUID `json:"thumbnailId,omitempty" extensions:"x-nullable,x-omitempty"`
@@ -263,6 +265,7 @@ func mapEntitySummary(e *ent.Entity) EntitySummary {
 		AssetID:       AssetID(e.AssetID),
 		Name:          e.Name,
 		Description:   e.Description,
+		Manufacturer:  e.Manufacturer,
 		ImportRef:     e.ImportRef,
 		Quantity:      e.Quantity,
 		CreatedAt:     e.CreatedAt,
@@ -274,6 +277,7 @@ func mapEntitySummary(e *ent.Entity) EntitySummary {
 		Parent:     parent,
 		EntityType: et,
 		Tags:       tags,
+		Fields:     mapEntityFields(e.Edges.Fields),
 
 		// Warranty
 		Insured:     e.Insured,
@@ -760,6 +764,7 @@ func (r *EntityRepository) QueryByGroup(ctx context.Context, gid uuid.UUID, q En
 		WithTag().
 		WithParent().
 		WithEntityType().
+		WithFields().
 		WithAttachments(func(aq *ent.AttachmentQuery) {
 			aq.Where(
 				attachment.Primary(true),

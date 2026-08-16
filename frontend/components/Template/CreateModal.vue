@@ -15,7 +15,9 @@
       />
 
       <Separator class="my-2" />
-      <h3 class="text-sm font-medium">{{ $t("components.template.form.default_item_values") }}</h3>
+      <h3 class="text-sm font-medium">
+        {{ $t("components.template.form.default_item_values") }}
+      </h3>
       <div class="flex min-w-0 flex-col gap-2">
         <FormTextField v-model="form.defaultName" :label="$t('components.template.form.item_name')" :max-length="255" />
         <FormTextArea
@@ -63,11 +65,19 @@
 
       <Separator class="my-2" />
       <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium">{{ $t("components.template.form.custom_fields") }}</h3>
-        <Button type="button" size="sm" variant="outline" @click="addField">
-          <MdiPlus class="mr-1 size-4" />
-          {{ $t("global.add") }}
-        </Button>
+        <h3 class="text-sm font-medium">
+          {{ $t("components.template.form.custom_fields") }}
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="outline" @click="applyClothingPreset">
+            <MdiHanger class="mr-1 size-4" />
+            {{ $t("components.template.form.clothing_preset") }}
+          </Button>
+          <Button type="button" size="sm" variant="outline" @click="addField">
+            <MdiPlus class="mr-1 size-4" />
+            {{ $t("global.add") }}
+          </Button>
+        </div>
       </div>
       <div v-if="form.fields.length > 0" class="flex flex-col gap-2">
         <div v-for="(field, idx) in form.fields" :key="idx" class="flex items-end gap-2">
@@ -87,7 +97,9 @@
           </Button>
         </div>
       </div>
-      <p v-else class="text-sm text-muted-foreground">{{ $t("components.template.form.no_custom_fields") }}</p>
+      <p v-else class="text-sm text-muted-foreground">
+        {{ $t("components.template.form.no_custom_fields") }}
+      </p>
 
       <div class="mt-4 flex justify-end">
         <Button type="submit" :loading="loading">{{ $t("global.create") }}</Button>
@@ -101,6 +113,7 @@
   import { toast } from "@/components/ui/sonner";
   import MdiPlus from "~icons/mdi/plus";
   import MdiDelete from "~icons/mdi/delete";
+  import MdiHanger from "~icons/mdi/hanger";
   import { DialogID } from "@/components/ui/dialog-provider/utils";
   import BaseModal from "@/components/App/CreateModal.vue";
   import { useDialog } from "~/components/ui/dialog-provider";
@@ -114,6 +127,7 @@
   import TagSelector from "~/components/Tag/Selector.vue";
   import { useTagStore } from "~/stores/tags";
   import type { EntitySummary } from "~~/lib/api/types/data-contracts";
+  import { CLOTHING_TEMPLATE_NAME, clothingTemplateFields } from "~/lib/closet-organization";
 
   const emit = defineEmits<{ created: [] }>();
   const { closeDialog } = useDialog();
@@ -140,13 +154,33 @@
     includeWarrantyFields: false,
     includePurchaseFields: false,
     includeSoldFields: false,
-    fields: [] as Array<{ id: string; name: string; type: "text"; textValue: string }>,
+    fields: [] as Array<{
+      id: string;
+      name: string;
+      type: "text";
+      textValue: string;
+    }>,
   });
 
   const NIL_UUID = "00000000-0000-0000-0000-000000000000";
 
   function addField() {
     form.fields.push({ id: NIL_UUID, name: "", type: "text", textValue: "" });
+  }
+
+  function applyClothingPreset() {
+    if (!form.name.trim()) form.name = CLOTHING_TEMPLATE_NAME;
+    if (!form.description.trim()) form.description = t("closet.setup.template_description");
+    for (const field of clothingTemplateFields()) {
+      if (!form.fields.some(current => current.name.trim().toLocaleLowerCase() === field.name.toLocaleLowerCase())) {
+        form.fields.push({
+          id: field.id,
+          name: field.name,
+          type: "text",
+          textValue: field.textValue,
+        });
+      }
+    }
   }
 
   function reset() {

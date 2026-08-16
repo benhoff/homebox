@@ -213,6 +213,36 @@
         "subtitle_sessions": "Capture continuously, then review every pending item in one queue.",
         "title": "AI inventory capture"
     },
+    "closet": {
+        "browse": "Browse",
+        "declutter": "Declutter",
+        "disposition": "Move disposition",
+        "inferred": "Inferred from the item name or description; run setup or edit the item to store this value.",
+        "inventory_view": "Inventory view",
+        "metadata_coverage": "{structured} of {total} items have structured garment type and color metadata.",
+        "organized_view": "Closet view",
+        "title": "Closet organization",
+        "uncategorized": "Uncategorized",
+        "filters": {
+            "all": "All",
+            "brand": "Brand",
+            "clear": "Clear filters",
+            "condition": "Condition",
+            "garmentType": "Garment type",
+            "primaryColor": "Primary color",
+            "season": "Season",
+            "size": "Size"
+        },
+        "setup": {
+            "action": "Set up clothing metadata",
+            "complete": "Added structured clothing metadata to {count} items.",
+            "confirm": "Create or reuse a Clothing type and template, then add garment type, primary color, size, season, condition, and move disposition to {count} items? Existing values, names, descriptions, tags, and photos will be preserved.",
+            "failed": "Clothing metadata setup could not be completed. You can safely retry.",
+            "partial": "Clothing metadata was added, but {count} items could not be updated. You can safely retry.",
+            "progress": "Updating {completed} of {total} items…",
+            "template_description": "Reusable clothing metadata for closet browsing, filtering, and move planning."
+        }
+    },
     "collection": {
         "copy_invite": "Copy Invite Link",
         "create_invite": "Create Invite",
@@ -564,6 +594,7 @@
             "empty_value": "(empty)",
             "form": {
                 "custom_fields": "Custom Fields",
+                "clothing_preset": "Clothing fields",
                 "default_item_values": "Default Item Values",
                 "default_location": "Default Location",
                 "default_value": "Default Value",
@@ -626,11 +657,11 @@
                 "default_template": "Default template: {name}",
                 "badge_container": "Container",
                 "tooltip": {
-                "edit": "Edit",
-                "delete": "Delete"
+                    "edit": "Edit",
+                    "delete": "Delete"
                 },
                 "actions": {
-                "delete": "Delete"
+                    "delete": "Delete"
                 }
             },
             "toasts": {

@@ -6331,6 +6331,12 @@ const docTemplate = `{
                     "x-nullable": true,
                     "x-omitempty": true
                 },
+                "fields": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/repo.EntityFieldData"
+                    }
+                },
                 "id": {
                     "type": "string"
                 },
@@ -6345,6 +6351,9 @@ const docTemplate = `{
                 "itemCount": {
                     "description": "Container-specific (populated when querying locations)",
                     "type": "number"
+                },
+                "manufacturer": {
+                    "type": "string"
                 },
                 "name": {
                     "type": "string"

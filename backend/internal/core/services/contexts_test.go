@@ -37,3 +37,19 @@ func Test_SetAuthContext_Nulls(t *testing.T) {
 	ctxUserToken := UseTokenCtx(ctx)
 	assert.Empty(t, ctxUserToken)
 }
+
+func TestNewDetachedContextPreservesAuthWithoutClientCancellation(t *testing.T) {
+	user := &repo.UserOut{ID: uuid.New(), DefaultGroupID: uuid.New()}
+	tenantID := uuid.New()
+	requestCtx, cancel := context.WithCancel(context.Background())
+	requestCtx = SetUserCtx(requestCtx, user, "request-token")
+	requestCtx = SetTenantCtx(requestCtx, tenantID)
+
+	detached := NewDetachedContext(requestCtx)
+	cancel()
+
+	assert.NoError(t, detached.Err())
+	assert.Equal(t, user.ID, detached.UID)
+	assert.Equal(t, tenantID, detached.GID)
+	assert.Equal(t, "request-token", UseTokenCtx(detached))
+}

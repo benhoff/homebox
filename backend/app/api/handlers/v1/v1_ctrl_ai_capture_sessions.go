@@ -624,7 +624,7 @@ func (ctrl *V1Controller) HandleAICaptureSessionSubmit() errchain.HandlerFunc {
 		if err := decodeAICaptureSessionBody(r, &body); err != nil {
 			return err
 		}
-		out, err := ctrl.svc.AICaptureSessions.Submit(services.NewContext(r.Context()), id, body.Revision)
+		out, err := ctrl.svc.AICaptureSessions.Submit(services.NewDetachedContext(r.Context()), id, body.Revision)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}
@@ -654,7 +654,7 @@ func (ctrl *V1Controller) HandleAICaptureSessionItemsSubmit() errchain.HandlerFu
 			return err
 		}
 		out, err := ctrl.svc.AICaptureSessions.SubmitItems(
-			services.NewContext(r.Context()), id, body.Revision, body.ClientIDs,
+			services.NewDetachedContext(r.Context()), id, body.Revision, body.ClientIDs,
 		)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)

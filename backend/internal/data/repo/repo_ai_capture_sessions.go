@@ -804,6 +804,28 @@ func (r *AICaptureSessionRepository) SetSubmitFailed(ctx context.Context, id uui
 		Exec(ctx)
 }
 
+func (r *AICaptureSessionRepository) TouchSubmitting(ctx context.Context, id uuid.UUID) error {
+	return r.db.AICaptureSession.UpdateOneID(id).
+		Where(aicapturesession.StatusEQ(aicapturesession.StatusSubmitting)).
+		SetUpdatedAt(time.Now()).
+		Exec(ctx)
+}
+
+func (r *AICaptureSessionRepository) RecoverInterruptedSubmissions(
+	ctx context.Context,
+	staleBefore time.Time,
+	code, message string,
+) (int, error) {
+	return r.db.AICaptureSession.Update().Where(
+		aicapturesession.StatusEQ(aicapturesession.StatusSubmitting),
+		aicapturesession.UpdatedAtLT(staleBefore),
+	).
+		SetStatus(aicapturesession.StatusReadyForReview).
+		SetErrorCode(code).
+		SetErrorMessage(message).
+		Save(ctx)
+}
+
 func (r *AICaptureSessionRepository) SetReadyAfterPartialSubmit(ctx context.Context, id uuid.UUID) error {
 	return r.db.AICaptureSession.UpdateOneID(id).
 		Where(aicapturesession.StatusEQ(aicapturesession.StatusSubmitting)).

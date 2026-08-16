@@ -1,6 +1,8 @@
 package services
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/repo"
 	"github.com/sysadminsmedia/homebox/backend/internal/sys/config"
 )
@@ -178,6 +181,76 @@ func TestSubmitItemsCreatesSelectedItemsAndPreservesCompletedDraftRows(t *testin
 		require.NoError(t, parseErr)
 		t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, itemID) })
 	}
+}
+
+func TestSubmitItemsReconcilesPhotoWrittenBeforeProgressUpdate(t *testing.T) {
+	ctx := tCtx
+	locationType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, true)
+	require.NoError(t, err)
+	itemType, err := tRepos.EntityTypes.GetDefault(ctx, tGroup.ID, false)
+	require.NoError(t, err)
+	location, err := tRepos.Entities.Create(ctx, tGroup.ID, repo.EntityCreate{
+		Name: "Interrupted submit test", EntityTypeID: locationType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, location.ID) })
+
+	session, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 5)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		stored, getErr := tRepos.AICaptureSessions.Get(ctx, tGroup.ID, tUser.ID, session.ID)
+		if getErr == nil {
+			_ = tRepos.AICaptureSessions.PurgeSessionPhotos(ctx, stored)
+		}
+		_, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, session.ID)
+	})
+
+	png, err := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=")
+	require.NoError(t, err)
+	photoID, path, hash := tRepos.AICaptureSessions.NewPhotoStorage(png, tGroup.ID, session.ID)
+	require.NoError(t, tRepos.AICaptureSessions.WriteBlob(ctx, path, "image/png", png))
+	_, _, err = tRepos.AICaptureSessions.CreatePhoto(
+		ctx, tGroup.ID, tUser.ID, session.ID, photoID, uuid.New(), 0, 8, 24, nil,
+		"interrupted.png", "image/png", path, int64(len(png)), hash,
+	)
+	require.NoError(t, err)
+	draft := AICaptureDraft{Items: []AICaptureItem{{
+		ClientID: "item-1", Name: "Recovered item", Quantity: 1, EntityTypeID: itemType.ID.String(),
+		PhotoIDs: []string{photoID.String()}, MoveDisposition: AICaptureMoveDispositionUndecided,
+	}}, Warnings: []string{}}
+	encoded, err := json.Marshal(draft)
+	require.NoError(t, err)
+	_, err = tClient.AICaptureSession.UpdateOneID(session.ID).
+		SetStatus(aicapturesession.StatusReadyForReview).
+		SetDraftJSON(string(encoded)).
+		SetDraftRevision(1).
+		Save(ctx)
+	require.NoError(t, err)
+
+	entity, err := tRepos.Entities.Create(ctx, tGroup.ID, repo.EntityCreate{
+		ParentID: location.ID, Name: "Recovered item", Quantity: 1, EntityTypeID: itemType.ID,
+	})
+	require.NoError(t, err)
+	_, err = tRepos.AICaptureSessions.GetOrCreateSubmissionItem(ctx, session.ID, "item-1")
+	require.NoError(t, err)
+	require.NoError(t, tRepos.AICaptureSessions.SetSubmissionItemEntity(ctx, session.ID, "item-1", entity.ID))
+	withPhoto, err := tSvc.Entities.AttachmentAdd(
+		ctx, entity.ID, "interrupted.png", attachment.TypePhoto, true, bytes.NewReader(png),
+	)
+	require.NoError(t, err)
+	require.Len(t, withPhoto.Attachments, 1)
+
+	cfg := config.AIConfig{Enabled: true, MaxPhotos: 8, MaxSessionPhotos: 24, MaxItems: 25}
+	svc := NewAICaptureSessionService(tRepos, NewAICaptureService(cfg), tSvc.Entities, cfg)
+	completed, err := svc.SubmitItems(ctx, session.ID, 1, []string{"item-1"})
+	require.NoError(t, err)
+	assert.Equal(t, aicapturesession.StatusCompleted.String(), completed.Status)
+	require.Len(t, completed.Submissions, 1)
+	assert.Equal(t, "completed", completed.Submissions[0].Status)
+
+	storedEntity, err := tRepos.Entities.GetOneByGroup(ctx, tGroup.ID, entity.ID)
+	require.NoError(t, err)
+	assert.Len(t, storedEntity.Attachments, 1, "retry must reuse the photo written before cancellation")
 }
 
 func TestPartitionAICapturePhotosKeepsGroupsAndUngroupedBatchInFirstPhotoOrder(t *testing.T) {

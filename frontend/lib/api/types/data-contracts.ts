@@ -1019,11 +1019,13 @@ export interface EntitySummary {
   createdAt: Date | string;
   description: string;
   entityType?: EntityTypeSummary | null;
+  fields: EntityFieldData[];
   id: string;
   imageId?: string | null;
   insured: boolean;
   /** Container-specific (populated when querying locations) */
   itemCount: number;
+  manufacturer: string;
   name: string;
   /** Edges */
   parent?: EntitySummary | null;

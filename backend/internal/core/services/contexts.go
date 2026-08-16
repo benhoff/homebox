@@ -53,6 +53,14 @@ func NewContext(ctx context.Context) Context {
 	}
 }
 
+// NewDetachedContext returns a service context that preserves request-scoped
+// authentication values but is not canceled when the client disconnects.
+// Use this only for operations whose durable work must finish after the HTTP
+// response is no longer writable.
+func NewDetachedContext(ctx context.Context) Context {
+	return NewContext(context.WithoutCancel(ctx))
+}
+
 // SetUserCtx is a helper function that sets the ContextUser and ContextUserToken
 // values within the context of a web request (or any context).
 func SetUserCtx(ctx context.Context, user *repo.UserOut, token string) context.Context {

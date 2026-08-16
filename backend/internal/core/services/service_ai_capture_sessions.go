@@ -21,16 +21,19 @@ import (
 )
 
 const (
-	AICaptureErrorInvalidState     = "INVALID_STATE"
-	AICaptureErrorSessionFull      = "SESSION_FULL"
-	AICaptureErrorGroupFull        = "CAPTURE_GROUP_FULL"
-	AICaptureErrorPhotoMismatch    = "PHOTO_COUNT_MISMATCH"
-	AICaptureErrorRevisionMismatch = "CAPTURE_REVISION_MISMATCH"
-	AICaptureErrorLocationMissing  = "LOCATION_MISSING"
-	AICaptureErrorAnalysisFailed   = "ANALYSIS_UPSTREAM_FAILED"
-	AICaptureErrorDraftConflict    = "DRAFT_REVISION_CONFLICT"
-	AICaptureErrorSubmitFailed     = "SUBMISSION_FAILED"
+	AICaptureErrorInvalidState      = "INVALID_STATE"
+	AICaptureErrorSessionFull       = "SESSION_FULL"
+	AICaptureErrorGroupFull         = "CAPTURE_GROUP_FULL"
+	AICaptureErrorPhotoMismatch     = "PHOTO_COUNT_MISMATCH"
+	AICaptureErrorRevisionMismatch  = "CAPTURE_REVISION_MISMATCH"
+	AICaptureErrorLocationMissing   = "LOCATION_MISSING"
+	AICaptureErrorAnalysisFailed    = "ANALYSIS_UPSTREAM_FAILED"
+	AICaptureErrorDraftConflict     = "DRAFT_REVISION_CONFLICT"
+	AICaptureErrorSubmitFailed      = "SUBMISSION_FAILED"
+	AICaptureErrorSubmitInterrupted = "SUBMISSION_INTERRUPTED"
 )
+
+const aiCaptureSubmissionStaleAfter = 5 * time.Minute
 
 type AICaptureSessionPhoto struct {
 	ID             string    `json:"id"`
@@ -1252,6 +1255,16 @@ func aiCaptureMoveFields(item AICaptureItem) []repo.EntityFieldData {
 	return fields
 }
 
+func capturePhotoAttachmentCounts(entity repo.EntityOut) map[string]int {
+	counts := make(map[string]int)
+	for _, itemAttachment := range entity.Attachments {
+		if itemAttachment.Type == attachment.TypePhoto.String() {
+			counts[itemAttachment.Title]++
+		}
+	}
+	return counts
+}
+
 func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptureSessionRecord, item AICaptureItem) error {
 	progress, err := svc.repos.AICaptureSessions.GetOrCreateSubmissionItem(ctx, session.ID, item.ClientID)
 	if err != nil {
@@ -1291,11 +1304,22 @@ func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptu
 		}
 	}
 
-	uploaded := decodeUploadedPhotoIDs(progress.UploadedPhotoIDs)
 	photoByID := make(map[string]repo.AICapturePhotoRecord, len(session.Photos))
 	for _, photo := range session.Photos {
 		photoByID[photo.ID.String()] = photo
 	}
+	uploaded := decodeUploadedPhotoIDs(progress.UploadedPhotoIDs)
+	recordedAttachmentCounts := make(map[string]int)
+	for photoID := range uploaded {
+		if photo, ok := photoByID[photoID]; ok {
+			recordedAttachmentCounts[photo.OriginalName]++
+		}
+	}
+	entity, err := svc.repos.Entities.GetOneByGroup(ctx, ctx.GID, *entityID)
+	if err != nil {
+		return err
+	}
+	existingAttachmentCounts := capturePhotoAttachmentCounts(entity)
 	for index, photoID := range item.PhotoIDs {
 		if _, ok := uploaded[photoID]; ok {
 			continue
@@ -1304,6 +1328,17 @@ func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptu
 		if !ok {
 			return fmt.Errorf("draft photo %s is unavailable", photoID)
 		}
+		if recordedAttachmentCounts[photo.OriginalName] < existingAttachmentCounts[photo.OriginalName] {
+			uploaded[photoID] = struct{}{}
+			recordedAttachmentCounts[photo.OriginalName]++
+			if err := svc.repos.AICaptureSessions.SetSubmissionItemPhotos(ctx, session.ID, item.ClientID, encodeUploadedPhotoIDs(uploaded)); err != nil {
+				return err
+			}
+			if err := svc.repos.AICaptureSessions.TouchSubmitting(ctx, session.ID); err != nil {
+				return err
+			}
+			continue
+		}
 		data, err := svc.repos.AICaptureSessions.ReadBlob(ctx, photo.Path)
 		if err != nil {
 			return err
@@ -1311,12 +1346,30 @@ func (svc *AICaptureSessionService) submitItem(ctx Context, session repo.AICaptu
 		if _, err := svc.entities.AttachmentAdd(ctx, *entityID, photo.OriginalName, attachment.TypePhoto, index == 0, bytes.NewReader(data)); err != nil {
 			return err
 		}
+		existingAttachmentCounts[photo.OriginalName]++
 		uploaded[photoID] = struct{}{}
+		recordedAttachmentCounts[photo.OriginalName]++
 		if err := svc.repos.AICaptureSessions.SetSubmissionItemPhotos(ctx, session.ID, item.ClientID, encodeUploadedPhotoIDs(uploaded)); err != nil {
+			return err
+		}
+		if err := svc.repos.AICaptureSessions.TouchSubmitting(ctx, session.ID); err != nil {
 			return err
 		}
 	}
 	return svc.repos.AICaptureSessions.SetSubmissionItemStatus(ctx, session.ID, item.ClientID, aicapturesessionitem.StatusCompleted, "")
+}
+
+func (svc *AICaptureSessionService) RecoverInterruptedSubmissions(ctx context.Context) error {
+	count, err := svc.repos.AICaptureSessions.RecoverInterruptedSubmissions(
+		ctx,
+		time.Now().Add(-aiCaptureSubmissionStaleAfter),
+		AICaptureErrorSubmitInterrupted,
+		"Item creation was interrupted. Review the remaining items and retry; completed work will not be duplicated.",
+	)
+	if err == nil && count > 0 {
+		log.Warn().Int("count", count).Msg("recovered interrupted AI capture submissions")
+	}
+	return err
 }
 
 func (svc *AICaptureSessionService) SubmitItems(ctx Context, id uuid.UUID, expectedRevision int, clientIDs []string) (AICaptureSessionOut, error) {
@@ -1359,10 +1412,16 @@ func (svc *AICaptureSessionService) SubmitItems(ctx Context, id uuid.UUID, expec
 		return AICaptureSessionOut{}, err
 	}
 	for _, item := range selected {
+		if err := svc.repos.AICaptureSessions.TouchSubmitting(ctx, session.ID); err != nil {
+			return AICaptureSessionOut{}, err
+		}
 		if err := svc.submitItem(ctx, session, item); err != nil {
 			_ = svc.repos.AICaptureSessions.SetSubmissionItemStatus(ctx, session.ID, item.ClientID, aicapturesessionitem.StatusFailed, AICaptureErrorSubmitFailed)
 			_ = svc.repos.AICaptureSessions.SetSubmitFailed(ctx, id, AICaptureErrorSubmitFailed, "Some items or photos could not be saved. Retry is safe.")
 			return svc.Get(ctx, id)
+		}
+		if err := svc.repos.AICaptureSessions.TouchSubmitting(ctx, session.ID); err != nil {
+			return AICaptureSessionOut{}, err
 		}
 	}
 	updated, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
