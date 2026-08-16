@@ -1497,6 +1497,19 @@ export interface AICaptureOption {
   name: string;
 }
 
+export interface AICaptureProviderStatus {
+  enabled: boolean;
+  id: string;
+  model: string;
+  name: string;
+}
+
+export interface AICaptureReanalysisOut {
+  item: AICaptureItem;
+  provider: string;
+  warnings: string[];
+}
+
 export interface AICaptureSessionOut {
   analysisAttempts: number;
   analyzedAt: string;
@@ -1546,6 +1559,7 @@ export interface AIStatus {
   enabled: boolean;
   maxPhotos: number;
   model: string;
+  providers: AICaptureProviderStatus[];
 }
 
 export interface APISummary {
@@ -1701,6 +1715,13 @@ export interface AiCaptureSessionLocationUpdate {
 
 export interface AiCaptureSessionPhotoUpdate {
   captureGroupId?: string | null;
+}
+
+export interface AiCaptureSessionReanalysis {
+  clientId: string;
+  instruction: string;
+  provider: string;
+  revision: number;
 }
 
 export interface AiCaptureSessionSubmit {

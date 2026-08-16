@@ -44,6 +44,13 @@ type aiCaptureSessionCorrection struct {
 	Instruction string `json:"instruction"`
 }
 
+type aiCaptureSessionReanalysis struct {
+	Revision    int    `json:"revision"`
+	ClientID    string `json:"clientId"`
+	Provider    string `json:"provider"`
+	Instruction string `json:"instruction"`
+}
+
 type aiCaptureSessionSubmit struct {
 	Revision int `json:"revision"`
 }
@@ -68,6 +75,8 @@ func aiCaptureSessionRequestError(err error) error {
 		return validate.NewRequestError(fmt.Errorf("%s: that action is unavailable for the current session", services.AICaptureErrorInvalidState), http.StatusConflict)
 	case errors.Is(err, services.ErrAIInvalidRequest):
 		return validate.NewRequestError(err, http.StatusUnprocessableEntity)
+	case errors.Is(err, services.ErrAIProvider):
+		return validate.NewRequestError(err, http.StatusServiceUnavailable)
 	case errors.Is(err, services.ErrAIUpstream):
 		return validate.NewRequestError(errors.New("the AI provider could not update this session"), http.StatusBadGateway)
 	case strings.Contains(err.Error(), services.AICaptureErrorLocationMissing):
@@ -468,6 +477,43 @@ func (ctrl *V1Controller) HandleAICaptureSessionCorrection() errchain.HandlerFun
 			return validate.NewRequestError(errors.New("instruction is required"), http.StatusUnprocessableEntity)
 		}
 		out, err := ctrl.svc.AICaptureSessions.Correct(services.NewContext(r.Context()), id, body.Revision, body.Instruction)
+		if err != nil {
+			return aiCaptureSessionRequestError(err)
+		}
+		return server.JSON(w, http.StatusOK, out)
+	}
+}
+
+// HandleAICaptureSessionReanalysis godoc
+//
+//	@Summary	Preview provider reanalysis for one reviewed capture item
+//	@Tags		AI Capture Sessions
+//	@Accept		json
+//	@Produce	json
+//	@Param		sessionId	path		string					true	"Capture session ID"
+//	@Param		payload		body		aiCaptureSessionReanalysis	true	"Reviewed item and provider"
+//	@Success	200			{object}	services.AICaptureReanalysisOut
+//	@Router		/v1/ai/capture/sessions/{sessionId}/reanalyze-item [POST]
+//	@Security	Bearer
+func (ctrl *V1Controller) HandleAICaptureSessionReanalysis() errchain.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := ctrl.routeUUID(r, "sessionId")
+		if err != nil {
+			return err
+		}
+		var body aiCaptureSessionReanalysis
+		if err := decodeAICaptureSessionBody(r, &body); err != nil {
+			return err
+		}
+		if strings.TrimSpace(body.ClientID) == "" {
+			return validate.NewRequestError(errors.New("clientId is required"), http.StatusUnprocessableEntity)
+		}
+		if len(body.Instruction) > 2000 {
+			return validate.NewRequestError(errors.New("instruction must be at most 2000 characters"), http.StatusUnprocessableEntity)
+		}
+		out, err := ctrl.svc.AICaptureSessions.ReanalyzeItem(
+			services.NewContext(r.Context()), id, body.Revision, body.ClientID, body.Provider, body.Instruction,
+		)
 		if err != nil {
 			return aiCaptureSessionRequestError(err)
 		}

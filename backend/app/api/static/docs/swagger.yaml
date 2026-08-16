@@ -2432,6 +2432,28 @@ definitions:
       name:
         type: string
     type: object
+  services.AICaptureProviderStatus:
+    properties:
+      enabled:
+        type: boolean
+      id:
+        type: string
+      model:
+        type: string
+      name:
+        type: string
+    type: object
+  services.AICaptureReanalysisOut:
+    properties:
+      item:
+        $ref: '#/definitions/services.AICaptureItem'
+      provider:
+        type: string
+      warnings:
+        items:
+          type: string
+        type: array
+    type: object
   services.AICaptureSessionOut:
     properties:
       analysisAttempts:
@@ -2545,6 +2567,10 @@ definitions:
         type: integer
       model:
         type: string
+      providers:
+        items:
+          $ref: '#/definitions/services.AICaptureProviderStatus'
+        type: array
     type: object
   v1.APISummary:
     properties:
@@ -2777,6 +2803,17 @@ definitions:
       captureGroupId:
         type: string
         x-nullable: true
+    type: object
+  v1.aiCaptureSessionReanalysis:
+    properties:
+      clientId:
+        type: string
+      instruction:
+        type: string
+      provider:
+        type: string
+      revision:
+        type: integer
     type: object
   v1.aiCaptureSessionSubmit:
     properties:
@@ -3249,6 +3286,34 @@ paths:
       security:
       - Bearer: []
       summary: Reassign or clear a photo's same-item group
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/reanalyze-item:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Reviewed item and provider
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionReanalysis'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureReanalysisOut'
+      security:
+      - Bearer: []
+      summary: Preview provider reanalysis for one reviewed capture item
       tags:
       - AI Capture Sessions
   /v1/ai/capture/sessions/{sessionId}/retry-analysis:

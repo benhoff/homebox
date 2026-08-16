@@ -114,8 +114,11 @@ func Test_OTelConfig_RedactsHeaders(t *testing.T) {
 
 func Test_Config_FullMarshalRedactsAllSecrets(t *testing.T) {
 	c := &Config{
-		Auth:    AuthConfig{APIKeyPepper: "pepper-secret"},
-		AI:      AIConfig{APIKey: "openai-secret"},
+		Auth: AuthConfig{APIKeyPepper: "pepper-secret"},
+		AI: AIConfig{
+			APIKey: "openai-secret",
+			Gemini: AIProviderConfig{APIKey: "gemini-secret"},
+		},
 		OIDC:    OIDCConf{ClientSecret: "oidc-secret"},
 		Mailer:  MailerConf{Password: "mailer-secret"},
 		Storage: Storage{ConnString: "s3://k:s3secret@b/p"},
@@ -133,6 +136,7 @@ func Test_Config_FullMarshalRedactsAllSecrets(t *testing.T) {
 	for _, secret := range []string{
 		"pepper-secret",
 		"openai-secret",
+		"gemini-secret",
 		"oidc-secret",
 		"mailer-secret",
 		"s3secret",

@@ -17,10 +17,18 @@ services:
       - HBOX_AUTH_API_KEY_PEPPER=${HBOX_AUTH_API_KEY_PEPPER}
       - HBOX_OPTIONS_TRUST_PROXY=true
       - HBOX_AI_ENABLED=true
+      - HBOX_AI_PROVIDER_NAME=Qwen
       - HBOX_AI_BASE_URL=http://192.168.1.25:8082/v1
       - HBOX_AI_MODEL=qwen3.5-9b-q4_k_m
       - HBOX_AI_REASONING_EFFORT=none
+      - HBOX_AI_GEMINI_ENABLED=true
+      - HBOX_AI_GEMINI_NAME=Gemini
+      - HBOX_AI_GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai
+      - HBOX_AI_GEMINI_API_KEY=${GEMINI_API_KEY}
+      - HBOX_AI_GEMINI_MODEL=gemini-3.6-flash
       - HBOX_AI_TIMEOUT=2m
       - HBOX_WEB_WRITE_TIMEOUT=3m
     ports:
       - 3100:7745
+    volumes:
+      - /media/homebox:/data

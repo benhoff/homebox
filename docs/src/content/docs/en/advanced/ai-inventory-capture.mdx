@@ -18,10 +18,23 @@ LiteLLM or llama.cpp example:
 
 ```env
 HBOX_AI_ENABLED=true
+HBOX_AI_PROVIDER_NAME=Qwen
 HBOX_AI_BASE_URL=http://192.168.1.25:8082/v1
 HBOX_AI_MODEL=qwen3.5-9b-q4_k_m
 HBOX_AI_REASONING_EFFORT=none
 ```
+
+## Optional Gemini reanalysis
+
+The primary provider remains the default for initial capture, whole-draft corrections, and item reanalysis. Gemini can be enabled as an explicit alternative on the Review screen:
+
+```env
+HBOX_AI_GEMINI_ENABLED=true
+HBOX_AI_GEMINI_API_KEY=your-gemini-api-key
+HBOX_AI_GEMINI_MODEL=gemini-3.6-flash
+```
+
+The Review screen can reanalyze one item or a selected set. Selected items are processed serially and independently. Each request includes every photo currently assigned to that item, so multiple views remain evidence for one physical object and never imply a larger quantity. Results are previews: compare and accept individual fields or the complete suggestion before HomeBox changes the draft.
 
 The configured provider must accept OpenAI-compatible `POST /chat/completions` requests with image data URLs and JSON response mode. The API key is used only by the HomeBox backend and is never returned to browsers.
 

@@ -69,18 +69,40 @@ type Config struct {
 // the assisted inventory capture flow. BaseURL may point at OpenAI, LiteLLM,
 // llama.cpp, or another server implementing chat completions.
 type AIConfig struct {
-	Enabled         bool          `yaml:"enabled"          conf:"default:false"`
-	BaseURL         string        `yaml:"base_url"         conf:"default:https://api.openai.com/v1"`
-	APIKey          string        `yaml:"api_key"          conf:"mask"`
-	Model           string        `yaml:"model"            conf:"default:gpt-4.1-mini"`
-	ReasoningEffort string        `yaml:"reasoning_effort"`
-	Timeout         time.Duration `yaml:"timeout"          conf:"default:2m"`
-	MaxPhotos       int           `yaml:"max_photos"       conf:"default:8"`
-	MaxItems        int           `yaml:"max_items"        conf:"default:25"`
+	Enabled         bool             `yaml:"enabled"          conf:"default:false"`
+	ProviderName    string           `yaml:"provider_name"    conf:"default:Primary AI"`
+	BaseURL         string           `yaml:"base_url"         conf:"default:https://api.openai.com/v1"`
+	APIKey          string           `yaml:"api_key"          conf:"mask"`
+	Model           string           `yaml:"model"            conf:"default:gpt-4.1-mini"`
+	ReasoningEffort string           `yaml:"reasoning_effort"`
+	Timeout         time.Duration    `yaml:"timeout"          conf:"default:2m"`
+	MaxPhotos       int              `yaml:"max_photos"       conf:"default:8"`
+	MaxItems        int              `yaml:"max_items"        conf:"default:25"`
+	Gemini          AIProviderConfig `yaml:"gemini"`
+}
+
+// AIProviderConfig defines an optional secondary OpenAI-compatible provider.
+// The primary provider remains the default for capture and correction requests.
+type AIProviderConfig struct {
+	Enabled         bool   `yaml:"enabled"          conf:"default:false"`
+	Name            string `yaml:"name"             conf:"default:Gemini"`
+	BaseURL         string `yaml:"base_url"         conf:"default:https://generativelanguage.googleapis.com/v1beta/openai"`
+	APIKey          string `yaml:"api_key"          conf:"mask"`
+	Model           string `yaml:"model"            conf:"default:gemini-3.6-flash"`
+	ReasoningEffort string `yaml:"reasoning_effort"`
 }
 
 func (c AIConfig) MarshalJSON() ([]byte, error) {
 	type alias AIConfig
+	a := alias(c)
+	if a.APIKey != "" {
+		a.APIKey = redactedValue
+	}
+	return json.Marshal(a)
+}
+
+func (c AIProviderConfig) MarshalJSON() ([]byte, error) {
+	type alias AIProviderConfig
 	a := alias(c)
 	if a.APIKey != "" {
 		a.APIKey = redactedValue

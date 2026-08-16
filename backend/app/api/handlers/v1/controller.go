@@ -145,9 +145,10 @@ type (
 	}
 
 	AIStatus struct {
-		Enabled   bool   `json:"enabled"`
-		Model     string `json:"model,omitempty"`
-		MaxPhotos int    `json:"maxPhotos"`
+		Enabled   bool                               `json:"enabled"`
+		Model     string                             `json:"model,omitempty"`
+		MaxPhotos int                                `json:"maxPhotos"`
+		Providers []services.AICaptureProviderStatus `json:"providers"`
 	}
 )
 
@@ -212,6 +213,7 @@ func (ctrl *V1Controller) HandleBase(ready ReadyFunc, build Build) errchain.Hand
 				Enabled:   ctrl.svc.AICapture.IsEnabled(),
 				Model:     ctrl.svc.AICapture.Model(),
 				MaxPhotos: ctrl.svc.AICapture.MaxPhotos(),
+				Providers: ctrl.svc.AICapture.Providers(),
 			},
 		})
 	}

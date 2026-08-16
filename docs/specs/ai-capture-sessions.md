@@ -199,6 +199,8 @@ The user can:
 - Change photo assignments
 - Split or merge AI suggestions when the capture grouping was incorrect
 - Ask AI for a correction
+- Reanalyze one item or a selected set with the primary provider, or explicitly choose an enabled secondary provider
+- Compare reanalysis suggestions field by field before applying them
 - Undo the most recent AI correction
 - Leave and resume review later
 - Submit the reviewed draft
@@ -296,6 +298,10 @@ stateDiagram-v2
 - **CAP-040:** Every draft edit is explicitly saved or autosaved before the UI reports it saved.
 - **CAP-041:** Draft updates include an expected revision and reject stale writes with HTTP 409.
 - **CAP-042:** AI corrections operate on server-stored photos and the latest persisted draft.
+- **CAP-042A:** Initial analysis and ordinary corrections use the configured primary provider. A secondary provider is used only when the reviewer explicitly selects it.
+- **CAP-042B:** Item reanalysis sends every photo currently assigned to that reviewed item in one provider request and enforces exactly one returned item. Multiple views never imply quantity.
+- **CAP-042C:** Bulk reanalysis processes selected items independently and serially, preserving successful suggestions when another item fails.
+- **CAP-042D:** Reanalysis returns a preview and does not mutate the persisted draft until the reviewer applies suggested fields.
 - **CAP-043:** Submission revalidates location, item type IDs, tag IDs, quantities, names, and photo ownership.
 - **CAP-044:** Submission creates each inventory item at most once for a given session draft `clientId`.
 - **CAP-045:** Session photos are copied into normal item attachments on the server, including normal thumbnail generation and primary-photo selection.
@@ -323,6 +329,7 @@ All routes use the existing authenticated active-collection middleware. Resource
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/retry-analysis` | Requeue a failed analysis |
 | `PUT` | `/v1/ai/capture/sessions/{sessionId}/draft` | Persist an edited draft using `revision` |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/corrections` | Ask AI to revise the latest draft |
+| `POST` | `/v1/ai/capture/sessions/{sessionId}/reanalyze-item` | Preview one reviewed item's metadata from the selected provider |
 | `POST` | `/v1/ai/capture/sessions/{sessionId}/submit` | Idempotently create inventory items and attachments |
 
 The existing `POST /v1/ai/capture/analyze` route remains available during rollout. The session UI must use only session routes. The direct route can be deprecated after session stability is proven.

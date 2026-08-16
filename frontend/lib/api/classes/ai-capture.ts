@@ -22,6 +22,12 @@ export interface AICaptureDraft {
   warnings: string[];
 }
 
+export interface AICaptureReanalysis {
+  item: AICaptureItem;
+  provider: string;
+  warnings: string[];
+}
+
 export interface AICaptureLocation {
   id: string;
   name: string;
@@ -186,6 +192,21 @@ export class AICaptureAPI extends BaseAPI {
     return this.http.post<{ revision: number; instruction: string }, AICaptureSession>({
       url: route(`/ai/capture/sessions/${sessionId}/corrections`),
       body: { revision, instruction },
+    });
+  }
+
+  reanalyzeItem(sessionId: string, revision: number, clientId: string, provider: string, instruction = "") {
+    return this.http.post<
+      {
+        revision: number;
+        clientId: string;
+        provider: string;
+        instruction: string;
+      },
+      AICaptureReanalysis
+    >({
+      url: route(`/ai/capture/sessions/${sessionId}/reanalyze-item`),
+      body: { revision, clientId, provider, instruction },
     });
   }
 

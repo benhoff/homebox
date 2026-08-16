@@ -184,6 +184,7 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 		r.Post("/ai/capture/sessions/{sessionId}/retry-analysis", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionRetryAnalysis(), userMW...))
 		r.Put("/ai/capture/sessions/{sessionId}/draft", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionDraftUpdate(), userMW...))
 		r.Post("/ai/capture/sessions/{sessionId}/corrections", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionCorrection(), append(userMW, a.aiCaptureLimiter.middleware)...))
+		r.Post("/ai/capture/sessions/{sessionId}/reanalyze-item", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionReanalysis(), append(userMW, a.aiCaptureLimiter.middleware)...))
 		r.Post("/ai/capture/sessions/{sessionId}/submit", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionSubmit(), userMW...))
 
 		// Tags endpoints

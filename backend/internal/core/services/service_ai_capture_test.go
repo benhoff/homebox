@@ -56,6 +56,76 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	assert.Contains(t, string(userContent), "Garage")
 }
 
+func TestAICaptureAnalyzeWithGeminiProvider(t *testing.T) {
+	var got chatCompletionRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/v1beta/openai/chat/completions", r.URL.Path)
+		assert.Equal(t, "Bearer gemini-secret", r.Header.Get("Authorization"))
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Drill\",\"quantity\":1,\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: "http://primary.invalid/v1", Model: "qwen-model", MaxPhotos: 4, MaxItems: 5,
+		Gemini: config.AIProviderConfig{
+			Enabled: true, Name: "Gemini", BaseURL: server.URL + "/v1beta/openai",
+			APIKey: "gemini-secret", Model: "gemini-model",
+		},
+	})
+	draft, err := svc.AnalyzeWithProvider(context.Background(), AICaptureProviderGemini, AICaptureRequest{
+		Photos:  []AICapturePhoto{{MIMEType: "image/jpeg", Data: []byte("photo")}},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+	})
+	require.NoError(t, err)
+	require.Len(t, draft.Items, 1)
+	assert.Equal(t, "gemini-model", got.Model)
+	assert.Equal(t, "Drill", draft.Items[0].Name)
+
+	providers := svc.Providers()
+	require.Len(t, providers, 2)
+	assert.Equal(t, AICaptureProviderDefault, providers[0].ID)
+	assert.Equal(t, AICaptureProviderGemini, providers[1].ID)
+	assert.True(t, providers[1].Enabled)
+}
+
+func TestAICaptureAnalyzeReviewedItemUsesEveryView(t *testing.T) {
+	var got chatCompletionRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"changed\",\"name\":\"Cordless drill\",\"quantity\":1,\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "qwen-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	draft, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{
+			{MIMEType: "image/jpeg", Data: []byte("front")},
+			{MIMEType: "image/jpeg", Data: []byte("label")},
+		},
+		Context:    AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+		Draft:      &AICaptureDraft{Items: []AICaptureItem{{ClientID: "kept", Name: "Drill", Quantity: 1}}},
+		SingleItem: true,
+	})
+	require.NoError(t, err)
+	require.Len(t, draft.Items, 1)
+	assert.Equal(t, []int{0, 1}, draft.Items[0].PhotoIndexes)
+	userContent, err := json.Marshal(got.Messages[1].Content)
+	require.NoError(t, err)
+	assert.Contains(t, string(userContent), "REVIEWED ITEM")
+	assert.Contains(t, string(userContent), "do not treat the number of photos as quantity")
+}
+
+func TestAICaptureAnalyzeRejectsUnavailableProvider(t *testing.T) {
+	svc := NewAICaptureService(config.AIConfig{Enabled: true})
+	_, err := svc.AnalyzeWithProvider(context.Background(), AICaptureProviderGemini, AICaptureRequest{})
+	assert.ErrorIs(t, err, ErrAIProvider)
+}
+
 func TestAICaptureAnalyzeSanitizesUnsafeDraft(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

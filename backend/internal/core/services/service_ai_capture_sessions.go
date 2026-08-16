@@ -69,6 +69,12 @@ type AICaptureSessionOut struct {
 	ExpiresAt          time.Time               `json:"expiresAt"`
 }
 
+type AICaptureReanalysisOut struct {
+	Item     AICaptureItem `json:"item"`
+	Provider string        `json:"provider"`
+	Warnings []string      `json:"warnings"`
+}
+
 type AICaptureSessionService struct {
 	repos    *repo.AllRepos
 	ai       *AICaptureService
@@ -566,6 +572,80 @@ func (svc *AICaptureSessionService) SaveDraft(ctx Context, id uuid.UUID, expecte
 		return AICaptureSessionOut{}, err
 	}
 	return svc.Get(ctx, id)
+}
+
+// ReanalyzeItem creates a provider suggestion without mutating the persisted
+// draft. Every photo currently assigned to the reviewed item is sent together,
+// and the one-item/grouping contract is enforced independently of the model.
+func (svc *AICaptureSessionService) ReanalyzeItem(
+	ctx Context,
+	id uuid.UUID,
+	expectedRevision int,
+	clientID, providerID, instruction string,
+) (AICaptureReanalysisOut, error) {
+	record, err := svc.repos.AICaptureSessions.Get(ctx, ctx.GID, ctx.UID, id)
+	if err != nil {
+		return AICaptureReanalysisOut{}, err
+	}
+	if record.Status != "ready_for_review" || record.DraftRevision != expectedRevision {
+		return AICaptureReanalysisOut{}, repo.ErrAICaptureDraftConflict
+	}
+
+	var current AICaptureDraft
+	if err := json.Unmarshal([]byte(record.DraftJSON), &current); err != nil {
+		return AICaptureReanalysisOut{}, err
+	}
+	itemIndex := slices.IndexFunc(current.Items, func(item AICaptureItem) bool {
+		return item.ClientID == strings.TrimSpace(clientID)
+	})
+	if itemIndex < 0 {
+		return AICaptureReanalysisOut{}, fmt.Errorf("%w: reviewed item was not found", ErrAIInvalidRequest)
+	}
+	original := current.Items[itemIndex]
+	photoIDs := make(map[string]struct{}, len(original.PhotoIDs))
+	for _, photoID := range original.PhotoIDs {
+		photoIDs[photoID] = struct{}{}
+	}
+	selectedRecords := make([]repo.AICapturePhotoRecord, 0, len(photoIDs))
+	for _, photo := range record.Photos {
+		if _, ok := photoIDs[photo.ID.String()]; ok {
+			selectedRecords = append(selectedRecords, photo)
+		}
+	}
+	if len(selectedRecords) == 0 || len(selectedRecords) != len(photoIDs) {
+		return AICaptureReanalysisOut{}, fmt.Errorf("%w: reviewed item must have available assigned photos", ErrAIInvalidRequest)
+	}
+	photos, err := svc.analysisPhotosFor(ctx, selectedRecords)
+	if err != nil {
+		return AICaptureReanalysisOut{}, err
+	}
+	metadata, err := svc.metadata(ctx, record)
+	if err != nil {
+		return AICaptureReanalysisOut{}, err
+	}
+
+	promptDraft := AICaptureDraft{Items: []AICaptureItem{original}, Warnings: []string{}}
+	mapDraftPhotoIndexes(&promptDraft, selectedRecords)
+	promptDraft.Items[0].PhotoIDs = nil
+	providerID = strings.TrimSpace(strings.ToLower(providerID))
+	if providerID == "" {
+		providerID = AICaptureProviderDefault
+	}
+	suggested, err := svc.ai.AnalyzeWithProvider(ctx, providerID, AICaptureRequest{
+		Photos: photos, Context: metadata, Draft: &promptDraft,
+		Instruction:    truncate(strings.TrimSpace(instruction), 2000),
+		CaptureGroupID: original.CaptureGroupID, SingleItem: true,
+	})
+	if err != nil {
+		return AICaptureReanalysisOut{}, err
+	}
+	mapDraftPhotoIDs(&suggested, selectedRecords)
+	item := suggested.Items[0]
+	item.ClientID = original.ClientID
+	item.CaptureGroupID = original.CaptureGroupID
+	item.PhotoIDs = slices.Clone(original.PhotoIDs)
+	item.PhotoIndexes = nil
+	return AICaptureReanalysisOut{Item: item, Provider: providerID, Warnings: suggested.Warnings}, nil
 }
 
 func (svc *AICaptureSessionService) Correct(ctx Context, id uuid.UUID, expectedRevision int, instruction string) (AICaptureSessionOut, error) {

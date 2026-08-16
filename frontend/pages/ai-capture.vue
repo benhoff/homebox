@@ -7,6 +7,7 @@
   import TagSelector from "~/components/Tag/Selector.vue";
   import { Button } from "~/components/ui/button";
   import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+  import { Checkbox } from "~/components/ui/checkbox";
   import { Input } from "~/components/ui/input";
   import { Label } from "~/components/ui/label";
   import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
@@ -14,6 +15,7 @@
   import type {
     AICaptureDraft,
     AICaptureItem,
+    AICaptureReanalysis,
     AICaptureSession,
     AICaptureSessionPhoto,
   } from "~/lib/api/classes/ai-capture";
@@ -52,6 +54,18 @@
 
   type CaptureView = "sessions" | "location" | "camera" | "processing" | "review" | "done";
   type CaptureLocation = { id: string; name: string };
+  type ReanalysisFieldKey =
+    "name" | "quantity" | "entityTypeId" | "manufacturer" | "modelNumber" | "description" | "tagIds";
+
+  const reanalysisFieldKeys: ReanalysisFieldKey[] = [
+    "name",
+    "quantity",
+    "entityTypeId",
+    "manufacturer",
+    "modelNumber",
+    "description",
+    "tagIds",
+  ];
 
   const api = useUserApi();
   const publicApi = usePublicApi();
@@ -67,6 +81,13 @@
   const queue = ref<CaptureQueuePhoto[]>([]);
   const previewURLs = ref<Record<string, string>>({});
   const correction = ref("");
+  const reanalysisInstruction = ref("");
+  const reanalysisProvider = ref("default");
+  const selectedReviewItemIds = ref<string[]>([]);
+  const reanalyzingItemIds = ref<string[]>([]);
+  const reanalysisSuggestions = ref<Record<string, AICaptureReanalysis>>({});
+  const reanalysisErrors = ref<Record<string, string>>({});
+  const undoDraft = ref<AICaptureDraft | null>(null);
   const loading = ref(false);
   const saving = ref(false);
   const submitting = ref(false);
@@ -89,6 +110,24 @@
   const draft = computed(() => activeSession.value?.draft);
   const sessionPhotos = computed(() => activeSession.value?.photos || []);
   const activeStatus = computed(() => activeSession.value?.status || "capturing");
+  const reanalysisProviders = computed(() => {
+    const configured = status.value?.ai?.providers?.filter(provider => provider.enabled) || [];
+    return configured.length
+      ? configured
+      : [
+          {
+            id: "default",
+            name: "Qwen",
+            model: status.value?.ai?.model || "",
+            enabled: true,
+          },
+        ];
+  });
+  const allReviewItemsSelected = computed(
+    () =>
+      !!draft.value?.items.length &&
+      draft.value.items.every(item => selectedReviewItemIds.value.includes(item.clientId))
+  );
   const captureGroups = computed(() => {
     const firstPositions = new Map<string, number>();
     const photos = [
@@ -172,6 +211,30 @@
     else sessions.value.unshift(session);
   }
 
+  function providerName(providerId: string) {
+    return reanalysisProviders.value.find(provider => provider.id === providerId)?.name || providerId;
+  }
+
+  function toggleReviewItem(clientId: string, checked: boolean) {
+    selectedReviewItemIds.value = checked
+      ? [...new Set([...selectedReviewItemIds.value, clientId])]
+      : selectedReviewItemIds.value.filter(id => id !== clientId);
+  }
+
+  function toggleAllReviewItems(checked: boolean) {
+    selectedReviewItemIds.value = checked ? draft.value?.items.map(item => item.clientId) || [] : [];
+  }
+
+  function resetReviewReanalysis() {
+    reanalysisInstruction.value = "";
+    reanalysisProvider.value = "default";
+    selectedReviewItemIds.value = [];
+    reanalyzingItemIds.value = [];
+    reanalysisSuggestions.value = {};
+    reanalysisErrors.value = {};
+    undoDraft.value = null;
+  }
+
   async function loadSessions() {
     const response = await api.aiCapture.listSessions();
     if (!response.error) sessions.value = response.data.items || [];
@@ -216,6 +279,7 @@
   }
 
   async function openSession(session: AICaptureSession) {
+    if (activeSession.value?.id !== session.id) resetReviewReanalysis();
     loading.value = true;
     try {
       const response = await api.aiCapture.getSession(session.id);
@@ -240,6 +304,7 @@
   }
 
   function newSession() {
+    resetReviewReanalysis();
     activeSession.value = null;
     selectedLocation.value = null;
     queue.value = [];
@@ -516,6 +581,8 @@
   }
 
   function removeItem(index: number) {
+    const item = activeSession.value?.draft?.items[index];
+    if (item) clearReanalysis(item.clientId);
     activeSession.value?.draft?.items.splice(index, 1);
   }
 
@@ -523,6 +590,7 @@
     const current = item.photoIds || [];
     item.photoIds = checked ? [...new Set([...current, photoId])] : current.filter(id => id !== photoId);
     item.captureGroupId = undefined;
+    clearReanalysis(item.clientId);
   }
 
   function splitItem(index: number) {
@@ -532,6 +600,7 @@
     const photoIds = item.photoIds || [];
     const splitAt = Math.ceil(photoIds.length / 2);
     const clone = JSON.parse(JSON.stringify(item)) as AICaptureItem;
+    clearReanalysis(item.clientId);
     item.photoIds = photoIds.slice(0, splitAt);
     item.captureGroupId = undefined;
     item.needsReview = true;
@@ -550,11 +619,127 @@
     const target = items[index - 1];
     const source = items[index];
     if (!target || !source) return;
+    clearReanalysis(target.clientId);
+    clearReanalysis(source.clientId);
     target.photoIds = [...new Set([...(target.photoIds || []), ...(source.photoIds || [])])];
     target.captureGroupId = undefined;
     target.needsReview = true;
     target.reviewReason = t("ai_capture.review.merge_reason");
     items.splice(index, 1);
+  }
+
+  function clearReanalysis(clientId: string) {
+    const suggestions = { ...reanalysisSuggestions.value };
+    const errors = { ...reanalysisErrors.value };
+    Reflect.deleteProperty(suggestions, clientId);
+    Reflect.deleteProperty(errors, clientId);
+    reanalysisSuggestions.value = suggestions;
+    reanalysisErrors.value = errors;
+    selectedReviewItemIds.value = selectedReviewItemIds.value.filter(id => id !== clientId);
+  }
+
+  function cloneDraft(value: AICaptureDraft) {
+    return JSON.parse(JSON.stringify(value)) as AICaptureDraft;
+  }
+
+  function rememberDraftForUndo() {
+    if (activeSession.value?.draft) undoDraft.value = cloneDraft(activeSession.value.draft);
+  }
+
+  function reanalysisFieldLabel(field: ReanalysisFieldKey) {
+    const keys: Record<ReanalysisFieldKey, string> = {
+      name: "global.name",
+      quantity: "global.quantity",
+      entityTypeId: "global.type",
+      manufacturer: "ai_capture.review.manufacturer",
+      modelNumber: "ai_capture.review.model",
+      description: "ai_capture.review.description_label",
+      tagIds: "global.tags",
+    };
+    return t(keys[field]);
+  }
+
+  function reanalysisValuesEqual(field: ReanalysisFieldKey, current: AICaptureItem, suggested: AICaptureItem) {
+    if (field === "tagIds") {
+      return JSON.stringify([...current.tagIds].sort()) === JSON.stringify([...suggested.tagIds].sort());
+    }
+    return current[field] === suggested[field];
+  }
+
+  function reanalysisChanges(current: AICaptureItem) {
+    const suggested = reanalysisSuggestions.value[current.clientId]?.item;
+    if (!suggested) return [];
+    return reanalysisFieldKeys
+      .filter(field => !reanalysisValuesEqual(field, current, suggested))
+      .map(field => ({ field, label: reanalysisFieldLabel(field) }));
+  }
+
+  function formatReanalysisValue(field: ReanalysisFieldKey, value: AICaptureItem[ReanalysisFieldKey]) {
+    if (field === "entityTypeId") {
+      return itemTypes.value.find(itemType => itemType.id === value)?.name || String(value || t("global.unknown"));
+    }
+    if (field === "tagIds") {
+      const ids = value as string[];
+      return ids.length ? ids.map(id => tags.value.find(tag => tag.id === id)?.name || id).join(", ") : "—";
+    }
+    return String(value || "—");
+  }
+
+  function applySuggestedField(item: AICaptureItem, field: ReanalysisFieldKey) {
+    const suggested = reanalysisSuggestions.value[item.clientId]?.item;
+    if (!suggested) return;
+    rememberDraftForUndo();
+    switch (field) {
+      case "name":
+        item.name = suggested.name;
+        break;
+      case "quantity":
+        item.quantity = suggested.quantity;
+        break;
+      case "entityTypeId":
+        item.entityTypeId = suggested.entityTypeId;
+        break;
+      case "manufacturer":
+        item.manufacturer = suggested.manufacturer;
+        break;
+      case "modelNumber":
+        item.modelNumber = suggested.modelNumber;
+        break;
+      case "description":
+        item.description = suggested.description;
+        break;
+      case "tagIds":
+        item.tagIds = [...suggested.tagIds];
+        break;
+    }
+  }
+
+  function applyAllSuggestedFields(item: AICaptureItem) {
+    const suggested = reanalysisSuggestions.value[item.clientId]?.item;
+    if (!suggested) return;
+    rememberDraftForUndo();
+    item.name = suggested.name;
+    item.quantity = suggested.quantity;
+    item.entityTypeId = suggested.entityTypeId;
+    item.manufacturer = suggested.manufacturer;
+    item.modelNumber = suggested.modelNumber;
+    item.description = suggested.description;
+    item.tagIds = [...suggested.tagIds];
+    item.needsReview = suggested.needsReview;
+    item.reviewReason = suggested.reviewReason;
+    clearReanalysis(item.clientId);
+    toast.success(t("ai_capture.review.suggestion_applied"));
+  }
+
+  function dismissSuggestion(clientId: string) {
+    clearReanalysis(clientId);
+  }
+
+  function undoLastReanalysis() {
+    if (!activeSession.value || !undoDraft.value) return;
+    activeSession.value.draft = cloneDraft(undoDraft.value);
+    undoDraft.value = null;
+    toast.success(t("ai_capture.review.undo_applied"));
   }
 
   function validDraft(value: AICaptureDraft | undefined, notify = true) {
@@ -572,7 +757,11 @@
   function scheduleAutosave() {
     if (autosaveTimer) clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(() => {
-      if (view.value === "review" && !saving.value && !submitting.value) void saveDraft(false, true);
+      if (reanalyzingItemIds.value.length > 0) {
+        scheduleAutosave();
+      } else if (view.value === "review" && !saving.value && !submitting.value) {
+        void saveDraft(false, true);
+      }
     }, 1200);
   }
 
@@ -607,6 +796,7 @@
   async function askAI() {
     if (!activeSession.value || !correction.value.trim()) return;
     if (!(await saveDraft())) return;
+    const previousDraft = activeSession.value.draft ? cloneDraft(activeSession.value.draft) : null;
     saving.value = true;
     const response = await api.aiCapture.correctSession(
       activeSession.value.id,
@@ -619,8 +809,61 @@
       return;
     }
     replaceSession(response.data);
+    undoDraft.value = previousDraft;
+    reanalysisSuggestions.value = {};
+    reanalysisErrors.value = {};
     correction.value = "";
     toast.success(t("ai_capture.correction_applied"));
+  }
+
+  async function reanalyzeItems(clientIds: string[]) {
+    const uniqueIds = [...new Set(clientIds)];
+    if (!activeSession.value || uniqueIds.length === 0 || reanalyzingItemIds.value.length > 0 || !(await saveDraft()))
+      return;
+    const sessionId = activeSession.value.id;
+    const revision = activeSession.value.draftRevision;
+    const provider = reanalysisProvider.value;
+    let succeeded = 0;
+    let failed = 0;
+
+    for (const clientId of uniqueIds) {
+      if (!activeSession.value?.draft?.items.some(item => item.clientId === clientId)) continue;
+      reanalyzingItemIds.value = [...reanalyzingItemIds.value, clientId];
+      const errors = { ...reanalysisErrors.value };
+      Reflect.deleteProperty(errors, clientId);
+      reanalysisErrors.value = errors;
+      try {
+        const response = await api.aiCapture.reanalyzeItem(
+          sessionId,
+          revision,
+          clientId,
+          provider,
+          reanalysisInstruction.value.trim()
+        );
+        if (response.error) throw new Error(responseMessage(response));
+        reanalysisSuggestions.value = {
+          ...reanalysisSuggestions.value,
+          [clientId]: response.data,
+        };
+        succeeded += 1;
+      } catch (error) {
+        console.error(error);
+        reanalysisErrors.value = {
+          ...reanalysisErrors.value,
+          [clientId]: error instanceof Error ? error.message : t("ai_capture.errors.analysis_failed"),
+        };
+        failed += 1;
+      } finally {
+        reanalyzingItemIds.value = reanalyzingItemIds.value.filter(id => id !== clientId);
+      }
+    }
+
+    if (succeeded) toast.success(t("ai_capture.review.reanalysis_complete", { count: succeeded }));
+    if (failed) toast.error(t("ai_capture.review.reanalysis_failed", { count: failed }));
+  }
+
+  function reanalyzeItem(item: AICaptureItem) {
+    return reanalyzeItems([item.clientId]);
   }
 
   async function submitSession() {
@@ -989,6 +1232,66 @@
               {{ $t("ai_capture.review.ask_ai") }}
             </Button>
           </div>
+          <div class="space-y-3 rounded-lg border p-3">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 class="font-medium">
+                  {{ $t("ai_capture.review.reanalyze_title") }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ $t("ai_capture.review.reanalyze_help") }}
+                </p>
+              </div>
+              <Button v-if="undoDraft" size="sm" variant="outline" @click="undoLastReanalysis">
+                {{ $t("ai_capture.review.undo") }}
+              </Button>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-[12rem_1fr]">
+              <div class="space-y-1">
+                <Label for="reanalysis-provider">{{ $t("ai_capture.review.provider") }}</Label>
+                <Select id="reanalysis-provider" v-model="reanalysisProvider">
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="provider in reanalysisProviders" :key="provider.id" :value="provider.id">
+                      {{ provider.name }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div class="space-y-1">
+                <Label for="reanalysis-instruction">{{ $t("ai_capture.review.optional_instruction") }}</Label>
+                <Input
+                  id="reanalysis-instruction"
+                  v-model="reanalysisInstruction"
+                  maxlength="2000"
+                  :placeholder="$t('ai_capture.review.reanalysis_placeholder')"
+                />
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label class="flex items-center gap-2 text-sm">
+                <Checkbox
+                  :model-value="allReviewItemsSelected"
+                  @update:model-value="value => toggleAllReviewItems(value === true)"
+                />
+                {{ $t("ai_capture.review.select_all") }}
+              </label>
+              <Button
+                variant="outline"
+                :disabled="selectedReviewItemIds.length === 0 || reanalyzingItemIds.length > 0 || saving"
+                @click="reanalyzeItems(selectedReviewItemIds)"
+              >
+                <MdiLoading v-if="reanalyzingItemIds.length" class="mr-2 animate-spin" />
+                <MdiRefresh v-else class="mr-2" />
+                {{
+                  $t("ai_capture.review.reanalyze_selected", {
+                    count: selectedReviewItemIds.length,
+                    provider: providerName(reanalysisProvider),
+                  })
+                }}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -996,9 +1299,15 @@
         <CardHeader class="pb-3">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <CardTitle class="flex items-center gap-2 text-lg"
-                ><MdiPackageVariant /> {{ item.name || $t("ai_capture.review.unnamed") }}</CardTitle
-              >
+              <CardTitle class="flex items-center gap-2 text-lg">
+                <Checkbox
+                  :model-value="selectedReviewItemIds.includes(item.clientId)"
+                  :aria-label="$t('ai_capture.review.select_item', { name: item.name })"
+                  @update:model-value="value => toggleReviewItem(item.clientId, value === true)"
+                />
+                <MdiPackageVariant />
+                {{ item.name || $t("ai_capture.review.unnamed") }}
+              </CardTitle>
               <span
                 v-if="item.captureGroupId"
                 class="mt-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-1 text-xs font-medium text-primary"
@@ -1018,6 +1327,20 @@
               <Button
                 size="sm"
                 variant="outline"
+                :disabled="reanalyzingItemIds.length > 0 || saving || !(item.photoIds?.length || 0)"
+                @click="reanalyzeItem(item)"
+              >
+                <MdiLoading v-if="reanalyzingItemIds.includes(item.clientId)" class="mr-1 animate-spin" />
+                <MdiRefresh v-else class="mr-1" />
+                {{
+                  $t("ai_capture.review.reanalyze_with", {
+                    provider: providerName(reanalysisProvider),
+                  })
+                }}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
                 :disabled="(item.photoIds?.length || 0) < 2"
                 @click="splitItem(itemIndex)"
               >
@@ -1031,6 +1354,69 @@
           </div>
         </CardHeader>
         <CardContent class="grid gap-4 sm:grid-cols-2">
+          <div
+            v-if="reanalysisErrors[item.clientId]"
+            class="rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive sm:col-span-2"
+          >
+            {{ reanalysisErrors[item.clientId] }}
+          </div>
+          <div
+            v-if="reanalysisSuggestions[item.clientId]"
+            class="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-3 sm:col-span-2"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <h3 class="font-medium">
+                  {{
+                    $t("ai_capture.review.suggestion_from", {
+                      provider: providerName(reanalysisSuggestions[item.clientId]!.provider),
+                    })
+                  }}
+                </h3>
+                <p class="text-sm text-muted-foreground">
+                  {{ $t("ai_capture.review.suggestion_help") }}
+                </p>
+              </div>
+              <div class="flex gap-2">
+                <Button size="sm" variant="ghost" @click="dismissSuggestion(item.clientId)">
+                  {{ $t("ai_capture.review.dismiss") }}
+                </Button>
+                <Button size="sm" @click="applyAllSuggestedFields(item)">
+                  {{ $t("ai_capture.review.apply_all") }}
+                </Button>
+              </div>
+            </div>
+            <p
+              v-for="warning in reanalysisSuggestions[item.clientId]!.warnings"
+              :key="warning"
+              class="text-sm text-amber-700 dark:text-amber-300"
+            >
+              {{ warning }}
+            </p>
+            <p v-if="reanalysisChanges(item).length === 0" class="text-sm text-muted-foreground">
+              {{ $t("ai_capture.review.no_changes") }}
+            </p>
+            <div
+              v-for="change in reanalysisChanges(item)"
+              :key="change.field"
+              class="grid gap-2 rounded-md bg-background p-2 sm:grid-cols-[8rem_1fr_1fr_auto] sm:items-center"
+            >
+              <strong class="text-sm">{{ change.label }}</strong>
+              <div class="min-w-0 text-sm">
+                <span class="block text-xs text-muted-foreground">{{ $t("ai_capture.review.current") }}</span>
+                <span class="break-words">{{ formatReanalysisValue(change.field, item[change.field]) }}</span>
+              </div>
+              <div class="min-w-0 text-sm">
+                <span class="block text-xs text-muted-foreground">{{ $t("ai_capture.review.suggested") }}</span>
+                <span class="break-words">
+                  {{ formatReanalysisValue(change.field, reanalysisSuggestions[item.clientId]!.item[change.field]) }}
+                </span>
+              </div>
+              <Button size="sm" variant="outline" @click="applySuggestedField(item, change.field)">
+                {{ $t("ai_capture.review.use_suggestion") }}
+              </Button>
+            </div>
+          </div>
           <div class="space-y-1">
             <Label :for="`item-name-${itemIndex}`">{{ $t("global.name") }}</Label
             ><Input :id="`item-name-${itemIndex}`" v-model="item.name" maxlength="255" />

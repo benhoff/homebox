@@ -20,6 +20,11 @@ const docTemplate = `{
     "paths": {
         "/v1/actions/create-missing-thumbnails": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Creates thumbnails for items that are missing them",
                 "produces": [
                     "application/json"
@@ -35,16 +40,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/actions/ensure-asset-ids": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Ensures all items in the database have an asset ID",
                 "produces": [
                     "application/json"
@@ -60,16 +65,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/actions/ensure-import-refs": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Ensures all items in the database have an import ref",
                 "produces": [
                     "application/json"
@@ -85,16 +90,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/actions/set-primary-photos": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Sets the first photo of each item as the primary photo",
                 "produces": [
                     "application/json"
@@ -110,16 +115,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/actions/wipe-inventory": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Deletes all items in the inventory",
                 "produces": [
                     "application/json"
@@ -145,16 +150,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/actions/zero-item-time-fields": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Resets all item date fields to the beginning of the day",
                 "produces": [
                     "application/json"
@@ -170,16 +175,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.ActionAmountResult"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/analyze": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -237,16 +242,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/validate.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -261,14 +266,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.Results-services_AICaptureSessionOut"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -297,16 +302,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -330,14 +335,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -355,14 +360,14 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -398,16 +403,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/corrections": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -443,16 +448,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/draft": {
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -488,16 +493,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/finish": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -533,16 +538,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/photos": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -596,16 +601,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionPhoto"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "image/jpeg",
                     "image/png",
@@ -639,14 +644,14 @@ const docTemplate = `{
                             "type": "file"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "tags": [
                     "AI Capture Sessions"
                 ],
@@ -671,14 +676,14 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -721,16 +726,61 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionPhoto"
                         }
                     }
-                },
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/reanalyze-item": {
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Preview provider reanalysis for one reviewed capture item",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Reviewed item and provider",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionReanalysis"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureReanalysisOut"
+                        }
+                    }
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/retry-analysis": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -754,16 +804,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/ai/capture/sessions/{sessionId}/submit": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "application/json"
                 ],
@@ -799,16 +849,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/services.AICaptureSessionOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/assets/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -832,12 +882,7 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.PaginationResult-repo_EntitySummary"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/currencies": {
@@ -861,6 +906,11 @@ const docTemplate = `{
         },
         "/v1/entities": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -915,14 +965,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityListResult"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -948,16 +998,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/export": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "tags": [
                     "Entities"
                 ],
@@ -969,16 +1019,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/fields": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -996,16 +1046,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/fields/values": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1032,16 +1082,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/import": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1065,16 +1115,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/tree": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1100,16 +1150,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1133,14 +1183,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1173,14 +1223,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1201,14 +1251,14 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
+                }
+            },
+            "patch": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "patch": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1241,16 +1291,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/attachments": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -1309,16 +1359,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/validate.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/attachments/external": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Links an entity to a document or URL in an external system without copying",
                 "consumes": [
                     "application/json"
@@ -1361,16 +1411,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/validate.ErrorResponse"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/attachments/{attachment_id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/octet-stream"
                 ],
@@ -1401,14 +1451,14 @@ const docTemplate = `{
                             "type": "file"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1445,14 +1495,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "tags": [
                     "Entities Attachments"
                 ],
@@ -1477,16 +1527,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/duplicate": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1519,16 +1569,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/maintenance": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1570,14 +1620,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1610,16 +1660,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.MaintenanceEntry"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entities/{id}/path": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1646,16 +1696,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entity-types": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1673,14 +1723,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1706,16 +1756,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityTypeSummary"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/entity-types/{id}": {
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1748,14 +1798,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityTypeSummary"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1776,16 +1826,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/group/exports": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Returns export job rows for the caller's group, newest first.",
                 "produces": [
                     "application/json"
@@ -1801,14 +1851,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.Results-repo_ExportOut"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "description": "Creates a pending export row and enqueues the build job. Poll the listing endpoint or watch the WebSocket for completion.",
                 "produces": [
                     "application/json"
@@ -1824,16 +1874,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.ExportOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/group/exports/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1857,14 +1907,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.ExportOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "description": "Deletes the export row and its blob artifact.",
                 "tags": [
                     "Group"
@@ -1883,16 +1933,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/group/exports/{id}/download": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/zip"
                 ],
@@ -1916,16 +1966,16 @@ const docTemplate = `{
                             "type": "file"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/group/import": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Uploads a collection-export zip and enqueues the import job. The destination group must be empty. Returns the tracked import row so clients can poll for progress.",
                 "consumes": [
                     "multipart/form-data"
@@ -1953,16 +2003,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.ExportOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1977,14 +2027,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.Group"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2010,14 +2060,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.Group"
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2043,14 +2093,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.Group"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2062,16 +2112,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/all": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2089,16 +2139,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/invitations": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2116,14 +2166,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2150,16 +2200,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.GroupInvitation"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/invitations/{id}": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2184,14 +2234,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/v1.GroupAcceptInvitationResponse"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2212,16 +2262,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/members": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2239,16 +2289,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/members/{user_id}": {
             "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2269,16 +2319,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/statistics": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2293,16 +2343,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.GroupStatistics"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/statistics/locations": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2320,16 +2370,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/statistics/purchase-price": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2358,16 +2408,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.ValueOverTime"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/groups/statistics/tags": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2385,16 +2435,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/labelmaker/asset/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2424,16 +2474,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/labelmaker/item/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2463,16 +2513,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/labelmaker/location/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2502,16 +2552,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/maintenance": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2546,16 +2596,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/maintenance/{id}": {
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2588,14 +2638,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.MaintenanceEntry"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2616,16 +2666,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/notifiers": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2643,14 +2693,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2676,16 +2726,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.NotifierOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/notifiers/test": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2706,16 +2756,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/notifiers/{id}": {
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "tags": [
                     "Notifiers"
                 ],
@@ -2745,14 +2795,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.NotifierOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "tags": [
                     "Notifiers"
                 ],
@@ -2770,16 +2820,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/products/search-from-barcode": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2805,16 +2855,16 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/qrcode": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2837,16 +2887,16 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/reporting/bill-of-materials": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2861,12 +2911,7 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/status": {
@@ -2890,6 +2935,11 @@ const docTemplate = `{
         },
         "/v1/tags": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2907,14 +2957,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2940,16 +2990,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.TagOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/tags/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -2973,14 +3023,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.TagOut"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3013,14 +3063,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.TagOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3041,16 +3091,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/templates": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3068,14 +3118,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3101,16 +3151,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityTemplateOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/templates/{id}": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3134,14 +3184,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityTemplateOut"
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3174,14 +3224,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityTemplateOut"
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3202,16 +3252,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/templates/{id}/create-item": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3244,16 +3294,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.EntityOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/change-password": {
             "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "tags": [
                     "User"
                 ],
@@ -3273,12 +3323,7 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/forgot-password": {
@@ -3417,6 +3462,11 @@ const docTemplate = `{
         },
         "/v1/users/logout": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "tags": [
                     "Authentication"
                 ],
@@ -3425,16 +3475,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/logout/all": {
             "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "Revokes every session token for the authenticated user across all\ndevices, including the current one. Use this to invalidate a session\ntoken that may have been leaked or stolen. API keys are stored\nseparately and are not affected; revoke them from the API keys page.",
                 "tags": [
                     "Authentication"
@@ -3444,16 +3494,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/refresh": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "description": "handleAuthRefresh returns a handler that will issue a new token from an existing token.\nThis does not validate that the user still exists within the database.",
                 "tags": [
                     "Authentication"
@@ -3463,12 +3513,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/register": {
@@ -3555,6 +3600,11 @@ const docTemplate = `{
         },
         "/v1/users/self": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3581,14 +3631,14 @@ const docTemplate = `{
                             ]
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3626,14 +3676,14 @@ const docTemplate = `{
                             ]
                         }
                     }
-                },
+                }
+            },
+            "delete": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "delete": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3645,16 +3695,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/self/api-keys": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3672,14 +3722,14 @@ const docTemplate = `{
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "post": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3705,16 +3755,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/repo.APIKeyCreatedOut"
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/self/api-keys/{id}": {
             "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "tags": [
                     "User"
                 ],
@@ -3732,16 +3782,16 @@ const docTemplate = `{
                     "204": {
                         "description": "No Content"
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         },
         "/v1/users/self/settings": {
             "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3769,14 +3819,14 @@ const docTemplate = `{
                             ]
                         }
                     }
-                },
+                }
+            },
+            "put": {
                 "security": [
                     {
                         "Bearer": []
                     }
-                ]
-            },
-            "put": {
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -3816,12 +3866,7 @@ const docTemplate = `{
                             ]
                         }
                     }
-                },
-                "security": [
-                    {
-                        "Bearer": []
-                    }
-                ]
+                }
             }
         }
     },
@@ -7343,6 +7388,40 @@ const docTemplate = `{
                 }
             }
         },
+        "services.AICaptureProviderStatus": {
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.AICaptureReanalysisOut": {
+            "type": "object",
+            "properties": {
+                "item": {
+                    "$ref": "#/definitions/services.AICaptureItem"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "services.AICaptureSessionOut": {
             "type": "object",
             "properties": {
@@ -7508,6 +7587,12 @@ const docTemplate = `{
                 },
                 "model": {
                     "type": "string"
+                },
+                "providers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureProviderStatus"
+                    }
                 }
             }
         },
@@ -7858,6 +7943,23 @@ const docTemplate = `{
                 "captureGroupId": {
                     "type": "string",
                     "x-nullable": true
+                }
+            }
+        },
+        "v1.aiCaptureSessionReanalysis": {
+            "type": "object",
+            "properties": {
+                "clientId": {
+                    "type": "string"
+                },
+                "instruction": {
+                    "type": "string"
+                },
+                "provider": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
                 }
             }
         },

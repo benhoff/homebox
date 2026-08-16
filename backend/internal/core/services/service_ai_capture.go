@@ -22,8 +22,29 @@ var (
 	ErrAIDisabled       = errors.New("AI capture is disabled")
 	ErrAIInvalidRequest = errors.New("invalid AI capture request")
 	ErrAIUpstream       = errors.New("AI provider request failed")
+	ErrAIProvider       = errors.New("AI provider is unavailable")
 	ErrAIGroupContract  = errors.New("AI provider violated the same-item group contract")
+	ErrAIItemContract   = errors.New("AI provider violated the reviewed-item contract")
 )
+
+const (
+	AICaptureProviderDefault = "default"
+	AICaptureProviderGemini  = "gemini"
+)
+
+type AICaptureProviderStatus struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Model   string `json:"model"`
+	Enabled bool   `json:"enabled"`
+}
+
+type aiCaptureProviderConfig struct {
+	BaseURL         string
+	APIKey          string
+	Model           string
+	ReasoningEffort string
+}
 
 type AICapturePhoto struct {
 	MIMEType string
@@ -69,6 +90,7 @@ type AICaptureRequest struct {
 	Draft                *AICaptureDraft
 	CaptureGroupID       string
 	AllowedCaptureGroups []string
+	SingleItem           bool
 }
 
 type AICaptureService struct {
@@ -96,6 +118,50 @@ func (svc *AICaptureService) Model() string {
 		return ""
 	}
 	return svc.config.Model
+}
+
+func (svc *AICaptureService) Providers() []AICaptureProviderStatus {
+	if svc == nil {
+		return []AICaptureProviderStatus{}
+	}
+	primaryName := strings.TrimSpace(svc.config.ProviderName)
+	if primaryName == "" {
+		primaryName = "Primary AI"
+	}
+	geminiName := strings.TrimSpace(svc.config.Gemini.Name)
+	if geminiName == "" {
+		geminiName = "Gemini"
+	}
+	return []AICaptureProviderStatus{
+		{ID: AICaptureProviderDefault, Name: primaryName, Model: svc.config.Model, Enabled: svc.config.Enabled},
+		{ID: AICaptureProviderGemini, Name: geminiName, Model: svc.config.Gemini.Model, Enabled: svc.config.Gemini.Enabled},
+	}
+}
+
+func (svc *AICaptureService) provider(id string) (aiCaptureProviderConfig, error) {
+	if svc == nil {
+		return aiCaptureProviderConfig{}, ErrAIDisabled
+	}
+	switch strings.TrimSpace(strings.ToLower(id)) {
+	case "", AICaptureProviderDefault:
+		if !svc.config.Enabled {
+			return aiCaptureProviderConfig{}, ErrAIDisabled
+		}
+		return aiCaptureProviderConfig{
+			BaseURL: svc.config.BaseURL, APIKey: svc.config.APIKey,
+			Model: svc.config.Model, ReasoningEffort: svc.config.ReasoningEffort,
+		}, nil
+	case AICaptureProviderGemini:
+		if !svc.config.Gemini.Enabled {
+			return aiCaptureProviderConfig{}, fmt.Errorf("%w: %s", ErrAIProvider, AICaptureProviderGemini)
+		}
+		return aiCaptureProviderConfig{
+			BaseURL: svc.config.Gemini.BaseURL, APIKey: svc.config.Gemini.APIKey,
+			Model: svc.config.Gemini.Model, ReasoningEffort: svc.config.Gemini.ReasoningEffort,
+		}, nil
+	default:
+		return aiCaptureProviderConfig{}, fmt.Errorf("%w: %s", ErrAIProvider, id)
+	}
 }
 
 func (svc *AICaptureService) MaxPhotos() int {
@@ -144,17 +210,22 @@ Return one JSON object only with this exact shape:
 Only identify the item name, visible quantity, factual visual description, manufacturer, clearly legible model number, supplied item type, relevant supplied tags, and which photos show the item. Never infer or return serial numbers, purchase data, warranty data, insurance state, asset IDs, sold data, or custom fields; people will add those manually later. Create separate items only when the photos clearly show separate inventory objects. Consolidate duplicate views of the same object. Use the selected location only as a categorization hint. Use only entityTypeId and tagIds supplied in the request. Photo indexes are zero-based. Never guess identifiers or model numbers. Include visible color, material, condition, accessories, and key specifications in the description when useful. Mark uncertain item identity, quantity, type, or photo grouping with needsReview and explain why.`
 
 func (svc *AICaptureService) Analyze(ctx context.Context, input AICaptureRequest) (AICaptureDraft, error) {
-	if !svc.IsEnabled() {
-		return AICaptureDraft{}, ErrAIDisabled
+	return svc.AnalyzeWithProvider(ctx, AICaptureProviderDefault, input)
+}
+
+func (svc *AICaptureService) AnalyzeWithProvider(ctx context.Context, providerID string, input AICaptureRequest) (AICaptureDraft, error) {
+	provider, err := svc.provider(providerID)
+	if err != nil {
+		return AICaptureDraft{}, err
 	}
 	if len(input.Photos) == 0 || len(input.Photos) > svc.MaxPhotos() {
 		return AICaptureDraft{}, fmt.Errorf("%w: photo count must be between 1 and %d", ErrAIInvalidRequest, svc.MaxPhotos())
 	}
-	if strings.TrimSpace(svc.config.BaseURL) == "" || strings.TrimSpace(svc.config.Model) == "" {
+	if strings.TrimSpace(provider.BaseURL) == "" || strings.TrimSpace(provider.Model) == "" {
 		return AICaptureDraft{}, fmt.Errorf("%w: provider URL and model are required", ErrAIInvalidRequest)
 	}
 
-	endpoint, err := url.JoinPath(strings.TrimRight(svc.config.BaseURL, "/"), "chat/completions")
+	endpoint, err := url.JoinPath(strings.TrimRight(provider.BaseURL, "/"), "chat/completions")
 	if err != nil {
 		return AICaptureDraft{}, fmt.Errorf("%w: invalid provider URL", ErrAIInvalidRequest)
 	}
@@ -176,14 +247,14 @@ func (svc *AICaptureService) Analyze(ctx context.Context, input AICaptureRequest
 	}
 
 	payload := chatCompletionRequest{
-		Model: svc.config.Model,
+		Model: provider.Model,
 		Messages: []chatMessage{
 			{Role: "system", Content: aiCaptureSystemPrompt},
 			{Role: "user", Content: content},
 		},
 		Temperature:     0.1,
 		MaxTokens:       4096,
-		ReasoningEffort: svc.config.ReasoningEffort,
+		ReasoningEffort: provider.ReasoningEffort,
 		ResponseFormat:  map[string]any{"type": "json_object"},
 	}
 
@@ -196,8 +267,8 @@ func (svc *AICaptureService) Analyze(ctx context.Context, input AICaptureRequest
 		return AICaptureDraft{}, fmt.Errorf("%w: create request: %v", ErrAIInvalidRequest, err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if svc.config.APIKey != "" {
-		req.Header.Set("Authorization", "Bearer "+svc.config.APIKey)
+	if provider.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+provider.APIKey)
 	}
 
 	resp, err := svc.client.Do(req)
@@ -222,6 +293,9 @@ func (svc *AICaptureService) Analyze(ctx context.Context, input AICaptureRequest
 	if contentText == "" || json.Unmarshal([]byte(contentText), &draft) != nil {
 		return AICaptureDraft{}, fmt.Errorf("%w: provider did not return a valid item draft", ErrAIUpstream)
 	}
+	if input.SingleItem && len(draft.Items) != 1 {
+		return AICaptureDraft{}, fmt.Errorf("%w: %w: expected exactly one reviewed item", ErrAIUpstream, ErrAIItemContract)
+	}
 	if input.CaptureGroupID != "" {
 		if len(draft.Items) != 1 || draft.Items[0].CaptureGroupID != input.CaptureGroupID {
 			return AICaptureDraft{}, fmt.Errorf("%w: %w: expected exactly one item for captureGroupId %s", ErrAIUpstream, ErrAIGroupContract, input.CaptureGroupID)
@@ -238,6 +312,13 @@ func (svc *AICaptureService) Analyze(ctx context.Context, input AICaptureRequest
 		item.PhotoIndexes = make([]int, len(input.Photos))
 		for index := range input.Photos {
 			item.PhotoIndexes[index] = index
+		}
+		return draft, nil
+	}
+	if input.SingleItem {
+		draft.Items[0].PhotoIndexes = make([]int, len(input.Photos))
+		for index := range input.Photos {
+			draft.Items[0].PhotoIndexes[index] = index
 		}
 		return draft, nil
 	}
@@ -266,6 +347,9 @@ func buildAICapturePrompt(input AICaptureRequest) (string, error) {
 		b.WriteString("\nSAME-ITEM GROUP: Every attached photo is a different view of one physical inventory item. Return exactly one item, assign every photo index to it, do not treat the number of photos as quantity, and set captureGroupId exactly to ")
 		b.WriteString(input.CaptureGroupID)
 		b.WriteString(". If the views conflict, still return one item and set needsReview with a concise reason.")
+	}
+	if input.SingleItem {
+		b.WriteString("\nREVIEWED ITEM: The reviewer assigned every attached photo to one physical inventory item. Return exactly one item, use every photo as evidence, do not treat the number of photos as quantity, and preserve existing fields unless the evidence or user instruction supports a change.")
 	}
 	if input.Draft != nil {
 		draftJSON, err := json.Marshal(input.Draft)
