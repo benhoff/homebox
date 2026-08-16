@@ -26,6 +26,22 @@ const photoStoreName = "photos";
 const stateStoreName = "session-state";
 const version = 2;
 
+export function createCaptureID() {
+  const cryptoSource = globalThis.crypto;
+  if (typeof cryptoSource?.randomUUID === "function") return cryptoSource.randomUUID();
+
+  const bytes = new Uint8Array(16);
+  if (typeof cryptoSource?.getRandomValues === "function") {
+    cryptoSource.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+  }
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const value = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
 function openCaptureDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(databaseName, version);
@@ -74,16 +90,22 @@ export function captureQueueKey(sessionId: string, clientPhotoId: string) {
   return `${sessionId}:${clientPhotoId}`;
 }
 
+function captureQueuePhotoRecord(photo: CaptureQueuePhoto): CaptureQueuePhoto {
+  // Photos read from a Vue ref are reactive proxies. IndexedDB cannot clone
+  // proxies, so always cross the persistence boundary with a plain record.
+  return { ...photo };
+}
+
 export async function putCaptureQueuePhoto(photo: CaptureQueuePhoto) {
-  await transactionRequest(photoStoreName, "readwrite", store => store.put(photo));
+  await transactionRequest(photoStoreName, "readwrite", store => store.put(captureQueuePhotoRecord(photo)));
 }
 
 export async function putCaptureQueuePhotoWithState(photo: CaptureQueuePhoto, state: CaptureQueueSessionState) {
   const database = await openCaptureDatabase();
   await new Promise<void>((resolve, reject) => {
     const transaction = database.transaction([photoStoreName, stateStoreName], "readwrite");
-    transaction.objectStore(photoStoreName).put(photo);
-    transaction.objectStore(stateStoreName).put(state);
+    transaction.objectStore(photoStoreName).put(captureQueuePhotoRecord(photo));
+    transaction.objectStore(stateStoreName).put({ ...state });
     transaction.oncomplete = () => {
       database.close();
       resolve();
@@ -164,18 +186,22 @@ type CaptureImageSource = CanvasImageSource & {
 
 async function loadCaptureImage(file: File | Blob): Promise<CaptureImageSource> {
   if (typeof createImageBitmap === "function") {
-    return (await createImageBitmap(file, {
-      imageOrientation: "from-image",
-    })) as CaptureImageSource;
+    try {
+      return (await createImageBitmap(file, {
+        imageOrientation: "from-image",
+      })) as CaptureImageSource;
+    } catch (error) {
+      console.warn("createImageBitmap could not decode the capture; trying the image element fallback", error);
+    }
   }
 
   const url = URL.createObjectURL(file);
   try {
     const image = new Image();
-    image.src = url;
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
       image.onerror = () => reject(new Error("Could not read the captured photo"));
+      image.src = url;
     });
     return Object.assign(image, {
       width: image.naturalWidth,

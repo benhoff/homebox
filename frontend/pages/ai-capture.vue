@@ -23,6 +23,7 @@
   import type { APISummary } from "~/lib/api/types/data-contracts";
   import {
     clearCaptureQueueSession,
+    createCaptureID,
     deleteCaptureQueuePhoto,
     getCaptureQueueSessionState,
     listCaptureQueuePhotos,
@@ -395,8 +396,8 @@
     const position = nextPosition.value++;
     try {
       const normalized = await normalizeCaptureImage(file, file.name);
-      const clientPhotoId = crypto.randomUUID();
-      const captureGroupId = sameItemMode.value ? activeCaptureGroupId.value || crypto.randomUUID() : null;
+      const clientPhotoId = createCaptureID();
+      const captureGroupId = sameItemMode.value ? activeCaptureGroupId.value || createCaptureID() : null;
       const photo: CaptureQueuePhoto = {
         key: `${activeSession.value.id}:${clientPhotoId}`,
         sessionId: activeSession.value.id,
@@ -537,7 +538,7 @@
   }
 
   function selectedCaptureGroup(value: string) {
-    if (value === "__new__") return crypto.randomUUID();
+    if (value === "__new__") return createCaptureID();
     return value || null;
   }
 
@@ -619,7 +620,7 @@
   function addItem() {
     if (!activeSession.value?.draft) return;
     activeSession.value.draft.items.push({
-      clientId: crypto.randomUUID(),
+      clientId: createCaptureID(),
       name: "",
       quantity: 1,
       description: "",
@@ -661,7 +662,7 @@
     item.captureGroupId = undefined;
     item.needsReview = true;
     item.reviewReason = t("ai_capture.review.split_reason");
-    clone.clientId = crypto.randomUUID();
+    clone.clientId = createCaptureID();
     clone.photoIds = photoIds.slice(splitAt);
     clone.captureGroupId = undefined;
     clone.needsReview = true;
