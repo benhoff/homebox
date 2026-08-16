@@ -278,7 +278,7 @@ stateDiagram-v2
 - **CAP-001:** A location is required before a session can be created.
 - **CAP-002:** The server validates that the location belongs to the active collection and is a location entity.
 - **CAP-003:** Only the creating user may list, open, mutate, analyze, submit, or delete a session.
-- **CAP-004:** A user may have at most five non-terminal sessions by default.
+- **CAP-004:** A user may have at most five sessions actively capturing, queued, analyzing, or submitting by default. Sessions awaiting review or a manual retry do not consume an in-flight slot; their 30-day expiry and per-session photo limit bound temporary storage.
 - **CAP-005:** Session list results are paginated and ordered by most recent activity.
 - **CAP-006:** A session records timestamps for creation, last update, sealing, analysis, completion, and expiration, plus a capture revision that changes when its photo set or grouping changes.
 - **CAP-007:** Location may change while `capturing`. After sealing, a deleted or inaccessible location must be replaced before retry or submission.
@@ -315,6 +315,7 @@ stateDiagram-v2
 - **CAP-031:** Analysis runs from server-stored photos and uses the existing `AICaptureService` prompt and sanitization.
 - **CAP-031A:** Ungrouped session photos are divided into provider requests of at most `HBOX_AI_MAX_PHOTOS`; an explicit same-item group is capped at that size so all its views remain in one request. Combined results retain stable photo IDs and capture order.
 - **CAP-031B:** Every stored photo must appear in at least one review item. If a provider omits an ungrouped photo, the server retries that photo as a single-item request; a permanent retry failure produces a clearly marked, individually reanalyzable placeholder instead of hiding the photo. Transient failures keep the complete session queued until the provider recovers.
+- **CAP-031C:** Provider requests interleave an explicit zero-based text label immediately before every image. Consecutive `image_url` parts must not be emitted: llama.cpp can merge them into “super-frames,” causing Qwen to omit one photo or describe an adjacent photo twice ([llama.cpp #24303](https://github.com/ggml-org/llama.cpp/issues/24303)).
 - **CAP-032:** Only one worker may analyze a session at a time.
 - **CAP-033:** Transient upstream failures remain durably queued and retry with bounded exponential backoff until the provider recovers. Retry activity extends temporary-data retention so an offline provider cannot expire pending work. Invalid requests and permanent provider errors fail without automatic retry.
 - **CAP-034:** A successful result and warnings are persisted as the session draft before the state becomes `ready_for_review`.

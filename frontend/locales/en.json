@@ -55,6 +55,7 @@
             "review_required": "Every item needs a name, positive quantity, and item type.",
             "rotate": "That photo could not be rotated.",
             "save_draft": "Your edits could not be saved. Reload the session and try again.",
+            "session_full": "Five capture sessions are already being captured or processed. Wait for one to reach review, or delete one, then try again.",
             "finish_session": "The capture could not be finished. Your photos are still saved.",
             "group_photo": "The photo's item group could not be changed.",
             "item_group_full": "This item already has {count} views. Tap Next item to continue without splitting it across AI batches.",

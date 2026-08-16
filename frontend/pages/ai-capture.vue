@@ -565,7 +565,10 @@
       view.value = "camera";
     } catch (error) {
       console.error(error);
-      toast.error(t("ai_capture.errors.create_session"));
+      const message = error instanceof Error ? error.message : "";
+      toast.error(
+        message.includes("SESSION_FULL") ? t("ai_capture.errors.session_full") : t("ai_capture.errors.create_session")
+      );
     } finally {
       loading.value = false;
     }

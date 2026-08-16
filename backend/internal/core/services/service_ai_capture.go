@@ -325,15 +325,28 @@ func (svc *AICaptureService) AnalyzeWithProvider(ctx context.Context, providerID
 		return AICaptureDraft{}, fmt.Errorf("%w: %v", ErrAIInvalidRequest, err)
 	}
 	content := []chatContent{{Type: "text", Text: userPrompt}}
-	for _, photo := range input.Photos {
+	for index, photo := range input.Photos {
 		if len(photo.Data) == 0 || !strings.HasPrefix(photo.MIMEType, "image/") {
 			return AICaptureDraft{}, fmt.Errorf("%w: every photo must be a non-empty image", ErrAIInvalidRequest)
 		}
-		content = append(content, chatContent{
-			Type: "image_url",
-			ImageURL: &chatImageURL{URL: "data:" + photo.MIMEType + ";base64," +
-				base64.StdEncoding.EncodeToString(photo.Data)},
-		})
+		// IMPORTANT: Keep a text part immediately before every image. llama.cpp can merge
+		// consecutive image_url parts into "super-frames", causing Qwen to omit an image
+		// or describe the following image twice. The interleaved label is the documented
+		// workaround: https://github.com/ggml-org/llama.cpp/issues/24303
+		content = append(content,
+			chatContent{
+				Type: "text",
+				Text: fmt.Sprintf(
+					"Photo index %d follows as a separate image. Do not merge it with adjacent photos.",
+					index,
+				),
+			},
+			chatContent{
+				Type: "image_url",
+				ImageURL: &chatImageURL{URL: "data:" + photo.MIMEType + ";base64," +
+					base64.StdEncoding.EncodeToString(photo.Data)},
+			},
+		)
 	}
 
 	payload := chatCompletionRequest{

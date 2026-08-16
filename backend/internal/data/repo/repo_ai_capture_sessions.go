@@ -165,19 +165,24 @@ func withAICaptureSessionEdges(query *ent.AICaptureSessionQuery) *ent.AICaptureS
 		WithItems(func(q *ent.AICaptureSessionItemQuery) { q.Order(ent.Asc(aicapturesessionitem.FieldCreatedAt)) })
 }
 
-func (r *AICaptureSessionRepository) Create(ctx context.Context, gid, uid, locationID uuid.UUID, locationName string, maxActive int) (AICaptureSessionRecord, error) {
-	if maxActive <= 0 {
-		maxActive = 5
+func (r *AICaptureSessionRepository) Create(ctx context.Context, gid, uid, locationID uuid.UUID, locationName string, maxInFlight int) (AICaptureSessionRecord, error) {
+	if maxInFlight <= 0 {
+		maxInFlight = 5
 	}
-	active, err := r.db.AICaptureSession.Query().Where(
+	inFlight, err := r.db.AICaptureSession.Query().Where(
 		aicapturesession.GroupID(gid),
 		aicapturesession.UserID(uid),
-		aicapturesession.StatusNEQ(aicapturesession.StatusCompleted),
+		aicapturesession.StatusIn(
+			aicapturesession.StatusCapturing,
+			aicapturesession.StatusQueued,
+			aicapturesession.StatusAnalyzing,
+			aicapturesession.StatusSubmitting,
+		),
 	).Count(ctx)
 	if err != nil {
 		return AICaptureSessionRecord{}, err
 	}
-	if active >= maxActive {
+	if inFlight >= maxInFlight {
 		return AICaptureSessionRecord{}, ErrAICaptureSessionLimit
 	}
 	row, err := r.db.AICaptureSession.Create().

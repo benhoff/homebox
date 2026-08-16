@@ -126,3 +126,30 @@ func TestAICaptureSessionRepository_DurableCaptureLifecycle(t *testing.T) {
 	)
 	assert.True(t, errors.Is(err, ErrAICaptureInvalidState))
 }
+
+func TestAICaptureSessionRepository_ReadyForReviewDoesNotUseInFlightSlot(t *testing.T) {
+	ctx := context.Background()
+	locationType := useContainerEntityType(t)
+	location, err := tRepos.Entities.Create(ctx, tGroup.ID, EntityCreate{
+		Name:         "AI capture limit test location",
+		EntityTypeID: locationType.ID,
+	})
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = tRepos.Entities.Delete(ctx, location.ID) })
+
+	first, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 1)
+	require.NoError(t, err)
+	t.Cleanup(func() { _, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, first.ID) })
+
+	_, err = tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 1)
+	assert.ErrorIs(t, err, ErrAICaptureSessionLimit, "capturing sessions must still use an in-flight slot")
+
+	_, err = tRepos.AICaptureSessions.db.AICaptureSession.UpdateOneID(first.ID).
+		SetStatus(aicapturesession.StatusReadyForReview).
+		Save(ctx)
+	require.NoError(t, err)
+
+	second, err := tRepos.AICaptureSessions.Create(ctx, tGroup.ID, tUser.ID, location.ID, location.Name, 1)
+	require.NoError(t, err, "sessions awaiting review must not prevent another capture")
+	t.Cleanup(func() { _, _ = tRepos.AICaptureSessions.Delete(ctx, tGroup.ID, tUser.ID, second.ID) })
+}

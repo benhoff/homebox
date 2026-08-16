@@ -67,6 +67,49 @@ func TestAICaptureAnalyzeOpenAICompatibleRequest(t *testing.T) {
 	assert.Contains(t, string(userContent), "Garage")
 }
 
+func TestAICaptureAnalyzeSeparatesImagesForLlamaCpp(t *testing.T) {
+	var got chatCompletionRequest
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&got))
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"{\"items\":[{\"clientId\":\"item-1\",\"name\":\"Two views\",\"quantity\":1,\"description\":\"\",\"manufacturer\":\"\",\"modelNumber\":\"\",\"entityTypeId\":\"type-1\",\"tagIds\":[],\"photoIndexes\":[0,1],\"needsReview\":false}],\"warnings\":[]}"}}]}`))
+	}))
+	defer server.Close()
+
+	svc := NewAICaptureService(config.AIConfig{
+		Enabled: true, BaseURL: server.URL, Model: "qwen-model", MaxPhotos: 4, MaxItems: 5,
+	})
+	_, err := svc.Analyze(context.Background(), AICaptureRequest{
+		Photos: []AICapturePhoto{
+			{MIMEType: "image/jpeg", Data: []byte("photo-zero")},
+			{MIMEType: "image/png", Data: []byte("photo-one")},
+		},
+		Context: AICaptureContext{EntityTypes: []AICaptureOption{{ID: "type-1", Name: "Item"}}},
+	})
+	require.NoError(t, err)
+
+	rawContent, err := json.Marshal(got.Messages[1].Content)
+	require.NoError(t, err)
+	var content []chatContent
+	require.NoError(t, json.Unmarshal(rawContent, &content))
+
+	// Regression for llama.cpp #24303: consecutive image_url parts may be merged,
+	// which made Qwen describe the next photo twice and omit the photo before it.
+	// The exact text/image alternation is intentional and must not be collapsed.
+	require.Len(t, content, 5)
+	assert.Equal(t, "text", content[0].Type)
+	assert.Equal(t, "text", content[1].Type)
+	assert.Equal(t, "Photo index 0 follows as a separate image. Do not merge it with adjacent photos.", content[1].Text)
+	assert.Equal(t, "image_url", content[2].Type)
+	require.NotNil(t, content[2].ImageURL)
+	assert.Equal(t, "data:image/jpeg;base64,cGhvdG8temVybw==", content[2].ImageURL.URL)
+	assert.Equal(t, "text", content[3].Type)
+	assert.Equal(t, "Photo index 1 follows as a separate image. Do not merge it with adjacent photos.", content[3].Text)
+	assert.Equal(t, "image_url", content[4].Type)
+	require.NotNil(t, content[4].ImageURL)
+	assert.Equal(t, "data:image/png;base64,cGhvdG8tb25l", content[4].ImageURL.URL)
+}
+
 func TestAICaptureAnalyzeWithGeminiProvider(t *testing.T) {
 	var got chatCompletionRequest
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

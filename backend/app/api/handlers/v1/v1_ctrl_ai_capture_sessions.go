@@ -75,7 +75,7 @@ func aiCaptureSessionRequestError(err error) error {
 	case errors.Is(err, services.ErrAIDisabled):
 		return validate.NewRequestError(err, http.StatusServiceUnavailable)
 	case errors.Is(err, repo.ErrAICaptureSessionLimit):
-		return validate.NewRequestError(fmt.Errorf("%s: finish or delete an existing session first", services.AICaptureErrorSessionFull), http.StatusConflict)
+		return validate.NewRequestError(fmt.Errorf("%s: wait for an active capture to reach review, or delete one first", services.AICaptureErrorSessionFull), http.StatusConflict)
 	case errors.Is(err, repo.ErrAICapturePhotoLimit):
 		return validate.NewRequestError(fmt.Errorf("%s: this session has reached its photo limit", services.AICaptureErrorSessionFull), http.StatusUnprocessableEntity)
 	case errors.Is(err, repo.ErrAICaptureGroupLimit):
