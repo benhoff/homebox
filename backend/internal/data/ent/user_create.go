@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
@@ -257,6 +258,21 @@ func (_c *UserCreate) AddNotifiers(v ...*Notifier) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddNotifierIDs(ids...)
+}
+
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (_c *UserCreate) AddAiCaptureSessionIDs(ids ...uuid.UUID) *UserCreate {
+	_c.mutation.AddAiCaptureSessionIDs(ids...)
+	return _c
+}
+
+// AddAiCaptureSessions adds the "ai_capture_sessions" edges to the AICaptureSession entity.
+func (_c *UserCreate) AddAiCaptureSessions(v ...*AICaptureSession) *UserCreate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddAiCaptureSessionIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -511,6 +527,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(notifier.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AiCaptureSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AiCaptureSessionsTable,
+			Columns: []string{user.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -73,12 +73,157 @@ export enum AttachmentType {
   TypeThumbnail = "thumbnail",
 }
 
+export enum AicapturesessionitemStatus {
+  DefaultStatus = "pending",
+  StatusPending = "pending",
+  StatusCreating = "creating",
+  StatusAttaching = "attaching",
+  StatusCompleted = "completed",
+  StatusFailed = "failed",
+}
+
+export enum AicapturesessionStatus {
+  DefaultStatus = "capturing",
+  StatusCapturing = "capturing",
+  StatusQueued = "queued",
+  StatusAnalyzing = "analyzing",
+  StatusAnalysisFailed = "analysis_failed",
+  StatusReadyForReview = "ready_for_review",
+  StatusSubmitting = "submitting",
+  StatusCompleted = "completed",
+}
+
 export interface CurrenciesCurrency {
   code: string;
   decimals: number;
   local: string;
   name: string;
   symbol: string;
+}
+
+export interface EntAICapturePhoto {
+  /** ClientPhotoID holds the value of the "client_photo_id" field. */
+  client_photo_id: string;
+  /** ContentHash holds the value of the "content_hash" field. */
+  content_hash: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the AICapturePhotoQuery when eager-loading is set.
+   */
+  edges: EntAICapturePhotoEdges;
+  /** ID of the ent. */
+  id: string;
+  /** MimeType holds the value of the "mime_type" field. */
+  mime_type: string;
+  /** OriginalName holds the value of the "original_name" field. */
+  original_name: string;
+  /** Path holds the value of the "path" field. */
+  path: string;
+  /** Position holds the value of the "position" field. */
+  position: number;
+  /** SessionID holds the value of the "session_id" field. */
+  session_id: string;
+  /** SizeBytes holds the value of the "size_bytes" field. */
+  size_bytes: number;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+}
+
+export interface EntAICapturePhotoEdges {
+  /** Session holds the value of the session edge. */
+  session: EntAICaptureSession;
+}
+
+export interface EntAICaptureSession {
+  /** AnalysisAttempts holds the value of the "analysis_attempts" field. */
+  analysis_attempts: number;
+  /** AnalyzedAt holds the value of the "analyzed_at" field. */
+  analyzed_at: string;
+  /** CompletedAt holds the value of the "completed_at" field. */
+  completed_at: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /** DraftJSON holds the value of the "draft_json" field. */
+  draft_json: string;
+  /** DraftRevision holds the value of the "draft_revision" field. */
+  draft_revision: number;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the AICaptureSessionQuery when eager-loading is set.
+   */
+  edges: EntAICaptureSessionEdges;
+  /** ErrorCode holds the value of the "error_code" field. */
+  error_code: string;
+  /** ErrorMessage holds the value of the "error_message" field. */
+  error_message: string;
+  /** ExpiresAt holds the value of the "expires_at" field. */
+  expires_at: string;
+  /** FinishedAt holds the value of the "finished_at" field. */
+  finished_at: string;
+  /** GroupID holds the value of the "group_id" field. */
+  group_id: string;
+  /** ID of the ent. */
+  id: string;
+  /** LocationID holds the value of the "location_id" field. */
+  location_id: string;
+  /** LocationNameSnapshot holds the value of the "location_name_snapshot" field. */
+  location_name_snapshot: string;
+  /** PhotoCount holds the value of the "photo_count" field. */
+  photo_count: number;
+  /** Status holds the value of the "status" field. */
+  status: AicapturesessionStatus;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+  /** UserID holds the value of the "user_id" field. */
+  user_id: string;
+  /** WorkerLeaseUntil holds the value of the "worker_lease_until" field. */
+  worker_lease_until: string;
+}
+
+export interface EntAICaptureSessionEdges {
+  /** Group holds the value of the group edge. */
+  group: EntGroup;
+  /** Items holds the value of the items edge. */
+  items: EntAICaptureSessionItem[];
+  /** Location holds the value of the location edge. */
+  location: EntEntity;
+  /** Photos holds the value of the photos edge. */
+  photos: EntAICapturePhoto[];
+  /** User holds the value of the user edge. */
+  user: EntUser;
+}
+
+export interface EntAICaptureSessionItem {
+  /** ClientID holds the value of the "client_id" field. */
+  client_id: string;
+  /** CreatedAt holds the value of the "created_at" field. */
+  created_at: string;
+  /**
+   * Edges holds the relations/edges for other nodes in the graph.
+   * The values are being populated by the AICaptureSessionItemQuery when eager-loading is set.
+   */
+  edges: EntAICaptureSessionItemEdges;
+  /** EntityID holds the value of the "entity_id" field. */
+  entity_id: string;
+  /** ErrorCode holds the value of the "error_code" field. */
+  error_code: string;
+  /** ID of the ent. */
+  id: string;
+  /** SessionID holds the value of the "session_id" field. */
+  session_id: string;
+  /** Status holds the value of the "status" field. */
+  status: AicapturesessionitemStatus;
+  /** UpdatedAt holds the value of the "updated_at" field. */
+  updated_at: string;
+  /** UploadedPhotoIds holds the value of the "uploaded_photo_ids" field. */
+  uploaded_photo_ids: string;
+}
+
+export interface EntAICaptureSessionItemEdges {
+  /** Session holds the value of the session edge. */
+  session: EntAICaptureSession;
 }
 
 export interface EntAPIKey {
@@ -240,6 +385,8 @@ export interface EntEntity {
 }
 
 export interface EntEntityEdges {
+  /** AiCaptureSessions holds the value of the ai_capture_sessions edge. */
+  ai_capture_sessions: EntAICaptureSession[];
   /** Attachments holds the value of the attachments edge. */
   attachments: EntAttachment[];
   /** Children holds the value of the children edge. */
@@ -427,6 +574,8 @@ export interface EntGroup {
 }
 
 export interface EntGroupEdges {
+  /** AiCaptureSessions holds the value of the ai_capture_sessions edge. */
+  ai_capture_sessions: EntAICaptureSession[];
   /** Entities holds the value of the entities edge. */
   entities: EntEntity[];
   /** EntityTemplates holds the value of the entity_templates edge. */
@@ -658,6 +807,8 @@ export interface EntUser {
 }
 
 export interface EntUserEdges {
+  /** AiCaptureSessions holds the value of the ai_capture_sessions edge. */
+  ai_capture_sessions: EntAICaptureSession[];
   /** APIKeys holds the value of the api_keys edge. */
   api_keys: EntAPIKey[];
   /** AuthTokens holds the value of the auth_tokens edge. */
@@ -1311,6 +1462,11 @@ export interface ValueOverTimeEntry {
   value: number;
 }
 
+export interface AICaptureCreatedItem {
+  id: string;
+  name: string;
+}
+
 export interface AICaptureDraft {
   items: AICaptureItem[];
   warnings: string[];
@@ -1324,10 +1480,47 @@ export interface AICaptureItem {
   modelNumber: string;
   name: string;
   needsReview: boolean;
+  photoIds: string[];
   photoIndexes: number[];
   quantity: number;
   reviewReason: string;
   tagIds: string[];
+}
+
+export interface AICaptureOption {
+  id: string;
+  name: string;
+}
+
+export interface AICaptureSessionOut {
+  analysisAttempts: number;
+  analyzedAt: string;
+  completedAt: string;
+  createdAt: Date | string;
+  createdItems: AICaptureCreatedItem[];
+  draft: AICaptureDraft;
+  draftRevision: number;
+  errorCode: string;
+  errorMessage: string;
+  expiresAt: Date | string;
+  finishedAt: string;
+  id: string;
+  location: AICaptureOption;
+  photoCount: number;
+  photos: AICaptureSessionPhoto[];
+  status: string;
+  updatedAt: Date | string;
+  uploadedPhotoCount: number;
+}
+
+export interface AICaptureSessionPhoto {
+  clientPhotoId: string;
+  createdAt: Date | string;
+  id: string;
+  mimeType: string;
+  originalName: string;
+  position: number;
+  sizeBytes: number;
 }
 
 export interface Latest {
@@ -1452,6 +1645,10 @@ export interface ResultsRepoExportOut {
   items: ExportOut[];
 }
 
+export interface ResultsServicesAICaptureSessionOut {
+  items: AICaptureSessionOut[];
+}
+
 export interface TelemetryStatus {
   enabled: boolean;
 }
@@ -1470,6 +1667,32 @@ export interface WipeInventoryOptions {
 
 export interface Wrapped {
   item: any;
+}
+
+export interface AiCaptureSessionCorrection {
+  instruction: string;
+  revision: number;
+}
+
+export interface AiCaptureSessionCreate {
+  locationId: string;
+}
+
+export interface AiCaptureSessionDraftUpdate {
+  draft: AICaptureDraft;
+  revision: number;
+}
+
+export interface AiCaptureSessionFinish {
+  expectedPhotoCount: number;
+}
+
+export interface AiCaptureSessionLocationUpdate {
+  locationId: string;
+}
+
+export interface AiCaptureSessionSubmit {
+  revision: number;
 }
 
 export interface ExternalAttachmentRequest {

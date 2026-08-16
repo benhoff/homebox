@@ -6,6 +6,15 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AICapturePhoto is the predicate function for aicapturephoto builders.
+type AICapturePhoto func(*sql.Selector)
+
+// AICaptureSession is the predicate function for aicapturesession builders.
+type AICaptureSession func(*sql.Selector)
+
+// AICaptureSessionItem is the predicate function for aicapturesessionitem builders.
+type AICaptureSessionItem func(*sql.Selector)
+
 // APIKey is the predicate function for apikey builders.
 type APIKey func(*sql.Selector)
 

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entity"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytemplate"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/entitytype"
@@ -191,6 +192,21 @@ func (_u *GroupUpdate) AddExports(v ...*Export) *GroupUpdate {
 	return _u.AddExportIDs(ids...)
 }
 
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (_u *GroupUpdate) AddAiCaptureSessionIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.AddAiCaptureSessionIDs(ids...)
+	return _u
+}
+
+// AddAiCaptureSessions adds the "ai_capture_sessions" edges to the AICaptureSession entity.
+func (_u *GroupUpdate) AddAiCaptureSessions(v ...*AICaptureSession) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAiCaptureSessionIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (_u *GroupUpdate) Mutation() *GroupMutation {
 	return _u.mutation
@@ -362,6 +378,27 @@ func (_u *GroupUpdate) RemoveExports(v ...*Export) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveExportIDs(ids...)
+}
+
+// ClearAiCaptureSessions clears all "ai_capture_sessions" edges to the AICaptureSession entity.
+func (_u *GroupUpdate) ClearAiCaptureSessions() *GroupUpdate {
+	_u.mutation.ClearAiCaptureSessions()
+	return _u
+}
+
+// RemoveAiCaptureSessionIDs removes the "ai_capture_sessions" edge to AICaptureSession entities by IDs.
+func (_u *GroupUpdate) RemoveAiCaptureSessionIDs(ids ...uuid.UUID) *GroupUpdate {
+	_u.mutation.RemoveAiCaptureSessionIDs(ids...)
+	return _u
+}
+
+// RemoveAiCaptureSessions removes "ai_capture_sessions" edges to AICaptureSession entities.
+func (_u *GroupUpdate) RemoveAiCaptureSessions(v ...*AICaptureSession) *GroupUpdate {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAiCaptureSessionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -803,6 +840,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.AiCaptureSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAiCaptureSessionsIDs(); len(nodes) > 0 && !_u.mutation.AiCaptureSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AiCaptureSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{group.Label}
@@ -977,6 +1059,21 @@ func (_u *GroupUpdateOne) AddExports(v ...*Export) *GroupUpdateOne {
 	return _u.AddExportIDs(ids...)
 }
 
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (_u *GroupUpdateOne) AddAiCaptureSessionIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.AddAiCaptureSessionIDs(ids...)
+	return _u
+}
+
+// AddAiCaptureSessions adds the "ai_capture_sessions" edges to the AICaptureSession entity.
+func (_u *GroupUpdateOne) AddAiCaptureSessions(v ...*AICaptureSession) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAiCaptureSessionIDs(ids...)
+}
+
 // Mutation returns the GroupMutation object of the builder.
 func (_u *GroupUpdateOne) Mutation() *GroupMutation {
 	return _u.mutation
@@ -1148,6 +1245,27 @@ func (_u *GroupUpdateOne) RemoveExports(v ...*Export) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveExportIDs(ids...)
+}
+
+// ClearAiCaptureSessions clears all "ai_capture_sessions" edges to the AICaptureSession entity.
+func (_u *GroupUpdateOne) ClearAiCaptureSessions() *GroupUpdateOne {
+	_u.mutation.ClearAiCaptureSessions()
+	return _u
+}
+
+// RemoveAiCaptureSessionIDs removes the "ai_capture_sessions" edge to AICaptureSession entities by IDs.
+func (_u *GroupUpdateOne) RemoveAiCaptureSessionIDs(ids ...uuid.UUID) *GroupUpdateOne {
+	_u.mutation.RemoveAiCaptureSessionIDs(ids...)
+	return _u
+}
+
+// RemoveAiCaptureSessions removes "ai_capture_sessions" edges to AICaptureSession entities.
+func (_u *GroupUpdateOne) RemoveAiCaptureSessions(v ...*AICaptureSession) *GroupUpdateOne {
+	ids := make([]uuid.UUID, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAiCaptureSessionIDs(ids...)
 }
 
 // Where appends a list predicates to the GroupUpdate builder.
@@ -1612,6 +1730,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(export.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AiCaptureSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAiCaptureSessionsIDs(); len(nodes) > 0 && !_u.mutation.AiCaptureSessionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AiCaptureSessionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.AiCaptureSessionsTable,
+			Columns: []string{group.AiCaptureSessionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(aicapturesession.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

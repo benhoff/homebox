@@ -470,6 +470,29 @@ func HasExportsWith(preds ...predicate.Export) predicate.Group {
 	})
 }
 
+// HasAiCaptureSessions applies the HasEdge predicate on the "ai_capture_sessions" edge.
+func HasAiCaptureSessions() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AiCaptureSessionsTable, AiCaptureSessionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAiCaptureSessionsWith applies the HasEdge predicate on the "ai_capture_sessions" edge with a given conditions (other predicates).
+func HasAiCaptureSessionsWith(preds ...predicate.AICaptureSession) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newAiCaptureSessionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserGroups applies the HasEdge predicate on the "user_groups" edge.
 func HasUserGroups() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

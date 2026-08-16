@@ -12,6 +12,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturephoto"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesessionitem"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
@@ -90,6 +93,9 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
+			aicapturephoto.Table:       aicapturephoto.ValidColumn,
+			aicapturesession.Table:     aicapturesession.ValidColumn,
+			aicapturesessionitem.Table: aicapturesessionitem.ValidColumn,
 			apikey.Table:               apikey.ValidColumn,
 			attachment.Table:           attachment.ValidColumn,
 			authroles.Table:            authroles.ValidColumn,

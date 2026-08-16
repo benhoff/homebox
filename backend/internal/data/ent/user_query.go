@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authtokens"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/group"
@@ -35,6 +36,7 @@ type UserQuery struct {
 	withPasswordResetTokens *PasswordResetTokensQuery
 	withAPIKeys             *APIKeyQuery
 	withNotifiers           *NotifierQuery
+	withAiCaptureSessions   *AICaptureSessionQuery
 	withUserGroups          *UserGroupQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -175,6 +177,28 @@ func (_q *UserQuery) QueryNotifiers() *NotifierQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(notifier.Table, notifier.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.NotifiersTable, user.NotifiersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAiCaptureSessions chains the current query on the "ai_capture_sessions" edge.
+func (_q *UserQuery) QueryAiCaptureSessions() *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AiCaptureSessionsTable, user.AiCaptureSessionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -401,6 +425,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPasswordResetTokens: _q.withPasswordResetTokens.Clone(),
 		withAPIKeys:             _q.withAPIKeys.Clone(),
 		withNotifiers:           _q.withNotifiers.Clone(),
+		withAiCaptureSessions:   _q.withAiCaptureSessions.Clone(),
 		withUserGroups:          _q.withUserGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -460,6 +485,17 @@ func (_q *UserQuery) WithNotifiers(opts ...func(*NotifierQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withNotifiers = query
+	return _q
+}
+
+// WithAiCaptureSessions tells the query-builder to eager-load the nodes that are connected to
+// the "ai_capture_sessions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAiCaptureSessions(opts ...func(*AICaptureSessionQuery)) *UserQuery {
+	query := (&AICaptureSessionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAiCaptureSessions = query
 	return _q
 }
 
@@ -552,12 +588,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [7]bool{
 			_q.withGroups != nil,
 			_q.withAuthTokens != nil,
 			_q.withPasswordResetTokens != nil,
 			_q.withAPIKeys != nil,
 			_q.withNotifiers != nil,
+			_q.withAiCaptureSessions != nil,
 			_q.withUserGroups != nil,
 		}
 	)
@@ -613,6 +650,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadNotifiers(ctx, query, nodes,
 			func(n *User) { n.Edges.Notifiers = []*Notifier{} },
 			func(n *User, e *Notifier) { n.Edges.Notifiers = append(n.Edges.Notifiers, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAiCaptureSessions; query != nil {
+		if err := _q.loadAiCaptureSessions(ctx, query, nodes,
+			func(n *User) { n.Edges.AiCaptureSessions = []*AICaptureSession{} },
+			func(n *User, e *AICaptureSession) { n.Edges.AiCaptureSessions = append(n.Edges.AiCaptureSessions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -793,6 +837,36 @@ func (_q *UserQuery) loadNotifiers(ctx context.Context, query *NotifierQuery, no
 	}
 	query.Where(predicate.Notifier(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.NotifiersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAiCaptureSessions(ctx context.Context, query *AICaptureSessionQuery, nodes []*User, init func(*User), assign func(*User, *AICaptureSession)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(aicapturesession.FieldUserID)
+	}
+	query.Where(predicate.AICaptureSession(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AiCaptureSessionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

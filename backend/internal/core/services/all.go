@@ -17,6 +17,7 @@ type AllServices struct {
 	BackgroundService *BackgroundService
 	Exports           *ExportService
 	AICapture         *AICaptureService
+	AICaptureSessions *AICaptureSessionService
 	Currencies        *currencies.CurrencyRegistry
 }
 
@@ -114,13 +115,15 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 		opt(options)
 	}
 
-	return &AllServices{
-		User:  &UserService{repos: repos, mailer: options.mailer},
-		Group: &GroupService{repos},
-		Entities: &EntityService{
-			repo:                 repos,
-			autoIncrementAssetID: options.autoIncrementAssetID,
-		},
+	entityService := &EntityService{
+		repo:                 repos,
+		autoIncrementAssetID: options.autoIncrementAssetID,
+	}
+	aiCapture := NewAICaptureService(options.aiConfig)
+	all := &AllServices{
+		User:     &UserService{repos: repos, mailer: options.mailer},
+		Group:    &GroupService{repos},
+		Entities: entityService,
 		BackgroundService: &BackgroundService{
 			repos:          repos,
 			latest:         Latest{},
@@ -134,7 +137,9 @@ func New(repos *repo.AllRepos, opts ...OptionsFunc) *AllServices {
 			pubSubConn: options.pubSubConn,
 			dialect:    options.dialect,
 		},
-		AICapture:  NewAICaptureService(options.aiConfig),
+		AICapture:  aiCapture,
 		Currencies: currencies.NewCurrencyService(options.currencies),
 	}
+	all.AICaptureSessions = NewAICaptureSessionService(repos, aiCapture, entityService, options.aiConfig)
+	return all
 }

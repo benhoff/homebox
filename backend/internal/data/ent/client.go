@@ -16,6 +16,9 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturephoto"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesessionitem"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
@@ -41,6 +44,12 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AICapturePhoto is the client for interacting with the AICapturePhoto builders.
+	AICapturePhoto *AICapturePhotoClient
+	// AICaptureSession is the client for interacting with the AICaptureSession builders.
+	AICaptureSession *AICaptureSessionClient
+	// AICaptureSessionItem is the client for interacting with the AICaptureSessionItem builders.
+	AICaptureSessionItem *AICaptureSessionItemClient
 	// APIKey is the client for interacting with the APIKey builders.
 	APIKey *APIKeyClient
 	// Attachment is the client for interacting with the Attachment builders.
@@ -88,6 +97,9 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AICapturePhoto = NewAICapturePhotoClient(c.config)
+	c.AICaptureSession = NewAICaptureSessionClient(c.config)
+	c.AICaptureSessionItem = NewAICaptureSessionItemClient(c.config)
 	c.APIKey = NewAPIKeyClient(c.config)
 	c.Attachment = NewAttachmentClient(c.config)
 	c.AuthRoles = NewAuthRolesClient(c.config)
@@ -198,6 +210,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:                  ctx,
 		config:               cfg,
+		AICapturePhoto:       NewAICapturePhotoClient(cfg),
+		AICaptureSession:     NewAICaptureSessionClient(cfg),
+		AICaptureSessionItem: NewAICaptureSessionItemClient(cfg),
 		APIKey:               NewAPIKeyClient(cfg),
 		Attachment:           NewAttachmentClient(cfg),
 		AuthRoles:            NewAuthRolesClient(cfg),
@@ -235,6 +250,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:                  ctx,
 		config:               cfg,
+		AICapturePhoto:       NewAICapturePhotoClient(cfg),
+		AICaptureSession:     NewAICaptureSessionClient(cfg),
+		AICaptureSessionItem: NewAICaptureSessionItemClient(cfg),
 		APIKey:               NewAPIKeyClient(cfg),
 		Attachment:           NewAttachmentClient(cfg),
 		AuthRoles:            NewAuthRolesClient(cfg),
@@ -259,7 +277,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		APIKey.
+//		AICapturePhoto.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -282,7 +300,8 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
+		c.AICapturePhoto, c.AICaptureSession, c.AICaptureSessionItem, c.APIKey,
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
 		c.EntityTemplate, c.EntityType, c.Export, c.Group, c.GroupInvitationToken,
 		c.MaintenanceEntry, c.Notifier, c.PasswordResetTokens, c.Tag, c.TemplateField,
 		c.User, c.UserGroup,
@@ -295,7 +314,8 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.APIKey, c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
+		c.AICapturePhoto, c.AICaptureSession, c.AICaptureSessionItem, c.APIKey,
+		c.Attachment, c.AuthRoles, c.AuthTokens, c.Entity, c.EntityField,
 		c.EntityTemplate, c.EntityType, c.Export, c.Group, c.GroupInvitationToken,
 		c.MaintenanceEntry, c.Notifier, c.PasswordResetTokens, c.Tag, c.TemplateField,
 		c.User, c.UserGroup,
@@ -307,6 +327,12 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
+	case *AICapturePhotoMutation:
+		return c.AICapturePhoto.mutate(ctx, m)
+	case *AICaptureSessionMutation:
+		return c.AICaptureSession.mutate(ctx, m)
+	case *AICaptureSessionItemMutation:
+		return c.AICaptureSessionItem.mutate(ctx, m)
 	case *APIKeyMutation:
 		return c.APIKey.mutate(ctx, m)
 	case *AttachmentMutation:
@@ -345,6 +371,517 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserGroup.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
+	}
+}
+
+// AICapturePhotoClient is a client for the AICapturePhoto schema.
+type AICapturePhotoClient struct {
+	config
+}
+
+// NewAICapturePhotoClient returns a client for the AICapturePhoto from the given config.
+func NewAICapturePhotoClient(c config) *AICapturePhotoClient {
+	return &AICapturePhotoClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `aicapturephoto.Hooks(f(g(h())))`.
+func (c *AICapturePhotoClient) Use(hooks ...Hook) {
+	c.hooks.AICapturePhoto = append(c.hooks.AICapturePhoto, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `aicapturephoto.Intercept(f(g(h())))`.
+func (c *AICapturePhotoClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AICapturePhoto = append(c.inters.AICapturePhoto, interceptors...)
+}
+
+// Create returns a builder for creating a AICapturePhoto entity.
+func (c *AICapturePhotoClient) Create() *AICapturePhotoCreate {
+	mutation := newAICapturePhotoMutation(c.config, OpCreate)
+	return &AICapturePhotoCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AICapturePhoto entities.
+func (c *AICapturePhotoClient) CreateBulk(builders ...*AICapturePhotoCreate) *AICapturePhotoCreateBulk {
+	return &AICapturePhotoCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AICapturePhotoClient) MapCreateBulk(slice any, setFunc func(*AICapturePhotoCreate, int)) *AICapturePhotoCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AICapturePhotoCreateBulk{err: fmt.Errorf("calling to AICapturePhotoClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AICapturePhotoCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AICapturePhotoCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AICapturePhoto.
+func (c *AICapturePhotoClient) Update() *AICapturePhotoUpdate {
+	mutation := newAICapturePhotoMutation(c.config, OpUpdate)
+	return &AICapturePhotoUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AICapturePhotoClient) UpdateOne(_m *AICapturePhoto) *AICapturePhotoUpdateOne {
+	mutation := newAICapturePhotoMutation(c.config, OpUpdateOne, withAICapturePhoto(_m))
+	return &AICapturePhotoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AICapturePhotoClient) UpdateOneID(id uuid.UUID) *AICapturePhotoUpdateOne {
+	mutation := newAICapturePhotoMutation(c.config, OpUpdateOne, withAICapturePhotoID(id))
+	return &AICapturePhotoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AICapturePhoto.
+func (c *AICapturePhotoClient) Delete() *AICapturePhotoDelete {
+	mutation := newAICapturePhotoMutation(c.config, OpDelete)
+	return &AICapturePhotoDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AICapturePhotoClient) DeleteOne(_m *AICapturePhoto) *AICapturePhotoDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AICapturePhotoClient) DeleteOneID(id uuid.UUID) *AICapturePhotoDeleteOne {
+	builder := c.Delete().Where(aicapturephoto.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AICapturePhotoDeleteOne{builder}
+}
+
+// Query returns a query builder for AICapturePhoto.
+func (c *AICapturePhotoClient) Query() *AICapturePhotoQuery {
+	return &AICapturePhotoQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAICapturePhoto},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AICapturePhoto entity by its id.
+func (c *AICapturePhotoClient) Get(ctx context.Context, id uuid.UUID) (*AICapturePhoto, error) {
+	return c.Query().Where(aicapturephoto.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AICapturePhotoClient) GetX(ctx context.Context, id uuid.UUID) *AICapturePhoto {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySession queries the session edge of a AICapturePhoto.
+func (c *AICapturePhotoClient) QuerySession(_m *AICapturePhoto) *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturephoto.Table, aicapturephoto.FieldID, id),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, aicapturephoto.SessionTable, aicapturephoto.SessionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AICapturePhotoClient) Hooks() []Hook {
+	return c.hooks.AICapturePhoto
+}
+
+// Interceptors returns the client interceptors.
+func (c *AICapturePhotoClient) Interceptors() []Interceptor {
+	return c.inters.AICapturePhoto
+}
+
+func (c *AICapturePhotoClient) mutate(ctx context.Context, m *AICapturePhotoMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AICapturePhotoCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AICapturePhotoUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AICapturePhotoUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AICapturePhotoDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AICapturePhoto mutation op: %q", m.Op())
+	}
+}
+
+// AICaptureSessionClient is a client for the AICaptureSession schema.
+type AICaptureSessionClient struct {
+	config
+}
+
+// NewAICaptureSessionClient returns a client for the AICaptureSession from the given config.
+func NewAICaptureSessionClient(c config) *AICaptureSessionClient {
+	return &AICaptureSessionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `aicapturesession.Hooks(f(g(h())))`.
+func (c *AICaptureSessionClient) Use(hooks ...Hook) {
+	c.hooks.AICaptureSession = append(c.hooks.AICaptureSession, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `aicapturesession.Intercept(f(g(h())))`.
+func (c *AICaptureSessionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AICaptureSession = append(c.inters.AICaptureSession, interceptors...)
+}
+
+// Create returns a builder for creating a AICaptureSession entity.
+func (c *AICaptureSessionClient) Create() *AICaptureSessionCreate {
+	mutation := newAICaptureSessionMutation(c.config, OpCreate)
+	return &AICaptureSessionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AICaptureSession entities.
+func (c *AICaptureSessionClient) CreateBulk(builders ...*AICaptureSessionCreate) *AICaptureSessionCreateBulk {
+	return &AICaptureSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AICaptureSessionClient) MapCreateBulk(slice any, setFunc func(*AICaptureSessionCreate, int)) *AICaptureSessionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AICaptureSessionCreateBulk{err: fmt.Errorf("calling to AICaptureSessionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AICaptureSessionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AICaptureSessionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AICaptureSession.
+func (c *AICaptureSessionClient) Update() *AICaptureSessionUpdate {
+	mutation := newAICaptureSessionMutation(c.config, OpUpdate)
+	return &AICaptureSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AICaptureSessionClient) UpdateOne(_m *AICaptureSession) *AICaptureSessionUpdateOne {
+	mutation := newAICaptureSessionMutation(c.config, OpUpdateOne, withAICaptureSession(_m))
+	return &AICaptureSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AICaptureSessionClient) UpdateOneID(id uuid.UUID) *AICaptureSessionUpdateOne {
+	mutation := newAICaptureSessionMutation(c.config, OpUpdateOne, withAICaptureSessionID(id))
+	return &AICaptureSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AICaptureSession.
+func (c *AICaptureSessionClient) Delete() *AICaptureSessionDelete {
+	mutation := newAICaptureSessionMutation(c.config, OpDelete)
+	return &AICaptureSessionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AICaptureSessionClient) DeleteOne(_m *AICaptureSession) *AICaptureSessionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AICaptureSessionClient) DeleteOneID(id uuid.UUID) *AICaptureSessionDeleteOne {
+	builder := c.Delete().Where(aicapturesession.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AICaptureSessionDeleteOne{builder}
+}
+
+// Query returns a query builder for AICaptureSession.
+func (c *AICaptureSessionClient) Query() *AICaptureSessionQuery {
+	return &AICaptureSessionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAICaptureSession},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AICaptureSession entity by its id.
+func (c *AICaptureSessionClient) Get(ctx context.Context, id uuid.UUID) (*AICaptureSession, error) {
+	return c.Query().Where(aicapturesession.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AICaptureSessionClient) GetX(ctx context.Context, id uuid.UUID) *AICaptureSession {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a AICaptureSession.
+func (c *AICaptureSessionClient) QueryGroup(_m *AICaptureSession) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesession.Table, aicapturesession.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, aicapturesession.GroupTable, aicapturesession.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUser queries the user edge of a AICaptureSession.
+func (c *AICaptureSessionClient) QueryUser(_m *AICaptureSession) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesession.Table, aicapturesession.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, aicapturesession.UserTable, aicapturesession.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryLocation queries the location edge of a AICaptureSession.
+func (c *AICaptureSessionClient) QueryLocation(_m *AICaptureSession) *EntityQuery {
+	query := (&EntityClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesession.Table, aicapturesession.FieldID, id),
+			sqlgraph.To(entity.Table, entity.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, aicapturesession.LocationTable, aicapturesession.LocationColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPhotos queries the photos edge of a AICaptureSession.
+func (c *AICaptureSessionClient) QueryPhotos(_m *AICaptureSession) *AICapturePhotoQuery {
+	query := (&AICapturePhotoClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesession.Table, aicapturesession.FieldID, id),
+			sqlgraph.To(aicapturephoto.Table, aicapturephoto.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, aicapturesession.PhotosTable, aicapturesession.PhotosColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryItems queries the items edge of a AICaptureSession.
+func (c *AICaptureSessionClient) QueryItems(_m *AICaptureSession) *AICaptureSessionItemQuery {
+	query := (&AICaptureSessionItemClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesession.Table, aicapturesession.FieldID, id),
+			sqlgraph.To(aicapturesessionitem.Table, aicapturesessionitem.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, aicapturesession.ItemsTable, aicapturesession.ItemsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AICaptureSessionClient) Hooks() []Hook {
+	return c.hooks.AICaptureSession
+}
+
+// Interceptors returns the client interceptors.
+func (c *AICaptureSessionClient) Interceptors() []Interceptor {
+	return c.inters.AICaptureSession
+}
+
+func (c *AICaptureSessionClient) mutate(ctx context.Context, m *AICaptureSessionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AICaptureSessionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AICaptureSessionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AICaptureSessionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AICaptureSessionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AICaptureSession mutation op: %q", m.Op())
+	}
+}
+
+// AICaptureSessionItemClient is a client for the AICaptureSessionItem schema.
+type AICaptureSessionItemClient struct {
+	config
+}
+
+// NewAICaptureSessionItemClient returns a client for the AICaptureSessionItem from the given config.
+func NewAICaptureSessionItemClient(c config) *AICaptureSessionItemClient {
+	return &AICaptureSessionItemClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `aicapturesessionitem.Hooks(f(g(h())))`.
+func (c *AICaptureSessionItemClient) Use(hooks ...Hook) {
+	c.hooks.AICaptureSessionItem = append(c.hooks.AICaptureSessionItem, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `aicapturesessionitem.Intercept(f(g(h())))`.
+func (c *AICaptureSessionItemClient) Intercept(interceptors ...Interceptor) {
+	c.inters.AICaptureSessionItem = append(c.inters.AICaptureSessionItem, interceptors...)
+}
+
+// Create returns a builder for creating a AICaptureSessionItem entity.
+func (c *AICaptureSessionItemClient) Create() *AICaptureSessionItemCreate {
+	mutation := newAICaptureSessionItemMutation(c.config, OpCreate)
+	return &AICaptureSessionItemCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AICaptureSessionItem entities.
+func (c *AICaptureSessionItemClient) CreateBulk(builders ...*AICaptureSessionItemCreate) *AICaptureSessionItemCreateBulk {
+	return &AICaptureSessionItemCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *AICaptureSessionItemClient) MapCreateBulk(slice any, setFunc func(*AICaptureSessionItemCreate, int)) *AICaptureSessionItemCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &AICaptureSessionItemCreateBulk{err: fmt.Errorf("calling to AICaptureSessionItemClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*AICaptureSessionItemCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &AICaptureSessionItemCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AICaptureSessionItem.
+func (c *AICaptureSessionItemClient) Update() *AICaptureSessionItemUpdate {
+	mutation := newAICaptureSessionItemMutation(c.config, OpUpdate)
+	return &AICaptureSessionItemUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AICaptureSessionItemClient) UpdateOne(_m *AICaptureSessionItem) *AICaptureSessionItemUpdateOne {
+	mutation := newAICaptureSessionItemMutation(c.config, OpUpdateOne, withAICaptureSessionItem(_m))
+	return &AICaptureSessionItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AICaptureSessionItemClient) UpdateOneID(id uuid.UUID) *AICaptureSessionItemUpdateOne {
+	mutation := newAICaptureSessionItemMutation(c.config, OpUpdateOne, withAICaptureSessionItemID(id))
+	return &AICaptureSessionItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AICaptureSessionItem.
+func (c *AICaptureSessionItemClient) Delete() *AICaptureSessionItemDelete {
+	mutation := newAICaptureSessionItemMutation(c.config, OpDelete)
+	return &AICaptureSessionItemDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AICaptureSessionItemClient) DeleteOne(_m *AICaptureSessionItem) *AICaptureSessionItemDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AICaptureSessionItemClient) DeleteOneID(id uuid.UUID) *AICaptureSessionItemDeleteOne {
+	builder := c.Delete().Where(aicapturesessionitem.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AICaptureSessionItemDeleteOne{builder}
+}
+
+// Query returns a query builder for AICaptureSessionItem.
+func (c *AICaptureSessionItemClient) Query() *AICaptureSessionItemQuery {
+	return &AICaptureSessionItemQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeAICaptureSessionItem},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a AICaptureSessionItem entity by its id.
+func (c *AICaptureSessionItemClient) Get(ctx context.Context, id uuid.UUID) (*AICaptureSessionItem, error) {
+	return c.Query().Where(aicapturesessionitem.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AICaptureSessionItemClient) GetX(ctx context.Context, id uuid.UUID) *AICaptureSessionItem {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySession queries the session edge of a AICaptureSessionItem.
+func (c *AICaptureSessionItemClient) QuerySession(_m *AICaptureSessionItem) *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(aicapturesessionitem.Table, aicapturesessionitem.FieldID, id),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, aicapturesessionitem.SessionTable, aicapturesessionitem.SessionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AICaptureSessionItemClient) Hooks() []Hook {
+	return c.hooks.AICaptureSessionItem
+}
+
+// Interceptors returns the client interceptors.
+func (c *AICaptureSessionItemClient) Interceptors() []Interceptor {
+	return c.inters.AICaptureSessionItem
+}
+
+func (c *AICaptureSessionItemClient) mutate(ctx context.Context, m *AICaptureSessionItemMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&AICaptureSessionItemCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&AICaptureSessionItemUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&AICaptureSessionItemUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&AICaptureSessionItemDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown AICaptureSessionItem mutation op: %q", m.Op())
 	}
 }
 
@@ -1205,6 +1742,22 @@ func (c *EntityClient) QueryAttachments(_m *Entity) *AttachmentQuery {
 			sqlgraph.From(entity.Table, entity.FieldID, id),
 			sqlgraph.To(attachment.Table, attachment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, entity.AttachmentsTable, entity.AttachmentsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAiCaptureSessions queries the ai_capture_sessions edge of a Entity.
+func (c *EntityClient) QueryAiCaptureSessions(_m *Entity) *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(entity.Table, entity.FieldID, id),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, entity.AiCaptureSessionsTable, entity.AiCaptureSessionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -2126,6 +2679,22 @@ func (c *GroupClient) QueryExports(_m *Group) *ExportQuery {
 			sqlgraph.From(group.Table, group.FieldID, id),
 			sqlgraph.To(export.Table, export.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, group.ExportsTable, group.ExportsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAiCaptureSessions queries the ai_capture_sessions edge of a Group.
+func (c *GroupClient) QueryAiCaptureSessions(_m *Group) *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.AiCaptureSessionsTable, group.AiCaptureSessionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -3320,6 +3889,22 @@ func (c *UserClient) QueryNotifiers(_m *User) *NotifierQuery {
 	return query
 }
 
+// QueryAiCaptureSessions queries the ai_capture_sessions edge of a User.
+func (c *UserClient) QueryAiCaptureSessions(_m *User) *AICaptureSessionQuery {
+	query := (&AICaptureSessionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(aicapturesession.Table, aicapturesession.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AiCaptureSessionsTable, user.AiCaptureSessionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserGroups queries the user_groups edge of a User.
 func (c *UserClient) QueryUserGroups(_m *User) *UserGroupQuery {
 	query := (&UserGroupClient{config: c.config}).Query()
@@ -3480,13 +4065,15 @@ func (c *UserGroupClient) mutate(ctx context.Context, m *UserGroupMutation) (Val
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		APIKey, Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
-		EntityType, Export, Group, GroupInvitationToken, MaintenanceEntry, Notifier,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Hook
+		AICapturePhoto, AICaptureSession, AICaptureSessionItem, APIKey, Attachment,
+		AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate, EntityType, Export,
+		Group, GroupInvitationToken, MaintenanceEntry, Notifier, PasswordResetTokens,
+		Tag, TemplateField, User, UserGroup []ent.Hook
 	}
 	inters struct {
-		APIKey, Attachment, AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate,
-		EntityType, Export, Group, GroupInvitationToken, MaintenanceEntry, Notifier,
-		PasswordResetTokens, Tag, TemplateField, User, UserGroup []ent.Interceptor
+		AICapturePhoto, AICaptureSession, AICaptureSessionItem, APIKey, Attachment,
+		AuthRoles, AuthTokens, Entity, EntityField, EntityTemplate, EntityType, Export,
+		Group, GroupInvitationToken, MaintenanceEntry, Notifier, PasswordResetTokens,
+		Tag, TemplateField, User, UserGroup []ent.Interceptor
 	}
 )

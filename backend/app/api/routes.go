@@ -171,6 +171,19 @@ func (a *app) mountRoutes(r *chi.Mux, chain *errchain.ErrChain, repos *repo.AllR
 
 		// AI-assisted inventory capture. The provider credential remains server-side.
 		r.Post("/ai/capture/analyze", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureAnalyze(), append(userMW, a.aiCaptureLimiter.middleware)...))
+		r.Post("/ai/capture/sessions", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionsCreate(), userMW...))
+		r.Get("/ai/capture/sessions", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionsList(), userMW...))
+		r.Get("/ai/capture/sessions/{sessionId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionGet(), userMW...))
+		r.Patch("/ai/capture/sessions/{sessionId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionUpdate(), userMW...))
+		r.Delete("/ai/capture/sessions/{sessionId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionDelete(), userMW...))
+		r.Post("/ai/capture/sessions/{sessionId}/photos", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoCreate(), userMW...))
+		r.Get("/ai/capture/sessions/{sessionId}/photos/{photoId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoGet(), userMW...))
+		r.Delete("/ai/capture/sessions/{sessionId}/photos/{photoId}", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionPhotoDelete(), userMW...))
+		r.Post("/ai/capture/sessions/{sessionId}/finish", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionFinish(), userMW...))
+		r.Post("/ai/capture/sessions/{sessionId}/retry-analysis", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionRetryAnalysis(), userMW...))
+		r.Put("/ai/capture/sessions/{sessionId}/draft", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionDraftUpdate(), userMW...))
+		r.Post("/ai/capture/sessions/{sessionId}/corrections", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionCorrection(), append(userMW, a.aiCaptureLimiter.middleware)...))
+		r.Post("/ai/capture/sessions/{sessionId}/submit", chain.ToHandlerFunc(v1Ctrl.HandleAICaptureSessionSubmit(), userMW...))
 
 		// Tags endpoints
 		r.Get("/tags", chain.ToHandlerFunc(v1Ctrl.HandleTagsGetAll(), userMW...))

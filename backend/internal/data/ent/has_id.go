@@ -4,6 +4,18 @@ package ent
 
 import "github.com/google/uuid"
 
+func (_m *AICapturePhoto) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *AICaptureSession) GetID() uuid.UUID {
+	return _m.ID
+}
+
+func (_m *AICaptureSessionItem) GetID() uuid.UUID {
+	return _m.ID
+}
+
 func (_m *APIKey) GetID() uuid.UUID {
 	return _m.ID
 }

@@ -245,6 +245,512 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/ai/capture/sessions": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "List the current user's AI capture sessions",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/v1.Results-services_AICaptureSessionOut"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Create an AI capture session",
+                "parameters": [
+                    {
+                        "description": "Selected location",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Get an AI capture session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Delete an AI capture session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            },
+            "patch": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Change an AI capture session location",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Replacement location",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionLocationUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/corrections": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Ask AI to correct a persisted capture draft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Correction instruction",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionCorrection"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/draft": {
+            "put": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Save an edited AI capture draft",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Draft and expected revision",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionDraftUpdate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/finish": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Seal an AI capture session and queue analysis",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Expected uploaded count",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionFinish"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/photos": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Upload one photo to an AI capture session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Normalized image",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Client idempotency UUID",
+                        "name": "clientPhotoId",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Capture order",
+                        "name": "position",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionPhoto"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/photos/{photoId}": {
+            "get": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "image/jpeg",
+                    "image/png",
+                    "image/gif",
+                    "image/webp"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Read an authorized AI capture session photo",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Capture photo ID",
+                        "name": "photoId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "file"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Delete a photo from a capturing session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Capture photo ID",
+                        "name": "photoId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/retry-analysis": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Retry failed AI capture analysis",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/ai/capture/sessions/{sessionId}/submit": {
+            "post": {
+                "security": [
+                    {
+                        "Bearer": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "AI Capture Sessions"
+                ],
+                "summary": "Create reviewed items from an AI capture session",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Capture session ID",
+                        "name": "sessionId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Expected draft revision",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/v1.aiCaptureSessionSubmit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/services.AICaptureSessionOut"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/assets/{id}": {
             "get": {
                 "security": [
@@ -3264,6 +3770,48 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "aicapturesession.Status": {
+            "type": "string",
+            "enum": [
+                "capturing",
+                "capturing",
+                "queued",
+                "analyzing",
+                "analysis_failed",
+                "ready_for_review",
+                "submitting",
+                "completed"
+            ],
+            "x-enum-varnames": [
+                "DefaultStatus",
+                "StatusCapturing",
+                "StatusQueued",
+                "StatusAnalyzing",
+                "StatusAnalysisFailed",
+                "StatusReadyForReview",
+                "StatusSubmitting",
+                "StatusCompleted"
+            ]
+        },
+        "aicapturesessionitem.Status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "pending",
+                "creating",
+                "attaching",
+                "completed",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "DefaultStatus",
+                "StatusPending",
+                "StatusCreating",
+                "StatusAttaching",
+                "StatusCompleted",
+                "StatusFailed"
+            ]
+        },
         "attachment.Type": {
             "type": "string",
             "enum": [
@@ -3317,6 +3865,278 @@ const docTemplate = `{
                 },
                 "symbol": {
                     "type": "string"
+                }
+            }
+        },
+        "ent.AICapturePhoto": {
+            "type": "object",
+            "properties": {
+                "client_photo_id": {
+                    "description": "ClientPhotoID holds the value of the \"client_photo_id\" field.",
+                    "type": "string"
+                },
+                "content_hash": {
+                    "description": "ContentHash holds the value of the \"content_hash\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the AICapturePhotoQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.AICapturePhotoEdges"
+                        }
+                    ]
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "mime_type": {
+                    "description": "MimeType holds the value of the \"mime_type\" field.",
+                    "type": "string"
+                },
+                "original_name": {
+                    "description": "OriginalName holds the value of the \"original_name\" field.",
+                    "type": "string"
+                },
+                "path": {
+                    "description": "Path holds the value of the \"path\" field.",
+                    "type": "string"
+                },
+                "position": {
+                    "description": "Position holds the value of the \"position\" field.",
+                    "type": "integer"
+                },
+                "session_id": {
+                    "description": "SessionID holds the value of the \"session_id\" field.",
+                    "type": "string"
+                },
+                "size_bytes": {
+                    "description": "SizeBytes holds the value of the \"size_bytes\" field.",
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.AICapturePhotoEdges": {
+            "type": "object",
+            "properties": {
+                "session": {
+                    "description": "Session holds the value of the session edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.AICaptureSession"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.AICaptureSession": {
+            "type": "object",
+            "properties": {
+                "analysis_attempts": {
+                    "description": "AnalysisAttempts holds the value of the \"analysis_attempts\" field.",
+                    "type": "integer"
+                },
+                "analyzed_at": {
+                    "description": "AnalyzedAt holds the value of the \"analyzed_at\" field.",
+                    "type": "string"
+                },
+                "completed_at": {
+                    "description": "CompletedAt holds the value of the \"completed_at\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "draft_json": {
+                    "description": "DraftJSON holds the value of the \"draft_json\" field.",
+                    "type": "string"
+                },
+                "draft_revision": {
+                    "description": "DraftRevision holds the value of the \"draft_revision\" field.",
+                    "type": "integer"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the AICaptureSessionQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.AICaptureSessionEdges"
+                        }
+                    ]
+                },
+                "error_code": {
+                    "description": "ErrorCode holds the value of the \"error_code\" field.",
+                    "type": "string"
+                },
+                "error_message": {
+                    "description": "ErrorMessage holds the value of the \"error_message\" field.",
+                    "type": "string"
+                },
+                "expires_at": {
+                    "description": "ExpiresAt holds the value of the \"expires_at\" field.",
+                    "type": "string"
+                },
+                "finished_at": {
+                    "description": "FinishedAt holds the value of the \"finished_at\" field.",
+                    "type": "string"
+                },
+                "group_id": {
+                    "description": "GroupID holds the value of the \"group_id\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "location_id": {
+                    "description": "LocationID holds the value of the \"location_id\" field.",
+                    "type": "string"
+                },
+                "location_name_snapshot": {
+                    "description": "LocationNameSnapshot holds the value of the \"location_name_snapshot\" field.",
+                    "type": "string"
+                },
+                "photo_count": {
+                    "description": "PhotoCount holds the value of the \"photo_count\" field.",
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "Status holds the value of the \"status\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/aicapturesession.Status"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "UserID holds the value of the \"user_id\" field.",
+                    "type": "string"
+                },
+                "worker_lease_until": {
+                    "description": "WorkerLeaseUntil holds the value of the \"worker_lease_until\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.AICaptureSessionEdges": {
+            "type": "object",
+            "properties": {
+                "group": {
+                    "description": "Group holds the value of the group edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Group"
+                        }
+                    ]
+                },
+                "items": {
+                    "description": "Items holds the value of the items edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.AICaptureSessionItem"
+                    }
+                },
+                "location": {
+                    "description": "Location holds the value of the location edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.Entity"
+                        }
+                    ]
+                },
+                "photos": {
+                    "description": "Photos holds the value of the photos edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.AICapturePhoto"
+                    }
+                },
+                "user": {
+                    "description": "User holds the value of the user edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.User"
+                        }
+                    ]
+                }
+            }
+        },
+        "ent.AICaptureSessionItem": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "description": "ClientID holds the value of the \"client_id\" field.",
+                    "type": "string"
+                },
+                "created_at": {
+                    "description": "CreatedAt holds the value of the \"created_at\" field.",
+                    "type": "string"
+                },
+                "edges": {
+                    "description": "Edges holds the relations/edges for other nodes in the graph.\nThe values are being populated by the AICaptureSessionItemQuery when eager-loading is set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.AICaptureSessionItemEdges"
+                        }
+                    ]
+                },
+                "entity_id": {
+                    "description": "EntityID holds the value of the \"entity_id\" field.",
+                    "type": "string"
+                },
+                "error_code": {
+                    "description": "ErrorCode holds the value of the \"error_code\" field.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID of the ent.",
+                    "type": "string"
+                },
+                "session_id": {
+                    "description": "SessionID holds the value of the \"session_id\" field.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Status holds the value of the \"status\" field.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/aicapturesessionitem.Status"
+                        }
+                    ]
+                },
+                "updated_at": {
+                    "description": "UpdatedAt holds the value of the \"updated_at\" field.",
+                    "type": "string"
+                },
+                "uploaded_photo_ids": {
+                    "description": "UploadedPhotoIds holds the value of the \"uploaded_photo_ids\" field.",
+                    "type": "string"
+                }
+            }
+        },
+        "ent.AICaptureSessionItemEdges": {
+            "type": "object",
+            "properties": {
+                "session": {
+                    "description": "Session holds the value of the session edge.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/ent.AICaptureSession"
+                        }
+                    ]
                 }
             }
         },
@@ -3655,6 +4475,13 @@ const docTemplate = `{
         "ent.EntityEdges": {
             "type": "object",
             "properties": {
+                "ai_capture_sessions": {
+                    "description": "AiCaptureSessions holds the value of the ai_capture_sessions edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.AICaptureSession"
+                    }
+                },
                 "attachments": {
                     "description": "Attachments holds the value of the attachments edge.",
                     "type": "array",
@@ -4081,6 +4908,13 @@ const docTemplate = `{
         "ent.GroupEdges": {
             "type": "object",
             "properties": {
+                "ai_capture_sessions": {
+                    "description": "AiCaptureSessions holds the value of the ai_capture_sessions edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.AICaptureSession"
+                    }
+                },
                 "entities": {
                     "description": "Entities holds the value of the entities edge.",
                     "type": "array",
@@ -4591,6 +5425,13 @@ const docTemplate = `{
         "ent.UserEdges": {
             "type": "object",
             "properties": {
+                "ai_capture_sessions": {
+                    "description": "AiCaptureSessions holds the value of the ai_capture_sessions edge.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ent.AICaptureSession"
+                    }
+                },
                 "api_keys": {
                     "description": "APIKeys holds the value of the api_keys edge.",
                     "type": "array",
@@ -6344,6 +7185,17 @@ const docTemplate = `{
                 }
             }
         },
+        "services.AICaptureCreatedItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
         "services.AICaptureDraft": {
             "type": "object",
             "properties": {
@@ -6385,6 +7237,12 @@ const docTemplate = `{
                 "needsReview": {
                     "type": "boolean"
                 },
+                "photoIds": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "photoIndexes": {
                     "type": "array",
                     "items": {
@@ -6402,6 +7260,108 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "services.AICaptureOption": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "services.AICaptureSessionOut": {
+            "type": "object",
+            "properties": {
+                "analysisAttempts": {
+                    "type": "integer"
+                },
+                "analyzedAt": {
+                    "type": "string"
+                },
+                "completedAt": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "createdItems": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureCreatedItem"
+                    }
+                },
+                "draft": {
+                    "$ref": "#/definitions/services.AICaptureDraft"
+                },
+                "draftRevision": {
+                    "type": "integer"
+                },
+                "errorCode": {
+                    "type": "string"
+                },
+                "errorMessage": {
+                    "type": "string"
+                },
+                "expiresAt": {
+                    "type": "string"
+                },
+                "finishedAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "location": {
+                    "$ref": "#/definitions/services.AICaptureOption"
+                },
+                "photoCount": {
+                    "type": "integer"
+                },
+                "photos": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureSessionPhoto"
+                    }
+                },
+                "status": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                },
+                "uploadedPhotoCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "services.AICaptureSessionPhoto": {
+            "type": "object",
+            "properties": {
+                "clientPhotoId": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "mimeType": {
+                    "type": "string"
+                },
+                "originalName": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "sizeBytes": {
+                    "type": "integer"
                 }
             }
         },
@@ -6714,6 +7674,17 @@ const docTemplate = `{
                 }
             }
         },
+        "v1.Results-services_AICaptureSessionOut": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.AICaptureSessionOut"
+                    }
+                }
+            }
+        },
         "v1.TelemetryStatus": {
             "type": "object",
             "properties": {
@@ -6754,6 +7725,60 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "item": {}
+            }
+        },
+        "v1.aiCaptureSessionCorrection": {
+            "type": "object",
+            "properties": {
+                "instruction": {
+                    "type": "string"
+                },
+                "revision": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.aiCaptureSessionCreate": {
+            "type": "object",
+            "properties": {
+                "locationId": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.aiCaptureSessionDraftUpdate": {
+            "type": "object",
+            "properties": {
+                "draft": {
+                    "$ref": "#/definitions/services.AICaptureDraft"
+                },
+                "revision": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.aiCaptureSessionFinish": {
+            "type": "object",
+            "properties": {
+                "expectedPhotoCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "v1.aiCaptureSessionLocationUpdate": {
+            "type": "object",
+            "properties": {
+                "locationId": {
+                    "type": "string"
+                }
+            }
+        },
+        "v1.aiCaptureSessionSubmit": {
+            "type": "object",
+            "properties": {
+                "revision": {
+                    "type": "integer"
+                }
             }
         },
         "v1.externalAttachmentRequest": {

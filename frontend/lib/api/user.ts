@@ -60,7 +60,7 @@ export class UserClient extends BaseAPI {
     this.notifiers = new NotifiersAPI(requests);
     this.products = new ProductAPI(requests);
     this.backups = new BackupsAPI(requests);
-    this.aiCapture = new AICaptureAPI(requests);
+    this.aiCapture = new AICaptureAPI(requests, attachmentToken);
 
     // Backward-compat shim: api.locations.* delegates to api.items.*
     this.locations = {

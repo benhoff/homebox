@@ -50,6 +50,7 @@ type AICaptureItem struct {
 	EntityTypeID string   `json:"entityTypeId"`
 	TagIDs       []string `json:"tagIds"`
 	PhotoIndexes []int    `json:"photoIndexes"`
+	PhotoIDs     []string `json:"photoIds,omitempty"`
 	NeedsReview  bool     `json:"needsReview"`
 	ReviewReason string   `json:"reviewReason,omitempty"`
 }

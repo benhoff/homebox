@@ -56,6 +56,18 @@ func registerRecurringTasks(app *app, cfg *config.Config, runner *graceful.Runne
 		purgeStaleExports(ctx, app)
 	}))
 
+	runner.AddPlugin(NewTask("ai-capture-session-worker", 2*time.Second, func(ctx context.Context) {
+		if err := app.services.AICaptureSessions.RunNextAnalysis(ctx); err != nil {
+			log.Error().Err(err).Msg("AI capture session worker failed")
+		}
+	}))
+
+	runner.AddPlugin(NewTask("purge-expired-ai-capture-sessions", 24*time.Hour, func(ctx context.Context) {
+		if err := app.services.AICaptureSessions.PurgeExpired(ctx); err != nil {
+			log.Error().Err(err).Msg("failed to purge expired AI capture sessions")
+		}
+	}))
+
 	runner.AddPlugin(NewTask("send-notifications", time.Hour, func(ctx context.Context) {
 		now := time.Now()
 		if now.Hour() == 8 {

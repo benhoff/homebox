@@ -9,6 +9,144 @@ import (
 )
 
 var (
+	// AiCapturePhotosColumns holds the columns for the "ai_capture_photos" table.
+	AiCapturePhotosColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "client_photo_id", Type: field.TypeUUID},
+		{Name: "position", Type: field.TypeInt},
+		{Name: "original_name", Type: field.TypeString, Size: 255},
+		{Name: "path", Type: field.TypeString},
+		{Name: "mime_type", Type: field.TypeString, Size: 100},
+		{Name: "size_bytes", Type: field.TypeInt64},
+		{Name: "content_hash", Type: field.TypeString, Size: 128},
+		{Name: "session_id", Type: field.TypeUUID},
+	}
+	// AiCapturePhotosTable holds the schema information for the "ai_capture_photos" table.
+	AiCapturePhotosTable = &schema.Table{
+		Name:       "ai_capture_photos",
+		Columns:    AiCapturePhotosColumns,
+		PrimaryKey: []*schema.Column{AiCapturePhotosColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ai_capture_photos_ai_capture_sessions_photos",
+				Columns:    []*schema.Column{AiCapturePhotosColumns[10]},
+				RefColumns: []*schema.Column{AiCaptureSessionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "aicapturephoto_session_id_client_photo_id",
+				Unique:  true,
+				Columns: []*schema.Column{AiCapturePhotosColumns[10], AiCapturePhotosColumns[3]},
+			},
+			{
+				Name:    "aicapturephoto_session_id_position",
+				Unique:  true,
+				Columns: []*schema.Column{AiCapturePhotosColumns[10], AiCapturePhotosColumns[4]},
+			},
+		},
+	}
+	// AiCaptureSessionsColumns holds the columns for the "ai_capture_sessions" table.
+	AiCaptureSessionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "location_name_snapshot", Type: field.TypeString, Size: 255},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"capturing", "queued", "analyzing", "analysis_failed", "ready_for_review", "submitting", "completed"}, Default: "capturing"},
+		{Name: "draft_json", Type: field.TypeString, Nullable: true, Size: 2147483647},
+		{Name: "draft_revision", Type: field.TypeInt, Default: 0},
+		{Name: "analysis_attempts", Type: field.TypeInt, Default: 0},
+		{Name: "photo_count", Type: field.TypeInt, Default: 0},
+		{Name: "worker_lease_until", Type: field.TypeTime, Nullable: true},
+		{Name: "error_code", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "error_message", Type: field.TypeString, Nullable: true, Size: 1000},
+		{Name: "finished_at", Type: field.TypeTime, Nullable: true},
+		{Name: "analyzed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "location_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "group_id", Type: field.TypeUUID},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// AiCaptureSessionsTable holds the schema information for the "ai_capture_sessions" table.
+	AiCaptureSessionsTable = &schema.Table{
+		Name:       "ai_capture_sessions",
+		Columns:    AiCaptureSessionsColumns,
+		PrimaryKey: []*schema.Column{AiCaptureSessionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ai_capture_sessions_entities_ai_capture_sessions",
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[16]},
+				RefColumns: []*schema.Column{EntitiesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "ai_capture_sessions_groups_ai_capture_sessions",
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[17]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "ai_capture_sessions_users_ai_capture_sessions",
+				Columns:    []*schema.Column{AiCaptureSessionsColumns[18]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "aicapturesession_user_id_updated_at",
+				Unique:  false,
+				Columns: []*schema.Column{AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[2]},
+			},
+			{
+				Name:    "aicapturesession_group_id_user_id_status",
+				Unique:  false,
+				Columns: []*schema.Column{AiCaptureSessionsColumns[17], AiCaptureSessionsColumns[18], AiCaptureSessionsColumns[4]},
+			},
+			{
+				Name:    "aicapturesession_status_worker_lease_until",
+				Unique:  false,
+				Columns: []*schema.Column{AiCaptureSessionsColumns[4], AiCaptureSessionsColumns[9]},
+			},
+		},
+	}
+	// AiCaptureSessionItemsColumns holds the columns for the "ai_capture_session_items" table.
+	AiCaptureSessionItemsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "client_id", Type: field.TypeString, Size: 255},
+		{Name: "entity_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"pending", "creating", "attaching", "completed", "failed"}, Default: "pending"},
+		{Name: "uploaded_photo_ids", Type: field.TypeString, Size: 2147483647, Default: "[]"},
+		{Name: "error_code", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "session_id", Type: field.TypeUUID},
+	}
+	// AiCaptureSessionItemsTable holds the schema information for the "ai_capture_session_items" table.
+	AiCaptureSessionItemsTable = &schema.Table{
+		Name:       "ai_capture_session_items",
+		Columns:    AiCaptureSessionItemsColumns,
+		PrimaryKey: []*schema.Column{AiCaptureSessionItemsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "ai_capture_session_items_ai_capture_sessions_items",
+				Columns:    []*schema.Column{AiCaptureSessionItemsColumns[8]},
+				RefColumns: []*schema.Column{AiCaptureSessionsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "aicapturesessionitem_session_id_client_id",
+				Unique:  true,
+				Columns: []*schema.Column{AiCaptureSessionItemsColumns[8], AiCaptureSessionItemsColumns[3]},
+			},
+		},
+	}
 	// APIKeysColumns holds the columns for the "api_keys" table.
 	APIKeysColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -657,6 +795,9 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AiCapturePhotosTable,
+		AiCaptureSessionsTable,
+		AiCaptureSessionItemsTable,
 		APIKeysTable,
 		AttachmentsTable,
 		AuthRolesTable,
@@ -680,6 +821,11 @@ var (
 )
 
 func init() {
+	AiCapturePhotosTable.ForeignKeys[0].RefTable = AiCaptureSessionsTable
+	AiCaptureSessionsTable.ForeignKeys[0].RefTable = EntitiesTable
+	AiCaptureSessionsTable.ForeignKeys[1].RefTable = GroupsTable
+	AiCaptureSessionsTable.ForeignKeys[2].RefTable = UsersTable
+	AiCaptureSessionItemsTable.ForeignKeys[0].RefTable = AiCaptureSessionsTable
 	APIKeysTable.ForeignKeys[0].RefTable = UsersTable
 	AttachmentsTable.ForeignKeys[0].RefTable = AttachmentsTable
 	AttachmentsTable.ForeignKeys[1].RefTable = EntitiesTable

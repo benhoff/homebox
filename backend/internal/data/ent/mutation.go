@@ -12,6 +12,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/google/uuid"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturephoto"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesession"
+	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/aicapturesessionitem"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/apikey"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/attachment"
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent/authroles"
@@ -42,6 +45,9 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypeAICapturePhoto       = "AICapturePhoto"
+	TypeAICaptureSession     = "AICaptureSession"
+	TypeAICaptureSessionItem = "AICaptureSessionItem"
 	TypeAPIKey               = "APIKey"
 	TypeAttachment           = "Attachment"
 	TypeAuthRoles            = "AuthRoles"
@@ -61,6 +67,3573 @@ const (
 	TypeUser                 = "User"
 	TypeUserGroup            = "UserGroup"
 )
+
+// AICapturePhotoMutation represents an operation that mutates the AICapturePhoto nodes in the graph.
+type AICapturePhotoMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *uuid.UUID
+	created_at      *time.Time
+	updated_at      *time.Time
+	client_photo_id *uuid.UUID
+	position        *int
+	addposition     *int
+	original_name   *string
+	_path           *string
+	mime_type       *string
+	size_bytes      *int64
+	addsize_bytes   *int64
+	content_hash    *string
+	clearedFields   map[string]struct{}
+	session         *uuid.UUID
+	clearedsession  bool
+	done            bool
+	oldValue        func(context.Context) (*AICapturePhoto, error)
+	predicates      []predicate.AICapturePhoto
+}
+
+var _ ent.Mutation = (*AICapturePhotoMutation)(nil)
+
+// aicapturephotoOption allows management of the mutation configuration using functional options.
+type aicapturephotoOption func(*AICapturePhotoMutation)
+
+// newAICapturePhotoMutation creates new mutation for the AICapturePhoto entity.
+func newAICapturePhotoMutation(c config, op Op, opts ...aicapturephotoOption) *AICapturePhotoMutation {
+	m := &AICapturePhotoMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAICapturePhoto,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAICapturePhotoID sets the ID field of the mutation.
+func withAICapturePhotoID(id uuid.UUID) aicapturephotoOption {
+	return func(m *AICapturePhotoMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AICapturePhoto
+		)
+		m.oldValue = func(ctx context.Context) (*AICapturePhoto, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AICapturePhoto.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAICapturePhoto sets the old AICapturePhoto of the mutation.
+func withAICapturePhoto(node *AICapturePhoto) aicapturephotoOption {
+	return func(m *AICapturePhotoMutation) {
+		m.oldValue = func(context.Context) (*AICapturePhoto, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AICapturePhotoMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AICapturePhotoMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of AICapturePhoto entities.
+func (m *AICapturePhotoMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AICapturePhotoMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AICapturePhotoMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AICapturePhoto.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AICapturePhotoMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AICapturePhotoMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AICapturePhotoMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AICapturePhotoMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AICapturePhotoMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AICapturePhotoMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *AICapturePhotoMutation) SetSessionID(u uuid.UUID) {
+	m.session = &u
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *AICapturePhotoMutation) SessionID() (r uuid.UUID, exists bool) {
+	v := m.session
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldSessionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *AICapturePhotoMutation) ResetSessionID() {
+	m.session = nil
+}
+
+// SetClientPhotoID sets the "client_photo_id" field.
+func (m *AICapturePhotoMutation) SetClientPhotoID(u uuid.UUID) {
+	m.client_photo_id = &u
+}
+
+// ClientPhotoID returns the value of the "client_photo_id" field in the mutation.
+func (m *AICapturePhotoMutation) ClientPhotoID() (r uuid.UUID, exists bool) {
+	v := m.client_photo_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClientPhotoID returns the old "client_photo_id" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldClientPhotoID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClientPhotoID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClientPhotoID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClientPhotoID: %w", err)
+	}
+	return oldValue.ClientPhotoID, nil
+}
+
+// ResetClientPhotoID resets all changes to the "client_photo_id" field.
+func (m *AICapturePhotoMutation) ResetClientPhotoID() {
+	m.client_photo_id = nil
+}
+
+// SetPosition sets the "position" field.
+func (m *AICapturePhotoMutation) SetPosition(i int) {
+	m.position = &i
+	m.addposition = nil
+}
+
+// Position returns the value of the "position" field in the mutation.
+func (m *AICapturePhotoMutation) Position() (r int, exists bool) {
+	v := m.position
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPosition returns the old "position" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldPosition(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPosition is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPosition requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPosition: %w", err)
+	}
+	return oldValue.Position, nil
+}
+
+// AddPosition adds i to the "position" field.
+func (m *AICapturePhotoMutation) AddPosition(i int) {
+	if m.addposition != nil {
+		*m.addposition += i
+	} else {
+		m.addposition = &i
+	}
+}
+
+// AddedPosition returns the value that was added to the "position" field in this mutation.
+func (m *AICapturePhotoMutation) AddedPosition() (r int, exists bool) {
+	v := m.addposition
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPosition resets all changes to the "position" field.
+func (m *AICapturePhotoMutation) ResetPosition() {
+	m.position = nil
+	m.addposition = nil
+}
+
+// SetOriginalName sets the "original_name" field.
+func (m *AICapturePhotoMutation) SetOriginalName(s string) {
+	m.original_name = &s
+}
+
+// OriginalName returns the value of the "original_name" field in the mutation.
+func (m *AICapturePhotoMutation) OriginalName() (r string, exists bool) {
+	v := m.original_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOriginalName returns the old "original_name" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldOriginalName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOriginalName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOriginalName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOriginalName: %w", err)
+	}
+	return oldValue.OriginalName, nil
+}
+
+// ResetOriginalName resets all changes to the "original_name" field.
+func (m *AICapturePhotoMutation) ResetOriginalName() {
+	m.original_name = nil
+}
+
+// SetPath sets the "path" field.
+func (m *AICapturePhotoMutation) SetPath(s string) {
+	m._path = &s
+}
+
+// Path returns the value of the "path" field in the mutation.
+func (m *AICapturePhotoMutation) Path() (r string, exists bool) {
+	v := m._path
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPath returns the old "path" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldPath(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPath is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPath requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPath: %w", err)
+	}
+	return oldValue.Path, nil
+}
+
+// ResetPath resets all changes to the "path" field.
+func (m *AICapturePhotoMutation) ResetPath() {
+	m._path = nil
+}
+
+// SetMimeType sets the "mime_type" field.
+func (m *AICapturePhotoMutation) SetMimeType(s string) {
+	m.mime_type = &s
+}
+
+// MimeType returns the value of the "mime_type" field in the mutation.
+func (m *AICapturePhotoMutation) MimeType() (r string, exists bool) {
+	v := m.mime_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMimeType returns the old "mime_type" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldMimeType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMimeType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMimeType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMimeType: %w", err)
+	}
+	return oldValue.MimeType, nil
+}
+
+// ResetMimeType resets all changes to the "mime_type" field.
+func (m *AICapturePhotoMutation) ResetMimeType() {
+	m.mime_type = nil
+}
+
+// SetSizeBytes sets the "size_bytes" field.
+func (m *AICapturePhotoMutation) SetSizeBytes(i int64) {
+	m.size_bytes = &i
+	m.addsize_bytes = nil
+}
+
+// SizeBytes returns the value of the "size_bytes" field in the mutation.
+func (m *AICapturePhotoMutation) SizeBytes() (r int64, exists bool) {
+	v := m.size_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSizeBytes returns the old "size_bytes" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldSizeBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSizeBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSizeBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSizeBytes: %w", err)
+	}
+	return oldValue.SizeBytes, nil
+}
+
+// AddSizeBytes adds i to the "size_bytes" field.
+func (m *AICapturePhotoMutation) AddSizeBytes(i int64) {
+	if m.addsize_bytes != nil {
+		*m.addsize_bytes += i
+	} else {
+		m.addsize_bytes = &i
+	}
+}
+
+// AddedSizeBytes returns the value that was added to the "size_bytes" field in this mutation.
+func (m *AICapturePhotoMutation) AddedSizeBytes() (r int64, exists bool) {
+	v := m.addsize_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSizeBytes resets all changes to the "size_bytes" field.
+func (m *AICapturePhotoMutation) ResetSizeBytes() {
+	m.size_bytes = nil
+	m.addsize_bytes = nil
+}
+
+// SetContentHash sets the "content_hash" field.
+func (m *AICapturePhotoMutation) SetContentHash(s string) {
+	m.content_hash = &s
+}
+
+// ContentHash returns the value of the "content_hash" field in the mutation.
+func (m *AICapturePhotoMutation) ContentHash() (r string, exists bool) {
+	v := m.content_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContentHash returns the old "content_hash" field's value of the AICapturePhoto entity.
+// If the AICapturePhoto object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICapturePhotoMutation) OldContentHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldContentHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldContentHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContentHash: %w", err)
+	}
+	return oldValue.ContentHash, nil
+}
+
+// ResetContentHash resets all changes to the "content_hash" field.
+func (m *AICapturePhotoMutation) ResetContentHash() {
+	m.content_hash = nil
+}
+
+// ClearSession clears the "session" edge to the AICaptureSession entity.
+func (m *AICapturePhotoMutation) ClearSession() {
+	m.clearedsession = true
+	m.clearedFields[aicapturephoto.FieldSessionID] = struct{}{}
+}
+
+// SessionCleared reports if the "session" edge to the AICaptureSession entity was cleared.
+func (m *AICapturePhotoMutation) SessionCleared() bool {
+	return m.clearedsession
+}
+
+// SessionIDs returns the "session" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SessionID instead. It exists only for internal usage by the builders.
+func (m *AICapturePhotoMutation) SessionIDs() (ids []uuid.UUID) {
+	if id := m.session; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSession resets all changes to the "session" edge.
+func (m *AICapturePhotoMutation) ResetSession() {
+	m.session = nil
+	m.clearedsession = false
+}
+
+// Where appends a list predicates to the AICapturePhotoMutation builder.
+func (m *AICapturePhotoMutation) Where(ps ...predicate.AICapturePhoto) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AICapturePhotoMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AICapturePhotoMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AICapturePhoto, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AICapturePhotoMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AICapturePhotoMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AICapturePhoto).
+func (m *AICapturePhotoMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AICapturePhotoMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, aicapturephoto.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, aicapturephoto.FieldUpdatedAt)
+	}
+	if m.session != nil {
+		fields = append(fields, aicapturephoto.FieldSessionID)
+	}
+	if m.client_photo_id != nil {
+		fields = append(fields, aicapturephoto.FieldClientPhotoID)
+	}
+	if m.position != nil {
+		fields = append(fields, aicapturephoto.FieldPosition)
+	}
+	if m.original_name != nil {
+		fields = append(fields, aicapturephoto.FieldOriginalName)
+	}
+	if m._path != nil {
+		fields = append(fields, aicapturephoto.FieldPath)
+	}
+	if m.mime_type != nil {
+		fields = append(fields, aicapturephoto.FieldMimeType)
+	}
+	if m.size_bytes != nil {
+		fields = append(fields, aicapturephoto.FieldSizeBytes)
+	}
+	if m.content_hash != nil {
+		fields = append(fields, aicapturephoto.FieldContentHash)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AICapturePhotoMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case aicapturephoto.FieldCreatedAt:
+		return m.CreatedAt()
+	case aicapturephoto.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case aicapturephoto.FieldSessionID:
+		return m.SessionID()
+	case aicapturephoto.FieldClientPhotoID:
+		return m.ClientPhotoID()
+	case aicapturephoto.FieldPosition:
+		return m.Position()
+	case aicapturephoto.FieldOriginalName:
+		return m.OriginalName()
+	case aicapturephoto.FieldPath:
+		return m.Path()
+	case aicapturephoto.FieldMimeType:
+		return m.MimeType()
+	case aicapturephoto.FieldSizeBytes:
+		return m.SizeBytes()
+	case aicapturephoto.FieldContentHash:
+		return m.ContentHash()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AICapturePhotoMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case aicapturephoto.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case aicapturephoto.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case aicapturephoto.FieldSessionID:
+		return m.OldSessionID(ctx)
+	case aicapturephoto.FieldClientPhotoID:
+		return m.OldClientPhotoID(ctx)
+	case aicapturephoto.FieldPosition:
+		return m.OldPosition(ctx)
+	case aicapturephoto.FieldOriginalName:
+		return m.OldOriginalName(ctx)
+	case aicapturephoto.FieldPath:
+		return m.OldPath(ctx)
+	case aicapturephoto.FieldMimeType:
+		return m.OldMimeType(ctx)
+	case aicapturephoto.FieldSizeBytes:
+		return m.OldSizeBytes(ctx)
+	case aicapturephoto.FieldContentHash:
+		return m.OldContentHash(ctx)
+	}
+	return nil, fmt.Errorf("unknown AICapturePhoto field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICapturePhotoMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case aicapturephoto.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case aicapturephoto.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case aicapturephoto.FieldSessionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	case aicapturephoto.FieldClientPhotoID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClientPhotoID(v)
+		return nil
+	case aicapturephoto.FieldPosition:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPosition(v)
+		return nil
+	case aicapturephoto.FieldOriginalName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOriginalName(v)
+		return nil
+	case aicapturephoto.FieldPath:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPath(v)
+		return nil
+	case aicapturephoto.FieldMimeType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMimeType(v)
+		return nil
+	case aicapturephoto.FieldSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSizeBytes(v)
+		return nil
+	case aicapturephoto.FieldContentHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContentHash(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AICapturePhoto field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AICapturePhotoMutation) AddedFields() []string {
+	var fields []string
+	if m.addposition != nil {
+		fields = append(fields, aicapturephoto.FieldPosition)
+	}
+	if m.addsize_bytes != nil {
+		fields = append(fields, aicapturephoto.FieldSizeBytes)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AICapturePhotoMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case aicapturephoto.FieldPosition:
+		return m.AddedPosition()
+	case aicapturephoto.FieldSizeBytes:
+		return m.AddedSizeBytes()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICapturePhotoMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case aicapturephoto.FieldPosition:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPosition(v)
+		return nil
+	case aicapturephoto.FieldSizeBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSizeBytes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AICapturePhoto numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AICapturePhotoMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AICapturePhotoMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AICapturePhotoMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown AICapturePhoto nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AICapturePhotoMutation) ResetField(name string) error {
+	switch name {
+	case aicapturephoto.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case aicapturephoto.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case aicapturephoto.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	case aicapturephoto.FieldClientPhotoID:
+		m.ResetClientPhotoID()
+		return nil
+	case aicapturephoto.FieldPosition:
+		m.ResetPosition()
+		return nil
+	case aicapturephoto.FieldOriginalName:
+		m.ResetOriginalName()
+		return nil
+	case aicapturephoto.FieldPath:
+		m.ResetPath()
+		return nil
+	case aicapturephoto.FieldMimeType:
+		m.ResetMimeType()
+		return nil
+	case aicapturephoto.FieldSizeBytes:
+		m.ResetSizeBytes()
+		return nil
+	case aicapturephoto.FieldContentHash:
+		m.ResetContentHash()
+		return nil
+	}
+	return fmt.Errorf("unknown AICapturePhoto field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AICapturePhotoMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.session != nil {
+		edges = append(edges, aicapturephoto.EdgeSession)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AICapturePhotoMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case aicapturephoto.EdgeSession:
+		if id := m.session; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AICapturePhotoMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AICapturePhotoMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AICapturePhotoMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedsession {
+		edges = append(edges, aicapturephoto.EdgeSession)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AICapturePhotoMutation) EdgeCleared(name string) bool {
+	switch name {
+	case aicapturephoto.EdgeSession:
+		return m.clearedsession
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AICapturePhotoMutation) ClearEdge(name string) error {
+	switch name {
+	case aicapturephoto.EdgeSession:
+		m.ClearSession()
+		return nil
+	}
+	return fmt.Errorf("unknown AICapturePhoto unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AICapturePhotoMutation) ResetEdge(name string) error {
+	switch name {
+	case aicapturephoto.EdgeSession:
+		m.ResetSession()
+		return nil
+	}
+	return fmt.Errorf("unknown AICapturePhoto edge %s", name)
+}
+
+// AICaptureSessionMutation represents an operation that mutates the AICaptureSession nodes in the graph.
+type AICaptureSessionMutation struct {
+	config
+	op                     Op
+	typ                    string
+	id                     *uuid.UUID
+	created_at             *time.Time
+	updated_at             *time.Time
+	location_name_snapshot *string
+	status                 *aicapturesession.Status
+	draft_json             *string
+	draft_revision         *int
+	adddraft_revision      *int
+	analysis_attempts      *int
+	addanalysis_attempts   *int
+	photo_count            *int
+	addphoto_count         *int
+	worker_lease_until     *time.Time
+	error_code             *string
+	error_message          *string
+	finished_at            *time.Time
+	analyzed_at            *time.Time
+	completed_at           *time.Time
+	expires_at             *time.Time
+	clearedFields          map[string]struct{}
+	group                  *uuid.UUID
+	clearedgroup           bool
+	user                   *uuid.UUID
+	cleareduser            bool
+	location               *uuid.UUID
+	clearedlocation        bool
+	photos                 map[uuid.UUID]struct{}
+	removedphotos          map[uuid.UUID]struct{}
+	clearedphotos          bool
+	items                  map[uuid.UUID]struct{}
+	removeditems           map[uuid.UUID]struct{}
+	cleareditems           bool
+	done                   bool
+	oldValue               func(context.Context) (*AICaptureSession, error)
+	predicates             []predicate.AICaptureSession
+}
+
+var _ ent.Mutation = (*AICaptureSessionMutation)(nil)
+
+// aicapturesessionOption allows management of the mutation configuration using functional options.
+type aicapturesessionOption func(*AICaptureSessionMutation)
+
+// newAICaptureSessionMutation creates new mutation for the AICaptureSession entity.
+func newAICaptureSessionMutation(c config, op Op, opts ...aicapturesessionOption) *AICaptureSessionMutation {
+	m := &AICaptureSessionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAICaptureSession,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAICaptureSessionID sets the ID field of the mutation.
+func withAICaptureSessionID(id uuid.UUID) aicapturesessionOption {
+	return func(m *AICaptureSessionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AICaptureSession
+		)
+		m.oldValue = func(ctx context.Context) (*AICaptureSession, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AICaptureSession.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAICaptureSession sets the old AICaptureSession of the mutation.
+func withAICaptureSession(node *AICaptureSession) aicapturesessionOption {
+	return func(m *AICaptureSessionMutation) {
+		m.oldValue = func(context.Context) (*AICaptureSession, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AICaptureSessionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AICaptureSessionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of AICaptureSession entities.
+func (m *AICaptureSessionMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AICaptureSessionMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AICaptureSessionMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AICaptureSession.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AICaptureSessionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AICaptureSessionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AICaptureSessionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AICaptureSessionMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AICaptureSessionMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AICaptureSessionMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *AICaptureSessionMutation) SetGroupID(u uuid.UUID) {
+	m.group = &u
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *AICaptureSessionMutation) GroupID() (r uuid.UUID, exists bool) {
+	v := m.group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldGroupID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *AICaptureSessionMutation) ResetGroupID() {
+	m.group = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *AICaptureSessionMutation) SetUserID(u uuid.UUID) {
+	m.user = &u
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *AICaptureSessionMutation) UserID() (r uuid.UUID, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldUserID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *AICaptureSessionMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetLocationID sets the "location_id" field.
+func (m *AICaptureSessionMutation) SetLocationID(u uuid.UUID) {
+	m.location = &u
+}
+
+// LocationID returns the value of the "location_id" field in the mutation.
+func (m *AICaptureSessionMutation) LocationID() (r uuid.UUID, exists bool) {
+	v := m.location
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocationID returns the old "location_id" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldLocationID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocationID: %w", err)
+	}
+	return oldValue.LocationID, nil
+}
+
+// ClearLocationID clears the value of the "location_id" field.
+func (m *AICaptureSessionMutation) ClearLocationID() {
+	m.location = nil
+	m.clearedFields[aicapturesession.FieldLocationID] = struct{}{}
+}
+
+// LocationIDCleared returns if the "location_id" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) LocationIDCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldLocationID]
+	return ok
+}
+
+// ResetLocationID resets all changes to the "location_id" field.
+func (m *AICaptureSessionMutation) ResetLocationID() {
+	m.location = nil
+	delete(m.clearedFields, aicapturesession.FieldLocationID)
+}
+
+// SetLocationNameSnapshot sets the "location_name_snapshot" field.
+func (m *AICaptureSessionMutation) SetLocationNameSnapshot(s string) {
+	m.location_name_snapshot = &s
+}
+
+// LocationNameSnapshot returns the value of the "location_name_snapshot" field in the mutation.
+func (m *AICaptureSessionMutation) LocationNameSnapshot() (r string, exists bool) {
+	v := m.location_name_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocationNameSnapshot returns the old "location_name_snapshot" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldLocationNameSnapshot(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocationNameSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocationNameSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocationNameSnapshot: %w", err)
+	}
+	return oldValue.LocationNameSnapshot, nil
+}
+
+// ResetLocationNameSnapshot resets all changes to the "location_name_snapshot" field.
+func (m *AICaptureSessionMutation) ResetLocationNameSnapshot() {
+	m.location_name_snapshot = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *AICaptureSessionMutation) SetStatus(a aicapturesession.Status) {
+	m.status = &a
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *AICaptureSessionMutation) Status() (r aicapturesession.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldStatus(ctx context.Context) (v aicapturesession.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *AICaptureSessionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetDraftJSON sets the "draft_json" field.
+func (m *AICaptureSessionMutation) SetDraftJSON(s string) {
+	m.draft_json = &s
+}
+
+// DraftJSON returns the value of the "draft_json" field in the mutation.
+func (m *AICaptureSessionMutation) DraftJSON() (r string, exists bool) {
+	v := m.draft_json
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDraftJSON returns the old "draft_json" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldDraftJSON(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDraftJSON is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDraftJSON requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDraftJSON: %w", err)
+	}
+	return oldValue.DraftJSON, nil
+}
+
+// ClearDraftJSON clears the value of the "draft_json" field.
+func (m *AICaptureSessionMutation) ClearDraftJSON() {
+	m.draft_json = nil
+	m.clearedFields[aicapturesession.FieldDraftJSON] = struct{}{}
+}
+
+// DraftJSONCleared returns if the "draft_json" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) DraftJSONCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldDraftJSON]
+	return ok
+}
+
+// ResetDraftJSON resets all changes to the "draft_json" field.
+func (m *AICaptureSessionMutation) ResetDraftJSON() {
+	m.draft_json = nil
+	delete(m.clearedFields, aicapturesession.FieldDraftJSON)
+}
+
+// SetDraftRevision sets the "draft_revision" field.
+func (m *AICaptureSessionMutation) SetDraftRevision(i int) {
+	m.draft_revision = &i
+	m.adddraft_revision = nil
+}
+
+// DraftRevision returns the value of the "draft_revision" field in the mutation.
+func (m *AICaptureSessionMutation) DraftRevision() (r int, exists bool) {
+	v := m.draft_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDraftRevision returns the old "draft_revision" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldDraftRevision(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDraftRevision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDraftRevision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDraftRevision: %w", err)
+	}
+	return oldValue.DraftRevision, nil
+}
+
+// AddDraftRevision adds i to the "draft_revision" field.
+func (m *AICaptureSessionMutation) AddDraftRevision(i int) {
+	if m.adddraft_revision != nil {
+		*m.adddraft_revision += i
+	} else {
+		m.adddraft_revision = &i
+	}
+}
+
+// AddedDraftRevision returns the value that was added to the "draft_revision" field in this mutation.
+func (m *AICaptureSessionMutation) AddedDraftRevision() (r int, exists bool) {
+	v := m.adddraft_revision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDraftRevision resets all changes to the "draft_revision" field.
+func (m *AICaptureSessionMutation) ResetDraftRevision() {
+	m.draft_revision = nil
+	m.adddraft_revision = nil
+}
+
+// SetAnalysisAttempts sets the "analysis_attempts" field.
+func (m *AICaptureSessionMutation) SetAnalysisAttempts(i int) {
+	m.analysis_attempts = &i
+	m.addanalysis_attempts = nil
+}
+
+// AnalysisAttempts returns the value of the "analysis_attempts" field in the mutation.
+func (m *AICaptureSessionMutation) AnalysisAttempts() (r int, exists bool) {
+	v := m.analysis_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnalysisAttempts returns the old "analysis_attempts" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldAnalysisAttempts(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnalysisAttempts is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnalysisAttempts requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnalysisAttempts: %w", err)
+	}
+	return oldValue.AnalysisAttempts, nil
+}
+
+// AddAnalysisAttempts adds i to the "analysis_attempts" field.
+func (m *AICaptureSessionMutation) AddAnalysisAttempts(i int) {
+	if m.addanalysis_attempts != nil {
+		*m.addanalysis_attempts += i
+	} else {
+		m.addanalysis_attempts = &i
+	}
+}
+
+// AddedAnalysisAttempts returns the value that was added to the "analysis_attempts" field in this mutation.
+func (m *AICaptureSessionMutation) AddedAnalysisAttempts() (r int, exists bool) {
+	v := m.addanalysis_attempts
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAnalysisAttempts resets all changes to the "analysis_attempts" field.
+func (m *AICaptureSessionMutation) ResetAnalysisAttempts() {
+	m.analysis_attempts = nil
+	m.addanalysis_attempts = nil
+}
+
+// SetPhotoCount sets the "photo_count" field.
+func (m *AICaptureSessionMutation) SetPhotoCount(i int) {
+	m.photo_count = &i
+	m.addphoto_count = nil
+}
+
+// PhotoCount returns the value of the "photo_count" field in the mutation.
+func (m *AICaptureSessionMutation) PhotoCount() (r int, exists bool) {
+	v := m.photo_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPhotoCount returns the old "photo_count" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldPhotoCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPhotoCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPhotoCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPhotoCount: %w", err)
+	}
+	return oldValue.PhotoCount, nil
+}
+
+// AddPhotoCount adds i to the "photo_count" field.
+func (m *AICaptureSessionMutation) AddPhotoCount(i int) {
+	if m.addphoto_count != nil {
+		*m.addphoto_count += i
+	} else {
+		m.addphoto_count = &i
+	}
+}
+
+// AddedPhotoCount returns the value that was added to the "photo_count" field in this mutation.
+func (m *AICaptureSessionMutation) AddedPhotoCount() (r int, exists bool) {
+	v := m.addphoto_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPhotoCount resets all changes to the "photo_count" field.
+func (m *AICaptureSessionMutation) ResetPhotoCount() {
+	m.photo_count = nil
+	m.addphoto_count = nil
+}
+
+// SetWorkerLeaseUntil sets the "worker_lease_until" field.
+func (m *AICaptureSessionMutation) SetWorkerLeaseUntil(t time.Time) {
+	m.worker_lease_until = &t
+}
+
+// WorkerLeaseUntil returns the value of the "worker_lease_until" field in the mutation.
+func (m *AICaptureSessionMutation) WorkerLeaseUntil() (r time.Time, exists bool) {
+	v := m.worker_lease_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWorkerLeaseUntil returns the old "worker_lease_until" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldWorkerLeaseUntil(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWorkerLeaseUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWorkerLeaseUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWorkerLeaseUntil: %w", err)
+	}
+	return oldValue.WorkerLeaseUntil, nil
+}
+
+// ClearWorkerLeaseUntil clears the value of the "worker_lease_until" field.
+func (m *AICaptureSessionMutation) ClearWorkerLeaseUntil() {
+	m.worker_lease_until = nil
+	m.clearedFields[aicapturesession.FieldWorkerLeaseUntil] = struct{}{}
+}
+
+// WorkerLeaseUntilCleared returns if the "worker_lease_until" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) WorkerLeaseUntilCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldWorkerLeaseUntil]
+	return ok
+}
+
+// ResetWorkerLeaseUntil resets all changes to the "worker_lease_until" field.
+func (m *AICaptureSessionMutation) ResetWorkerLeaseUntil() {
+	m.worker_lease_until = nil
+	delete(m.clearedFields, aicapturesession.FieldWorkerLeaseUntil)
+}
+
+// SetErrorCode sets the "error_code" field.
+func (m *AICaptureSessionMutation) SetErrorCode(s string) {
+	m.error_code = &s
+}
+
+// ErrorCode returns the value of the "error_code" field in the mutation.
+func (m *AICaptureSessionMutation) ErrorCode() (r string, exists bool) {
+	v := m.error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCode returns the old "error_code" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCode: %w", err)
+	}
+	return oldValue.ErrorCode, nil
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (m *AICaptureSessionMutation) ClearErrorCode() {
+	m.error_code = nil
+	m.clearedFields[aicapturesession.FieldErrorCode] = struct{}{}
+}
+
+// ErrorCodeCleared returns if the "error_code" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ErrorCodeCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldErrorCode]
+	return ok
+}
+
+// ResetErrorCode resets all changes to the "error_code" field.
+func (m *AICaptureSessionMutation) ResetErrorCode() {
+	m.error_code = nil
+	delete(m.clearedFields, aicapturesession.FieldErrorCode)
+}
+
+// SetErrorMessage sets the "error_message" field.
+func (m *AICaptureSessionMutation) SetErrorMessage(s string) {
+	m.error_message = &s
+}
+
+// ErrorMessage returns the value of the "error_message" field in the mutation.
+func (m *AICaptureSessionMutation) ErrorMessage() (r string, exists bool) {
+	v := m.error_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorMessage returns the old "error_message" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldErrorMessage(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorMessage: %w", err)
+	}
+	return oldValue.ErrorMessage, nil
+}
+
+// ClearErrorMessage clears the value of the "error_message" field.
+func (m *AICaptureSessionMutation) ClearErrorMessage() {
+	m.error_message = nil
+	m.clearedFields[aicapturesession.FieldErrorMessage] = struct{}{}
+}
+
+// ErrorMessageCleared returns if the "error_message" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) ErrorMessageCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldErrorMessage]
+	return ok
+}
+
+// ResetErrorMessage resets all changes to the "error_message" field.
+func (m *AICaptureSessionMutation) ResetErrorMessage() {
+	m.error_message = nil
+	delete(m.clearedFields, aicapturesession.FieldErrorMessage)
+}
+
+// SetFinishedAt sets the "finished_at" field.
+func (m *AICaptureSessionMutation) SetFinishedAt(t time.Time) {
+	m.finished_at = &t
+}
+
+// FinishedAt returns the value of the "finished_at" field in the mutation.
+func (m *AICaptureSessionMutation) FinishedAt() (r time.Time, exists bool) {
+	v := m.finished_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFinishedAt returns the old "finished_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldFinishedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFinishedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFinishedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFinishedAt: %w", err)
+	}
+	return oldValue.FinishedAt, nil
+}
+
+// ClearFinishedAt clears the value of the "finished_at" field.
+func (m *AICaptureSessionMutation) ClearFinishedAt() {
+	m.finished_at = nil
+	m.clearedFields[aicapturesession.FieldFinishedAt] = struct{}{}
+}
+
+// FinishedAtCleared returns if the "finished_at" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) FinishedAtCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldFinishedAt]
+	return ok
+}
+
+// ResetFinishedAt resets all changes to the "finished_at" field.
+func (m *AICaptureSessionMutation) ResetFinishedAt() {
+	m.finished_at = nil
+	delete(m.clearedFields, aicapturesession.FieldFinishedAt)
+}
+
+// SetAnalyzedAt sets the "analyzed_at" field.
+func (m *AICaptureSessionMutation) SetAnalyzedAt(t time.Time) {
+	m.analyzed_at = &t
+}
+
+// AnalyzedAt returns the value of the "analyzed_at" field in the mutation.
+func (m *AICaptureSessionMutation) AnalyzedAt() (r time.Time, exists bool) {
+	v := m.analyzed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAnalyzedAt returns the old "analyzed_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldAnalyzedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAnalyzedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAnalyzedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAnalyzedAt: %w", err)
+	}
+	return oldValue.AnalyzedAt, nil
+}
+
+// ClearAnalyzedAt clears the value of the "analyzed_at" field.
+func (m *AICaptureSessionMutation) ClearAnalyzedAt() {
+	m.analyzed_at = nil
+	m.clearedFields[aicapturesession.FieldAnalyzedAt] = struct{}{}
+}
+
+// AnalyzedAtCleared returns if the "analyzed_at" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) AnalyzedAtCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldAnalyzedAt]
+	return ok
+}
+
+// ResetAnalyzedAt resets all changes to the "analyzed_at" field.
+func (m *AICaptureSessionMutation) ResetAnalyzedAt() {
+	m.analyzed_at = nil
+	delete(m.clearedFields, aicapturesession.FieldAnalyzedAt)
+}
+
+// SetCompletedAt sets the "completed_at" field.
+func (m *AICaptureSessionMutation) SetCompletedAt(t time.Time) {
+	m.completed_at = &t
+}
+
+// CompletedAt returns the value of the "completed_at" field in the mutation.
+func (m *AICaptureSessionMutation) CompletedAt() (r time.Time, exists bool) {
+	v := m.completed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCompletedAt returns the old "completed_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldCompletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCompletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCompletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCompletedAt: %w", err)
+	}
+	return oldValue.CompletedAt, nil
+}
+
+// ClearCompletedAt clears the value of the "completed_at" field.
+func (m *AICaptureSessionMutation) ClearCompletedAt() {
+	m.completed_at = nil
+	m.clearedFields[aicapturesession.FieldCompletedAt] = struct{}{}
+}
+
+// CompletedAtCleared returns if the "completed_at" field was cleared in this mutation.
+func (m *AICaptureSessionMutation) CompletedAtCleared() bool {
+	_, ok := m.clearedFields[aicapturesession.FieldCompletedAt]
+	return ok
+}
+
+// ResetCompletedAt resets all changes to the "completed_at" field.
+func (m *AICaptureSessionMutation) ResetCompletedAt() {
+	m.completed_at = nil
+	delete(m.clearedFields, aicapturesession.FieldCompletedAt)
+}
+
+// SetExpiresAt sets the "expires_at" field.
+func (m *AICaptureSessionMutation) SetExpiresAt(t time.Time) {
+	m.expires_at = &t
+}
+
+// ExpiresAt returns the value of the "expires_at" field in the mutation.
+func (m *AICaptureSessionMutation) ExpiresAt() (r time.Time, exists bool) {
+	v := m.expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExpiresAt returns the old "expires_at" field's value of the AICaptureSession entity.
+// If the AICaptureSession object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionMutation) OldExpiresAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExpiresAt: %w", err)
+	}
+	return oldValue.ExpiresAt, nil
+}
+
+// ResetExpiresAt resets all changes to the "expires_at" field.
+func (m *AICaptureSessionMutation) ResetExpiresAt() {
+	m.expires_at = nil
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *AICaptureSessionMutation) ClearGroup() {
+	m.clearedgroup = true
+	m.clearedFields[aicapturesession.FieldGroupID] = struct{}{}
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *AICaptureSessionMutation) GroupCleared() bool {
+	return m.clearedgroup
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *AICaptureSessionMutation) GroupIDs() (ids []uuid.UUID) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *AICaptureSessionMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *AICaptureSessionMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[aicapturesession.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *AICaptureSessionMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *AICaptureSessionMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *AICaptureSessionMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearLocation clears the "location" edge to the Entity entity.
+func (m *AICaptureSessionMutation) ClearLocation() {
+	m.clearedlocation = true
+	m.clearedFields[aicapturesession.FieldLocationID] = struct{}{}
+}
+
+// LocationCleared reports if the "location" edge to the Entity entity was cleared.
+func (m *AICaptureSessionMutation) LocationCleared() bool {
+	return m.LocationIDCleared() || m.clearedlocation
+}
+
+// LocationIDs returns the "location" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// LocationID instead. It exists only for internal usage by the builders.
+func (m *AICaptureSessionMutation) LocationIDs() (ids []uuid.UUID) {
+	if id := m.location; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetLocation resets all changes to the "location" edge.
+func (m *AICaptureSessionMutation) ResetLocation() {
+	m.location = nil
+	m.clearedlocation = false
+}
+
+// AddPhotoIDs adds the "photos" edge to the AICapturePhoto entity by ids.
+func (m *AICaptureSessionMutation) AddPhotoIDs(ids ...uuid.UUID) {
+	if m.photos == nil {
+		m.photos = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.photos[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPhotos clears the "photos" edge to the AICapturePhoto entity.
+func (m *AICaptureSessionMutation) ClearPhotos() {
+	m.clearedphotos = true
+}
+
+// PhotosCleared reports if the "photos" edge to the AICapturePhoto entity was cleared.
+func (m *AICaptureSessionMutation) PhotosCleared() bool {
+	return m.clearedphotos
+}
+
+// RemovePhotoIDs removes the "photos" edge to the AICapturePhoto entity by IDs.
+func (m *AICaptureSessionMutation) RemovePhotoIDs(ids ...uuid.UUID) {
+	if m.removedphotos == nil {
+		m.removedphotos = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.photos, ids[i])
+		m.removedphotos[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPhotos returns the removed IDs of the "photos" edge to the AICapturePhoto entity.
+func (m *AICaptureSessionMutation) RemovedPhotosIDs() (ids []uuid.UUID) {
+	for id := range m.removedphotos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PhotosIDs returns the "photos" edge IDs in the mutation.
+func (m *AICaptureSessionMutation) PhotosIDs() (ids []uuid.UUID) {
+	for id := range m.photos {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPhotos resets all changes to the "photos" edge.
+func (m *AICaptureSessionMutation) ResetPhotos() {
+	m.photos = nil
+	m.clearedphotos = false
+	m.removedphotos = nil
+}
+
+// AddItemIDs adds the "items" edge to the AICaptureSessionItem entity by ids.
+func (m *AICaptureSessionMutation) AddItemIDs(ids ...uuid.UUID) {
+	if m.items == nil {
+		m.items = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.items[ids[i]] = struct{}{}
+	}
+}
+
+// ClearItems clears the "items" edge to the AICaptureSessionItem entity.
+func (m *AICaptureSessionMutation) ClearItems() {
+	m.cleareditems = true
+}
+
+// ItemsCleared reports if the "items" edge to the AICaptureSessionItem entity was cleared.
+func (m *AICaptureSessionMutation) ItemsCleared() bool {
+	return m.cleareditems
+}
+
+// RemoveItemIDs removes the "items" edge to the AICaptureSessionItem entity by IDs.
+func (m *AICaptureSessionMutation) RemoveItemIDs(ids ...uuid.UUID) {
+	if m.removeditems == nil {
+		m.removeditems = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.items, ids[i])
+		m.removeditems[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedItems returns the removed IDs of the "items" edge to the AICaptureSessionItem entity.
+func (m *AICaptureSessionMutation) RemovedItemsIDs() (ids []uuid.UUID) {
+	for id := range m.removeditems {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ItemsIDs returns the "items" edge IDs in the mutation.
+func (m *AICaptureSessionMutation) ItemsIDs() (ids []uuid.UUID) {
+	for id := range m.items {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetItems resets all changes to the "items" edge.
+func (m *AICaptureSessionMutation) ResetItems() {
+	m.items = nil
+	m.cleareditems = false
+	m.removeditems = nil
+}
+
+// Where appends a list predicates to the AICaptureSessionMutation builder.
+func (m *AICaptureSessionMutation) Where(ps ...predicate.AICaptureSession) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AICaptureSessionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AICaptureSessionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AICaptureSession, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AICaptureSessionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AICaptureSessionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AICaptureSession).
+func (m *AICaptureSessionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AICaptureSessionMutation) Fields() []string {
+	fields := make([]string, 0, 18)
+	if m.created_at != nil {
+		fields = append(fields, aicapturesession.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, aicapturesession.FieldUpdatedAt)
+	}
+	if m.group != nil {
+		fields = append(fields, aicapturesession.FieldGroupID)
+	}
+	if m.user != nil {
+		fields = append(fields, aicapturesession.FieldUserID)
+	}
+	if m.location != nil {
+		fields = append(fields, aicapturesession.FieldLocationID)
+	}
+	if m.location_name_snapshot != nil {
+		fields = append(fields, aicapturesession.FieldLocationNameSnapshot)
+	}
+	if m.status != nil {
+		fields = append(fields, aicapturesession.FieldStatus)
+	}
+	if m.draft_json != nil {
+		fields = append(fields, aicapturesession.FieldDraftJSON)
+	}
+	if m.draft_revision != nil {
+		fields = append(fields, aicapturesession.FieldDraftRevision)
+	}
+	if m.analysis_attempts != nil {
+		fields = append(fields, aicapturesession.FieldAnalysisAttempts)
+	}
+	if m.photo_count != nil {
+		fields = append(fields, aicapturesession.FieldPhotoCount)
+	}
+	if m.worker_lease_until != nil {
+		fields = append(fields, aicapturesession.FieldWorkerLeaseUntil)
+	}
+	if m.error_code != nil {
+		fields = append(fields, aicapturesession.FieldErrorCode)
+	}
+	if m.error_message != nil {
+		fields = append(fields, aicapturesession.FieldErrorMessage)
+	}
+	if m.finished_at != nil {
+		fields = append(fields, aicapturesession.FieldFinishedAt)
+	}
+	if m.analyzed_at != nil {
+		fields = append(fields, aicapturesession.FieldAnalyzedAt)
+	}
+	if m.completed_at != nil {
+		fields = append(fields, aicapturesession.FieldCompletedAt)
+	}
+	if m.expires_at != nil {
+		fields = append(fields, aicapturesession.FieldExpiresAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AICaptureSessionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case aicapturesession.FieldCreatedAt:
+		return m.CreatedAt()
+	case aicapturesession.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case aicapturesession.FieldGroupID:
+		return m.GroupID()
+	case aicapturesession.FieldUserID:
+		return m.UserID()
+	case aicapturesession.FieldLocationID:
+		return m.LocationID()
+	case aicapturesession.FieldLocationNameSnapshot:
+		return m.LocationNameSnapshot()
+	case aicapturesession.FieldStatus:
+		return m.Status()
+	case aicapturesession.FieldDraftJSON:
+		return m.DraftJSON()
+	case aicapturesession.FieldDraftRevision:
+		return m.DraftRevision()
+	case aicapturesession.FieldAnalysisAttempts:
+		return m.AnalysisAttempts()
+	case aicapturesession.FieldPhotoCount:
+		return m.PhotoCount()
+	case aicapturesession.FieldWorkerLeaseUntil:
+		return m.WorkerLeaseUntil()
+	case aicapturesession.FieldErrorCode:
+		return m.ErrorCode()
+	case aicapturesession.FieldErrorMessage:
+		return m.ErrorMessage()
+	case aicapturesession.FieldFinishedAt:
+		return m.FinishedAt()
+	case aicapturesession.FieldAnalyzedAt:
+		return m.AnalyzedAt()
+	case aicapturesession.FieldCompletedAt:
+		return m.CompletedAt()
+	case aicapturesession.FieldExpiresAt:
+		return m.ExpiresAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AICaptureSessionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case aicapturesession.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case aicapturesession.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case aicapturesession.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case aicapturesession.FieldUserID:
+		return m.OldUserID(ctx)
+	case aicapturesession.FieldLocationID:
+		return m.OldLocationID(ctx)
+	case aicapturesession.FieldLocationNameSnapshot:
+		return m.OldLocationNameSnapshot(ctx)
+	case aicapturesession.FieldStatus:
+		return m.OldStatus(ctx)
+	case aicapturesession.FieldDraftJSON:
+		return m.OldDraftJSON(ctx)
+	case aicapturesession.FieldDraftRevision:
+		return m.OldDraftRevision(ctx)
+	case aicapturesession.FieldAnalysisAttempts:
+		return m.OldAnalysisAttempts(ctx)
+	case aicapturesession.FieldPhotoCount:
+		return m.OldPhotoCount(ctx)
+	case aicapturesession.FieldWorkerLeaseUntil:
+		return m.OldWorkerLeaseUntil(ctx)
+	case aicapturesession.FieldErrorCode:
+		return m.OldErrorCode(ctx)
+	case aicapturesession.FieldErrorMessage:
+		return m.OldErrorMessage(ctx)
+	case aicapturesession.FieldFinishedAt:
+		return m.OldFinishedAt(ctx)
+	case aicapturesession.FieldAnalyzedAt:
+		return m.OldAnalyzedAt(ctx)
+	case aicapturesession.FieldCompletedAt:
+		return m.OldCompletedAt(ctx)
+	case aicapturesession.FieldExpiresAt:
+		return m.OldExpiresAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown AICaptureSession field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICaptureSessionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case aicapturesession.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case aicapturesession.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case aicapturesession.FieldGroupID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case aicapturesession.FieldUserID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case aicapturesession.FieldLocationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocationID(v)
+		return nil
+	case aicapturesession.FieldLocationNameSnapshot:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocationNameSnapshot(v)
+		return nil
+	case aicapturesession.FieldStatus:
+		v, ok := value.(aicapturesession.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case aicapturesession.FieldDraftJSON:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDraftJSON(v)
+		return nil
+	case aicapturesession.FieldDraftRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDraftRevision(v)
+		return nil
+	case aicapturesession.FieldAnalysisAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnalysisAttempts(v)
+		return nil
+	case aicapturesession.FieldPhotoCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPhotoCount(v)
+		return nil
+	case aicapturesession.FieldWorkerLeaseUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWorkerLeaseUntil(v)
+		return nil
+	case aicapturesession.FieldErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCode(v)
+		return nil
+	case aicapturesession.FieldErrorMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorMessage(v)
+		return nil
+	case aicapturesession.FieldFinishedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFinishedAt(v)
+		return nil
+	case aicapturesession.FieldAnalyzedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAnalyzedAt(v)
+		return nil
+	case aicapturesession.FieldCompletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCompletedAt(v)
+		return nil
+	case aicapturesession.FieldExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExpiresAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AICaptureSessionMutation) AddedFields() []string {
+	var fields []string
+	if m.adddraft_revision != nil {
+		fields = append(fields, aicapturesession.FieldDraftRevision)
+	}
+	if m.addanalysis_attempts != nil {
+		fields = append(fields, aicapturesession.FieldAnalysisAttempts)
+	}
+	if m.addphoto_count != nil {
+		fields = append(fields, aicapturesession.FieldPhotoCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AICaptureSessionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case aicapturesession.FieldDraftRevision:
+		return m.AddedDraftRevision()
+	case aicapturesession.FieldAnalysisAttempts:
+		return m.AddedAnalysisAttempts()
+	case aicapturesession.FieldPhotoCount:
+		return m.AddedPhotoCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICaptureSessionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case aicapturesession.FieldDraftRevision:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDraftRevision(v)
+		return nil
+	case aicapturesession.FieldAnalysisAttempts:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAnalysisAttempts(v)
+		return nil
+	case aicapturesession.FieldPhotoCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPhotoCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AICaptureSessionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(aicapturesession.FieldLocationID) {
+		fields = append(fields, aicapturesession.FieldLocationID)
+	}
+	if m.FieldCleared(aicapturesession.FieldDraftJSON) {
+		fields = append(fields, aicapturesession.FieldDraftJSON)
+	}
+	if m.FieldCleared(aicapturesession.FieldWorkerLeaseUntil) {
+		fields = append(fields, aicapturesession.FieldWorkerLeaseUntil)
+	}
+	if m.FieldCleared(aicapturesession.FieldErrorCode) {
+		fields = append(fields, aicapturesession.FieldErrorCode)
+	}
+	if m.FieldCleared(aicapturesession.FieldErrorMessage) {
+		fields = append(fields, aicapturesession.FieldErrorMessage)
+	}
+	if m.FieldCleared(aicapturesession.FieldFinishedAt) {
+		fields = append(fields, aicapturesession.FieldFinishedAt)
+	}
+	if m.FieldCleared(aicapturesession.FieldAnalyzedAt) {
+		fields = append(fields, aicapturesession.FieldAnalyzedAt)
+	}
+	if m.FieldCleared(aicapturesession.FieldCompletedAt) {
+		fields = append(fields, aicapturesession.FieldCompletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AICaptureSessionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AICaptureSessionMutation) ClearField(name string) error {
+	switch name {
+	case aicapturesession.FieldLocationID:
+		m.ClearLocationID()
+		return nil
+	case aicapturesession.FieldDraftJSON:
+		m.ClearDraftJSON()
+		return nil
+	case aicapturesession.FieldWorkerLeaseUntil:
+		m.ClearWorkerLeaseUntil()
+		return nil
+	case aicapturesession.FieldErrorCode:
+		m.ClearErrorCode()
+		return nil
+	case aicapturesession.FieldErrorMessage:
+		m.ClearErrorMessage()
+		return nil
+	case aicapturesession.FieldFinishedAt:
+		m.ClearFinishedAt()
+		return nil
+	case aicapturesession.FieldAnalyzedAt:
+		m.ClearAnalyzedAt()
+		return nil
+	case aicapturesession.FieldCompletedAt:
+		m.ClearCompletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AICaptureSessionMutation) ResetField(name string) error {
+	switch name {
+	case aicapturesession.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case aicapturesession.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case aicapturesession.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case aicapturesession.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case aicapturesession.FieldLocationID:
+		m.ResetLocationID()
+		return nil
+	case aicapturesession.FieldLocationNameSnapshot:
+		m.ResetLocationNameSnapshot()
+		return nil
+	case aicapturesession.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case aicapturesession.FieldDraftJSON:
+		m.ResetDraftJSON()
+		return nil
+	case aicapturesession.FieldDraftRevision:
+		m.ResetDraftRevision()
+		return nil
+	case aicapturesession.FieldAnalysisAttempts:
+		m.ResetAnalysisAttempts()
+		return nil
+	case aicapturesession.FieldPhotoCount:
+		m.ResetPhotoCount()
+		return nil
+	case aicapturesession.FieldWorkerLeaseUntil:
+		m.ResetWorkerLeaseUntil()
+		return nil
+	case aicapturesession.FieldErrorCode:
+		m.ResetErrorCode()
+		return nil
+	case aicapturesession.FieldErrorMessage:
+		m.ResetErrorMessage()
+		return nil
+	case aicapturesession.FieldFinishedAt:
+		m.ResetFinishedAt()
+		return nil
+	case aicapturesession.FieldAnalyzedAt:
+		m.ResetAnalyzedAt()
+		return nil
+	case aicapturesession.FieldCompletedAt:
+		m.ResetCompletedAt()
+		return nil
+	case aicapturesession.FieldExpiresAt:
+		m.ResetExpiresAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AICaptureSessionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.group != nil {
+		edges = append(edges, aicapturesession.EdgeGroup)
+	}
+	if m.user != nil {
+		edges = append(edges, aicapturesession.EdgeUser)
+	}
+	if m.location != nil {
+		edges = append(edges, aicapturesession.EdgeLocation)
+	}
+	if m.photos != nil {
+		edges = append(edges, aicapturesession.EdgePhotos)
+	}
+	if m.items != nil {
+		edges = append(edges, aicapturesession.EdgeItems)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AICaptureSessionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case aicapturesession.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
+	case aicapturesession.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case aicapturesession.EdgeLocation:
+		if id := m.location; id != nil {
+			return []ent.Value{*id}
+		}
+	case aicapturesession.EdgePhotos:
+		ids := make([]ent.Value, 0, len(m.photos))
+		for id := range m.photos {
+			ids = append(ids, id)
+		}
+		return ids
+	case aicapturesession.EdgeItems:
+		ids := make([]ent.Value, 0, len(m.items))
+		for id := range m.items {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AICaptureSessionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.removedphotos != nil {
+		edges = append(edges, aicapturesession.EdgePhotos)
+	}
+	if m.removeditems != nil {
+		edges = append(edges, aicapturesession.EdgeItems)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AICaptureSessionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case aicapturesession.EdgePhotos:
+		ids := make([]ent.Value, 0, len(m.removedphotos))
+		for id := range m.removedphotos {
+			ids = append(ids, id)
+		}
+		return ids
+	case aicapturesession.EdgeItems:
+		ids := make([]ent.Value, 0, len(m.removeditems))
+		for id := range m.removeditems {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AICaptureSessionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.clearedgroup {
+		edges = append(edges, aicapturesession.EdgeGroup)
+	}
+	if m.cleareduser {
+		edges = append(edges, aicapturesession.EdgeUser)
+	}
+	if m.clearedlocation {
+		edges = append(edges, aicapturesession.EdgeLocation)
+	}
+	if m.clearedphotos {
+		edges = append(edges, aicapturesession.EdgePhotos)
+	}
+	if m.cleareditems {
+		edges = append(edges, aicapturesession.EdgeItems)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AICaptureSessionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case aicapturesession.EdgeGroup:
+		return m.clearedgroup
+	case aicapturesession.EdgeUser:
+		return m.cleareduser
+	case aicapturesession.EdgeLocation:
+		return m.clearedlocation
+	case aicapturesession.EdgePhotos:
+		return m.clearedphotos
+	case aicapturesession.EdgeItems:
+		return m.cleareditems
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AICaptureSessionMutation) ClearEdge(name string) error {
+	switch name {
+	case aicapturesession.EdgeGroup:
+		m.ClearGroup()
+		return nil
+	case aicapturesession.EdgeUser:
+		m.ClearUser()
+		return nil
+	case aicapturesession.EdgeLocation:
+		m.ClearLocation()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AICaptureSessionMutation) ResetEdge(name string) error {
+	switch name {
+	case aicapturesession.EdgeGroup:
+		m.ResetGroup()
+		return nil
+	case aicapturesession.EdgeUser:
+		m.ResetUser()
+		return nil
+	case aicapturesession.EdgeLocation:
+		m.ResetLocation()
+		return nil
+	case aicapturesession.EdgePhotos:
+		m.ResetPhotos()
+		return nil
+	case aicapturesession.EdgeItems:
+		m.ResetItems()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSession edge %s", name)
+}
+
+// AICaptureSessionItemMutation represents an operation that mutates the AICaptureSessionItem nodes in the graph.
+type AICaptureSessionItemMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	created_at         *time.Time
+	updated_at         *time.Time
+	client_id          *string
+	entity_id          *uuid.UUID
+	status             *aicapturesessionitem.Status
+	uploaded_photo_ids *string
+	error_code         *string
+	clearedFields      map[string]struct{}
+	session            *uuid.UUID
+	clearedsession     bool
+	done               bool
+	oldValue           func(context.Context) (*AICaptureSessionItem, error)
+	predicates         []predicate.AICaptureSessionItem
+}
+
+var _ ent.Mutation = (*AICaptureSessionItemMutation)(nil)
+
+// aicapturesessionitemOption allows management of the mutation configuration using functional options.
+type aicapturesessionitemOption func(*AICaptureSessionItemMutation)
+
+// newAICaptureSessionItemMutation creates new mutation for the AICaptureSessionItem entity.
+func newAICaptureSessionItemMutation(c config, op Op, opts ...aicapturesessionitemOption) *AICaptureSessionItemMutation {
+	m := &AICaptureSessionItemMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAICaptureSessionItem,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAICaptureSessionItemID sets the ID field of the mutation.
+func withAICaptureSessionItemID(id uuid.UUID) aicapturesessionitemOption {
+	return func(m *AICaptureSessionItemMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AICaptureSessionItem
+		)
+		m.oldValue = func(ctx context.Context) (*AICaptureSessionItem, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AICaptureSessionItem.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAICaptureSessionItem sets the old AICaptureSessionItem of the mutation.
+func withAICaptureSessionItem(node *AICaptureSessionItem) aicapturesessionitemOption {
+	return func(m *AICaptureSessionItemMutation) {
+		m.oldValue = func(context.Context) (*AICaptureSessionItem, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AICaptureSessionItemMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AICaptureSessionItemMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of AICaptureSessionItem entities.
+func (m *AICaptureSessionItemMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AICaptureSessionItemMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AICaptureSessionItemMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AICaptureSessionItem.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AICaptureSessionItemMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AICaptureSessionItemMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AICaptureSessionItemMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AICaptureSessionItemMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AICaptureSessionItemMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AICaptureSessionItemMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSessionID sets the "session_id" field.
+func (m *AICaptureSessionItemMutation) SetSessionID(u uuid.UUID) {
+	m.session = &u
+}
+
+// SessionID returns the value of the "session_id" field in the mutation.
+func (m *AICaptureSessionItemMutation) SessionID() (r uuid.UUID, exists bool) {
+	v := m.session
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSessionID returns the old "session_id" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldSessionID(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSessionID: %w", err)
+	}
+	return oldValue.SessionID, nil
+}
+
+// ResetSessionID resets all changes to the "session_id" field.
+func (m *AICaptureSessionItemMutation) ResetSessionID() {
+	m.session = nil
+}
+
+// SetClientID sets the "client_id" field.
+func (m *AICaptureSessionItemMutation) SetClientID(s string) {
+	m.client_id = &s
+}
+
+// ClientID returns the value of the "client_id" field in the mutation.
+func (m *AICaptureSessionItemMutation) ClientID() (r string, exists bool) {
+	v := m.client_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClientID returns the old "client_id" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldClientID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClientID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClientID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClientID: %w", err)
+	}
+	return oldValue.ClientID, nil
+}
+
+// ResetClientID resets all changes to the "client_id" field.
+func (m *AICaptureSessionItemMutation) ResetClientID() {
+	m.client_id = nil
+}
+
+// SetEntityID sets the "entity_id" field.
+func (m *AICaptureSessionItemMutation) SetEntityID(u uuid.UUID) {
+	m.entity_id = &u
+}
+
+// EntityID returns the value of the "entity_id" field in the mutation.
+func (m *AICaptureSessionItemMutation) EntityID() (r uuid.UUID, exists bool) {
+	v := m.entity_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEntityID returns the old "entity_id" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldEntityID(ctx context.Context) (v *uuid.UUID, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEntityID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEntityID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEntityID: %w", err)
+	}
+	return oldValue.EntityID, nil
+}
+
+// ClearEntityID clears the value of the "entity_id" field.
+func (m *AICaptureSessionItemMutation) ClearEntityID() {
+	m.entity_id = nil
+	m.clearedFields[aicapturesessionitem.FieldEntityID] = struct{}{}
+}
+
+// EntityIDCleared returns if the "entity_id" field was cleared in this mutation.
+func (m *AICaptureSessionItemMutation) EntityIDCleared() bool {
+	_, ok := m.clearedFields[aicapturesessionitem.FieldEntityID]
+	return ok
+}
+
+// ResetEntityID resets all changes to the "entity_id" field.
+func (m *AICaptureSessionItemMutation) ResetEntityID() {
+	m.entity_id = nil
+	delete(m.clearedFields, aicapturesessionitem.FieldEntityID)
+}
+
+// SetStatus sets the "status" field.
+func (m *AICaptureSessionItemMutation) SetStatus(a aicapturesessionitem.Status) {
+	m.status = &a
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *AICaptureSessionItemMutation) Status() (r aicapturesessionitem.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldStatus(ctx context.Context) (v aicapturesessionitem.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *AICaptureSessionItemMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetUploadedPhotoIds sets the "uploaded_photo_ids" field.
+func (m *AICaptureSessionItemMutation) SetUploadedPhotoIds(s string) {
+	m.uploaded_photo_ids = &s
+}
+
+// UploadedPhotoIds returns the value of the "uploaded_photo_ids" field in the mutation.
+func (m *AICaptureSessionItemMutation) UploadedPhotoIds() (r string, exists bool) {
+	v := m.uploaded_photo_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUploadedPhotoIds returns the old "uploaded_photo_ids" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldUploadedPhotoIds(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUploadedPhotoIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUploadedPhotoIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUploadedPhotoIds: %w", err)
+	}
+	return oldValue.UploadedPhotoIds, nil
+}
+
+// ResetUploadedPhotoIds resets all changes to the "uploaded_photo_ids" field.
+func (m *AICaptureSessionItemMutation) ResetUploadedPhotoIds() {
+	m.uploaded_photo_ids = nil
+}
+
+// SetErrorCode sets the "error_code" field.
+func (m *AICaptureSessionItemMutation) SetErrorCode(s string) {
+	m.error_code = &s
+}
+
+// ErrorCode returns the value of the "error_code" field in the mutation.
+func (m *AICaptureSessionItemMutation) ErrorCode() (r string, exists bool) {
+	v := m.error_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCode returns the old "error_code" field's value of the AICaptureSessionItem entity.
+// If the AICaptureSessionItem object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AICaptureSessionItemMutation) OldErrorCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCode: %w", err)
+	}
+	return oldValue.ErrorCode, nil
+}
+
+// ClearErrorCode clears the value of the "error_code" field.
+func (m *AICaptureSessionItemMutation) ClearErrorCode() {
+	m.error_code = nil
+	m.clearedFields[aicapturesessionitem.FieldErrorCode] = struct{}{}
+}
+
+// ErrorCodeCleared returns if the "error_code" field was cleared in this mutation.
+func (m *AICaptureSessionItemMutation) ErrorCodeCleared() bool {
+	_, ok := m.clearedFields[aicapturesessionitem.FieldErrorCode]
+	return ok
+}
+
+// ResetErrorCode resets all changes to the "error_code" field.
+func (m *AICaptureSessionItemMutation) ResetErrorCode() {
+	m.error_code = nil
+	delete(m.clearedFields, aicapturesessionitem.FieldErrorCode)
+}
+
+// ClearSession clears the "session" edge to the AICaptureSession entity.
+func (m *AICaptureSessionItemMutation) ClearSession() {
+	m.clearedsession = true
+	m.clearedFields[aicapturesessionitem.FieldSessionID] = struct{}{}
+}
+
+// SessionCleared reports if the "session" edge to the AICaptureSession entity was cleared.
+func (m *AICaptureSessionItemMutation) SessionCleared() bool {
+	return m.clearedsession
+}
+
+// SessionIDs returns the "session" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SessionID instead. It exists only for internal usage by the builders.
+func (m *AICaptureSessionItemMutation) SessionIDs() (ids []uuid.UUID) {
+	if id := m.session; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSession resets all changes to the "session" edge.
+func (m *AICaptureSessionItemMutation) ResetSession() {
+	m.session = nil
+	m.clearedsession = false
+}
+
+// Where appends a list predicates to the AICaptureSessionItemMutation builder.
+func (m *AICaptureSessionItemMutation) Where(ps ...predicate.AICaptureSessionItem) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the AICaptureSessionItemMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *AICaptureSessionItemMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.AICaptureSessionItem, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *AICaptureSessionItemMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *AICaptureSessionItemMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (AICaptureSessionItem).
+func (m *AICaptureSessionItemMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AICaptureSessionItemMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, aicapturesessionitem.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, aicapturesessionitem.FieldUpdatedAt)
+	}
+	if m.session != nil {
+		fields = append(fields, aicapturesessionitem.FieldSessionID)
+	}
+	if m.client_id != nil {
+		fields = append(fields, aicapturesessionitem.FieldClientID)
+	}
+	if m.entity_id != nil {
+		fields = append(fields, aicapturesessionitem.FieldEntityID)
+	}
+	if m.status != nil {
+		fields = append(fields, aicapturesessionitem.FieldStatus)
+	}
+	if m.uploaded_photo_ids != nil {
+		fields = append(fields, aicapturesessionitem.FieldUploadedPhotoIds)
+	}
+	if m.error_code != nil {
+		fields = append(fields, aicapturesessionitem.FieldErrorCode)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AICaptureSessionItemMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case aicapturesessionitem.FieldCreatedAt:
+		return m.CreatedAt()
+	case aicapturesessionitem.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case aicapturesessionitem.FieldSessionID:
+		return m.SessionID()
+	case aicapturesessionitem.FieldClientID:
+		return m.ClientID()
+	case aicapturesessionitem.FieldEntityID:
+		return m.EntityID()
+	case aicapturesessionitem.FieldStatus:
+		return m.Status()
+	case aicapturesessionitem.FieldUploadedPhotoIds:
+		return m.UploadedPhotoIds()
+	case aicapturesessionitem.FieldErrorCode:
+		return m.ErrorCode()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AICaptureSessionItemMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case aicapturesessionitem.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case aicapturesessionitem.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case aicapturesessionitem.FieldSessionID:
+		return m.OldSessionID(ctx)
+	case aicapturesessionitem.FieldClientID:
+		return m.OldClientID(ctx)
+	case aicapturesessionitem.FieldEntityID:
+		return m.OldEntityID(ctx)
+	case aicapturesessionitem.FieldStatus:
+		return m.OldStatus(ctx)
+	case aicapturesessionitem.FieldUploadedPhotoIds:
+		return m.OldUploadedPhotoIds(ctx)
+	case aicapturesessionitem.FieldErrorCode:
+		return m.OldErrorCode(ctx)
+	}
+	return nil, fmt.Errorf("unknown AICaptureSessionItem field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICaptureSessionItemMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case aicapturesessionitem.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case aicapturesessionitem.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case aicapturesessionitem.FieldSessionID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSessionID(v)
+		return nil
+	case aicapturesessionitem.FieldClientID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClientID(v)
+		return nil
+	case aicapturesessionitem.FieldEntityID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEntityID(v)
+		return nil
+	case aicapturesessionitem.FieldStatus:
+		v, ok := value.(aicapturesessionitem.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case aicapturesessionitem.FieldUploadedPhotoIds:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUploadedPhotoIds(v)
+		return nil
+	case aicapturesessionitem.FieldErrorCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCode(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AICaptureSessionItemMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AICaptureSessionItemMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AICaptureSessionItemMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AICaptureSessionItemMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(aicapturesessionitem.FieldEntityID) {
+		fields = append(fields, aicapturesessionitem.FieldEntityID)
+	}
+	if m.FieldCleared(aicapturesessionitem.FieldErrorCode) {
+		fields = append(fields, aicapturesessionitem.FieldErrorCode)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AICaptureSessionItemMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AICaptureSessionItemMutation) ClearField(name string) error {
+	switch name {
+	case aicapturesessionitem.FieldEntityID:
+		m.ClearEntityID()
+		return nil
+	case aicapturesessionitem.FieldErrorCode:
+		m.ClearErrorCode()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AICaptureSessionItemMutation) ResetField(name string) error {
+	switch name {
+	case aicapturesessionitem.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case aicapturesessionitem.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case aicapturesessionitem.FieldSessionID:
+		m.ResetSessionID()
+		return nil
+	case aicapturesessionitem.FieldClientID:
+		m.ResetClientID()
+		return nil
+	case aicapturesessionitem.FieldEntityID:
+		m.ResetEntityID()
+		return nil
+	case aicapturesessionitem.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case aicapturesessionitem.FieldUploadedPhotoIds:
+		m.ResetUploadedPhotoIds()
+		return nil
+	case aicapturesessionitem.FieldErrorCode:
+		m.ResetErrorCode()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AICaptureSessionItemMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.session != nil {
+		edges = append(edges, aicapturesessionitem.EdgeSession)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AICaptureSessionItemMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case aicapturesessionitem.EdgeSession:
+		if id := m.session; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AICaptureSessionItemMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AICaptureSessionItemMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AICaptureSessionItemMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedsession {
+		edges = append(edges, aicapturesessionitem.EdgeSession)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AICaptureSessionItemMutation) EdgeCleared(name string) bool {
+	switch name {
+	case aicapturesessionitem.EdgeSession:
+		return m.clearedsession
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AICaptureSessionItemMutation) ClearEdge(name string) error {
+	switch name {
+	case aicapturesessionitem.EdgeSession:
+		m.ClearSession()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AICaptureSessionItemMutation) ResetEdge(name string) error {
+	switch name {
+	case aicapturesessionitem.EdgeSession:
+		m.ResetSession()
+		return nil
+	}
+	return fmt.Errorf("unknown AICaptureSessionItem edge %s", name)
+}
 
 // APIKeyMutation represents an operation that mutates the APIKey nodes in the graph.
 type APIKeyMutation struct {
@@ -2664,6 +6237,9 @@ type EntityMutation struct {
 	attachments                 map[uuid.UUID]struct{}
 	removedattachments          map[uuid.UUID]struct{}
 	clearedattachments          bool
+	ai_capture_sessions         map[uuid.UUID]struct{}
+	removedai_capture_sessions  map[uuid.UUID]struct{}
+	clearedai_capture_sessions  bool
 	done                        bool
 	oldValue                    func(context.Context) (*Entity, error)
 	predicates                  []predicate.Entity
@@ -4273,6 +7849,60 @@ func (m *EntityMutation) ResetAttachments() {
 	m.removedattachments = nil
 }
 
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by ids.
+func (m *EntityMutation) AddAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.ai_capture_sessions == nil {
+		m.ai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.ai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAiCaptureSessions clears the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *EntityMutation) ClearAiCaptureSessions() {
+	m.clearedai_capture_sessions = true
+}
+
+// AiCaptureSessionsCleared reports if the "ai_capture_sessions" edge to the AICaptureSession entity was cleared.
+func (m *EntityMutation) AiCaptureSessionsCleared() bool {
+	return m.clearedai_capture_sessions
+}
+
+// RemoveAiCaptureSessionIDs removes the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (m *EntityMutation) RemoveAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.removedai_capture_sessions == nil {
+		m.removedai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.ai_capture_sessions, ids[i])
+		m.removedai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAiCaptureSessions returns the removed IDs of the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *EntityMutation) RemovedAiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AiCaptureSessionsIDs returns the "ai_capture_sessions" edge IDs in the mutation.
+func (m *EntityMutation) AiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.ai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAiCaptureSessions resets all changes to the "ai_capture_sessions" edge.
+func (m *EntityMutation) ResetAiCaptureSessions() {
+	m.ai_capture_sessions = nil
+	m.clearedai_capture_sessions = false
+	m.removedai_capture_sessions = nil
+}
+
 // Where appends a list predicates to the EntityMutation builder.
 func (m *EntityMutation) Where(ps ...predicate.Entity) {
 	m.predicates = append(m.predicates, ps...)
@@ -4929,7 +8559,7 @@ func (m *EntityMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EntityMutation) AddedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.group != nil {
 		edges = append(edges, entity.EdgeGroup)
 	}
@@ -4953,6 +8583,9 @@ func (m *EntityMutation) AddedEdges() []string {
 	}
 	if m.attachments != nil {
 		edges = append(edges, entity.EdgeAttachments)
+	}
+	if m.ai_capture_sessions != nil {
+		edges = append(edges, entity.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -5003,13 +8636,19 @@ func (m *EntityMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entity.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.ai_capture_sessions))
+		for id := range m.ai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EntityMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.removedchildren != nil {
 		edges = append(edges, entity.EdgeChildren)
 	}
@@ -5024,6 +8663,9 @@ func (m *EntityMutation) RemovedEdges() []string {
 	}
 	if m.removedattachments != nil {
 		edges = append(edges, entity.EdgeAttachments)
+	}
+	if m.removedai_capture_sessions != nil {
+		edges = append(edges, entity.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -5062,13 +8704,19 @@ func (m *EntityMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case entity.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.removedai_capture_sessions))
+		for id := range m.removedai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EntityMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.clearedgroup {
 		edges = append(edges, entity.EdgeGroup)
 	}
@@ -5093,6 +8741,9 @@ func (m *EntityMutation) ClearedEdges() []string {
 	if m.clearedattachments {
 		edges = append(edges, entity.EdgeAttachments)
 	}
+	if m.clearedai_capture_sessions {
+		edges = append(edges, entity.EdgeAiCaptureSessions)
+	}
 	return edges
 }
 
@@ -5116,6 +8767,8 @@ func (m *EntityMutation) EdgeCleared(name string) bool {
 		return m.clearedmaintenance_entries
 	case entity.EdgeAttachments:
 		return m.clearedattachments
+	case entity.EdgeAiCaptureSessions:
+		return m.clearedai_capture_sessions
 	}
 	return false
 }
@@ -5164,6 +8817,9 @@ func (m *EntityMutation) ResetEdge(name string) error {
 		return nil
 	case entity.EdgeAttachments:
 		m.ResetAttachments()
+		return nil
+	case entity.EdgeAiCaptureSessions:
+		m.ResetAiCaptureSessions()
 		return nil
 	}
 	return fmt.Errorf("unknown Entity edge %s", name)
@@ -9497,41 +13153,44 @@ func (m *ExportMutation) ResetEdge(name string) error {
 // GroupMutation represents an operation that mutates the Group nodes in the graph.
 type GroupMutation struct {
 	config
-	op                       Op
-	typ                      string
-	id                       *uuid.UUID
-	created_at               *time.Time
-	updated_at               *time.Time
-	name                     *string
-	currency                 *string
-	clearedFields            map[string]struct{}
-	users                    map[uuid.UUID]struct{}
-	removedusers             map[uuid.UUID]struct{}
-	clearedusers             bool
-	entity_types             map[uuid.UUID]struct{}
-	removedentity_types      map[uuid.UUID]struct{}
-	clearedentity_types      bool
-	entities                 map[uuid.UUID]struct{}
-	removedentities          map[uuid.UUID]struct{}
-	clearedentities          bool
-	tags                     map[uuid.UUID]struct{}
-	removedtags              map[uuid.UUID]struct{}
-	clearedtags              bool
-	invitation_tokens        map[uuid.UUID]struct{}
-	removedinvitation_tokens map[uuid.UUID]struct{}
-	clearedinvitation_tokens bool
-	notifiers                map[uuid.UUID]struct{}
-	removednotifiers         map[uuid.UUID]struct{}
-	clearednotifiers         bool
-	entity_templates         map[uuid.UUID]struct{}
-	removedentity_templates  map[uuid.UUID]struct{}
-	clearedentity_templates  bool
-	exports                  map[uuid.UUID]struct{}
-	removedexports           map[uuid.UUID]struct{}
-	clearedexports           bool
-	done                     bool
-	oldValue                 func(context.Context) (*Group, error)
-	predicates               []predicate.Group
+	op                         Op
+	typ                        string
+	id                         *uuid.UUID
+	created_at                 *time.Time
+	updated_at                 *time.Time
+	name                       *string
+	currency                   *string
+	clearedFields              map[string]struct{}
+	users                      map[uuid.UUID]struct{}
+	removedusers               map[uuid.UUID]struct{}
+	clearedusers               bool
+	entity_types               map[uuid.UUID]struct{}
+	removedentity_types        map[uuid.UUID]struct{}
+	clearedentity_types        bool
+	entities                   map[uuid.UUID]struct{}
+	removedentities            map[uuid.UUID]struct{}
+	clearedentities            bool
+	tags                       map[uuid.UUID]struct{}
+	removedtags                map[uuid.UUID]struct{}
+	clearedtags                bool
+	invitation_tokens          map[uuid.UUID]struct{}
+	removedinvitation_tokens   map[uuid.UUID]struct{}
+	clearedinvitation_tokens   bool
+	notifiers                  map[uuid.UUID]struct{}
+	removednotifiers           map[uuid.UUID]struct{}
+	clearednotifiers           bool
+	entity_templates           map[uuid.UUID]struct{}
+	removedentity_templates    map[uuid.UUID]struct{}
+	clearedentity_templates    bool
+	exports                    map[uuid.UUID]struct{}
+	removedexports             map[uuid.UUID]struct{}
+	clearedexports             bool
+	ai_capture_sessions        map[uuid.UUID]struct{}
+	removedai_capture_sessions map[uuid.UUID]struct{}
+	clearedai_capture_sessions bool
+	done                       bool
+	oldValue                   func(context.Context) (*Group, error)
+	predicates                 []predicate.Group
 }
 
 var _ ent.Mutation = (*GroupMutation)(nil)
@@ -10214,6 +13873,60 @@ func (m *GroupMutation) ResetExports() {
 	m.removedexports = nil
 }
 
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by ids.
+func (m *GroupMutation) AddAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.ai_capture_sessions == nil {
+		m.ai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.ai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAiCaptureSessions clears the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *GroupMutation) ClearAiCaptureSessions() {
+	m.clearedai_capture_sessions = true
+}
+
+// AiCaptureSessionsCleared reports if the "ai_capture_sessions" edge to the AICaptureSession entity was cleared.
+func (m *GroupMutation) AiCaptureSessionsCleared() bool {
+	return m.clearedai_capture_sessions
+}
+
+// RemoveAiCaptureSessionIDs removes the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (m *GroupMutation) RemoveAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.removedai_capture_sessions == nil {
+		m.removedai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.ai_capture_sessions, ids[i])
+		m.removedai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAiCaptureSessions returns the removed IDs of the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *GroupMutation) RemovedAiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AiCaptureSessionsIDs returns the "ai_capture_sessions" edge IDs in the mutation.
+func (m *GroupMutation) AiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.ai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAiCaptureSessions resets all changes to the "ai_capture_sessions" edge.
+func (m *GroupMutation) ResetAiCaptureSessions() {
+	m.ai_capture_sessions = nil
+	m.clearedai_capture_sessions = false
+	m.removedai_capture_sessions = nil
+}
+
 // Where appends a list predicates to the GroupMutation builder.
 func (m *GroupMutation) Where(ps ...predicate.Group) {
 	m.predicates = append(m.predicates, ps...)
@@ -10398,7 +14111,7 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.users != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -10422,6 +14135,9 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.exports != nil {
 		edges = append(edges, group.EdgeExports)
+	}
+	if m.ai_capture_sessions != nil {
+		edges = append(edges, group.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -10478,13 +14194,19 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.ai_capture_sessions))
+		for id := range m.ai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.removedusers != nil {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -10508,6 +14230,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedexports != nil {
 		edges = append(edges, group.EdgeExports)
+	}
+	if m.removedai_capture_sessions != nil {
+		edges = append(edges, group.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -10564,13 +14289,19 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.removedai_capture_sessions))
+		for id := range m.removedai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 8)
+	edges := make([]string, 0, 9)
 	if m.clearedusers {
 		edges = append(edges, group.EdgeUsers)
 	}
@@ -10595,6 +14326,9 @@ func (m *GroupMutation) ClearedEdges() []string {
 	if m.clearedexports {
 		edges = append(edges, group.EdgeExports)
 	}
+	if m.clearedai_capture_sessions {
+		edges = append(edges, group.EdgeAiCaptureSessions)
+	}
 	return edges
 }
 
@@ -10618,6 +14352,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearedentity_templates
 	case group.EdgeExports:
 		return m.clearedexports
+	case group.EdgeAiCaptureSessions:
+		return m.clearedai_capture_sessions
 	}
 	return false
 }
@@ -10657,6 +14393,9 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	case group.EdgeExports:
 		m.ResetExports()
+		return nil
+	case group.EdgeAiCaptureSessions:
+		m.ResetAiCaptureSessions()
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
@@ -15525,6 +19264,9 @@ type UserMutation struct {
 	notifiers                    map[uuid.UUID]struct{}
 	removednotifiers             map[uuid.UUID]struct{}
 	clearednotifiers             bool
+	ai_capture_sessions          map[uuid.UUID]struct{}
+	removedai_capture_sessions   map[uuid.UUID]struct{}
+	clearedai_capture_sessions   bool
 	done                         bool
 	oldValue                     func(context.Context) (*User, error)
 	predicates                   []predicate.User
@@ -16414,6 +20156,60 @@ func (m *UserMutation) ResetNotifiers() {
 	m.removednotifiers = nil
 }
 
+// AddAiCaptureSessionIDs adds the "ai_capture_sessions" edge to the AICaptureSession entity by ids.
+func (m *UserMutation) AddAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.ai_capture_sessions == nil {
+		m.ai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.ai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAiCaptureSessions clears the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *UserMutation) ClearAiCaptureSessions() {
+	m.clearedai_capture_sessions = true
+}
+
+// AiCaptureSessionsCleared reports if the "ai_capture_sessions" edge to the AICaptureSession entity was cleared.
+func (m *UserMutation) AiCaptureSessionsCleared() bool {
+	return m.clearedai_capture_sessions
+}
+
+// RemoveAiCaptureSessionIDs removes the "ai_capture_sessions" edge to the AICaptureSession entity by IDs.
+func (m *UserMutation) RemoveAiCaptureSessionIDs(ids ...uuid.UUID) {
+	if m.removedai_capture_sessions == nil {
+		m.removedai_capture_sessions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.ai_capture_sessions, ids[i])
+		m.removedai_capture_sessions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAiCaptureSessions returns the removed IDs of the "ai_capture_sessions" edge to the AICaptureSession entity.
+func (m *UserMutation) RemovedAiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AiCaptureSessionsIDs returns the "ai_capture_sessions" edge IDs in the mutation.
+func (m *UserMutation) AiCaptureSessionsIDs() (ids []uuid.UUID) {
+	for id := range m.ai_capture_sessions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAiCaptureSessions resets all changes to the "ai_capture_sessions" edge.
+func (m *UserMutation) ResetAiCaptureSessions() {
+	m.ai_capture_sessions = nil
+	m.clearedai_capture_sessions = false
+	m.removedai_capture_sessions = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -16773,7 +20569,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.groups != nil {
 		edges = append(edges, user.EdgeGroups)
 	}
@@ -16788,6 +20584,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.notifiers != nil {
 		edges = append(edges, user.EdgeNotifiers)
+	}
+	if m.ai_capture_sessions != nil {
+		edges = append(edges, user.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -16826,13 +20625,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.ai_capture_sessions))
+		for id := range m.ai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.removedgroups != nil {
 		edges = append(edges, user.EdgeGroups)
 	}
@@ -16847,6 +20652,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removednotifiers != nil {
 		edges = append(edges, user.EdgeNotifiers)
+	}
+	if m.removedai_capture_sessions != nil {
+		edges = append(edges, user.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -16885,13 +20693,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeAiCaptureSessions:
+		ids := make([]ent.Value, 0, len(m.removedai_capture_sessions))
+		for id := range m.removedai_capture_sessions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 5)
+	edges := make([]string, 0, 6)
 	if m.clearedgroups {
 		edges = append(edges, user.EdgeGroups)
 	}
@@ -16906,6 +20720,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearednotifiers {
 		edges = append(edges, user.EdgeNotifiers)
+	}
+	if m.clearedai_capture_sessions {
+		edges = append(edges, user.EdgeAiCaptureSessions)
 	}
 	return edges
 }
@@ -16924,6 +20741,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedapi_keys
 	case user.EdgeNotifiers:
 		return m.clearednotifiers
+	case user.EdgeAiCaptureSessions:
+		return m.clearedai_capture_sessions
 	}
 	return false
 }
@@ -16954,6 +20773,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeNotifiers:
 		m.ResetNotifiers()
+		return nil
+	case user.EdgeAiCaptureSessions:
+		m.ResetAiCaptureSessions()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

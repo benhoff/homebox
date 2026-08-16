@@ -79,6 +79,8 @@ const (
 	EdgeMaintenanceEntries = "maintenance_entries"
 	// EdgeAttachments holds the string denoting the attachments edge name in mutations.
 	EdgeAttachments = "attachments"
+	// EdgeAiCaptureSessions holds the string denoting the ai_capture_sessions edge name in mutations.
+	EdgeAiCaptureSessions = "ai_capture_sessions"
 	// Table holds the table name of the entity in the database.
 	Table = "entities"
 	// GroupTable is the table that holds the group relation/edge.
@@ -129,6 +131,13 @@ const (
 	AttachmentsInverseTable = "attachments"
 	// AttachmentsColumn is the table column denoting the attachments relation/edge.
 	AttachmentsColumn = "entity_attachments"
+	// AiCaptureSessionsTable is the table that holds the ai_capture_sessions relation/edge.
+	AiCaptureSessionsTable = "ai_capture_sessions"
+	// AiCaptureSessionsInverseTable is the table name for the AICaptureSession entity.
+	// It exists in this package in order to avoid circular dependency with the "aicapturesession" package.
+	AiCaptureSessionsInverseTable = "ai_capture_sessions"
+	// AiCaptureSessionsColumn is the table column denoting the ai_capture_sessions relation/edge.
+	AiCaptureSessionsColumn = "location_id"
 )
 
 // Columns holds all SQL columns for entity fields.
@@ -452,6 +461,20 @@ func ByAttachments(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAttachmentsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByAiCaptureSessionsCount orders the results by ai_capture_sessions count.
+func ByAiCaptureSessionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAiCaptureSessionsStep(), opts...)
+	}
+}
+
+// ByAiCaptureSessions orders the results by ai_capture_sessions terms.
+func ByAiCaptureSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAiCaptureSessionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newGroupStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -506,5 +529,12 @@ func newAttachmentsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AttachmentsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, AttachmentsTable, AttachmentsColumn),
+	)
+}
+func newAiCaptureSessionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AiCaptureSessionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AiCaptureSessionsTable, AiCaptureSessionsColumn),
 	)
 }

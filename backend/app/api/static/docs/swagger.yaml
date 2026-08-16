@@ -1,5 +1,41 @@
 basePath: /api
 definitions:
+  aicapturesession.Status:
+    enum:
+    - capturing
+    - capturing
+    - queued
+    - analyzing
+    - analysis_failed
+    - ready_for_review
+    - submitting
+    - completed
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusCapturing
+    - StatusQueued
+    - StatusAnalyzing
+    - StatusAnalysisFailed
+    - StatusReadyForReview
+    - StatusSubmitting
+    - StatusCompleted
+  aicapturesessionitem.Status:
+    enum:
+    - pending
+    - pending
+    - creating
+    - attaching
+    - completed
+    - failed
+    type: string
+    x-enum-varnames:
+    - DefaultStatus
+    - StatusPending
+    - StatusCreating
+    - StatusAttaching
+    - StatusCompleted
+    - StatusFailed
   attachment.Type:
     enum:
     - attachment
@@ -42,6 +78,194 @@ definitions:
         type: string
       symbol:
         type: string
+    type: object
+  ent.AICapturePhoto:
+    properties:
+      client_photo_id:
+        description: ClientPhotoID holds the value of the "client_photo_id" field.
+        type: string
+      content_hash:
+        description: ContentHash holds the value of the "content_hash" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.AICapturePhotoEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the AICapturePhotoQuery when eager-loading is set.
+      id:
+        description: ID of the ent.
+        type: string
+      mime_type:
+        description: MimeType holds the value of the "mime_type" field.
+        type: string
+      original_name:
+        description: OriginalName holds the value of the "original_name" field.
+        type: string
+      path:
+        description: Path holds the value of the "path" field.
+        type: string
+      position:
+        description: Position holds the value of the "position" field.
+        type: integer
+      session_id:
+        description: SessionID holds the value of the "session_id" field.
+        type: string
+      size_bytes:
+        description: SizeBytes holds the value of the "size_bytes" field.
+        type: integer
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+    type: object
+  ent.AICapturePhotoEdges:
+    properties:
+      session:
+        allOf:
+        - $ref: '#/definitions/ent.AICaptureSession'
+        description: Session holds the value of the session edge.
+    type: object
+  ent.AICaptureSession:
+    properties:
+      analysis_attempts:
+        description: AnalysisAttempts holds the value of the "analysis_attempts" field.
+        type: integer
+      analyzed_at:
+        description: AnalyzedAt holds the value of the "analyzed_at" field.
+        type: string
+      completed_at:
+        description: CompletedAt holds the value of the "completed_at" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      draft_json:
+        description: DraftJSON holds the value of the "draft_json" field.
+        type: string
+      draft_revision:
+        description: DraftRevision holds the value of the "draft_revision" field.
+        type: integer
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.AICaptureSessionEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the AICaptureSessionQuery when eager-loading is set.
+      error_code:
+        description: ErrorCode holds the value of the "error_code" field.
+        type: string
+      error_message:
+        description: ErrorMessage holds the value of the "error_message" field.
+        type: string
+      expires_at:
+        description: ExpiresAt holds the value of the "expires_at" field.
+        type: string
+      finished_at:
+        description: FinishedAt holds the value of the "finished_at" field.
+        type: string
+      group_id:
+        description: GroupID holds the value of the "group_id" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      location_id:
+        description: LocationID holds the value of the "location_id" field.
+        type: string
+      location_name_snapshot:
+        description: LocationNameSnapshot holds the value of the "location_name_snapshot"
+          field.
+        type: string
+      photo_count:
+        description: PhotoCount holds the value of the "photo_count" field.
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/aicapturesession.Status'
+        description: Status holds the value of the "status" field.
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      user_id:
+        description: UserID holds the value of the "user_id" field.
+        type: string
+      worker_lease_until:
+        description: WorkerLeaseUntil holds the value of the "worker_lease_until"
+          field.
+        type: string
+    type: object
+  ent.AICaptureSessionEdges:
+    properties:
+      group:
+        allOf:
+        - $ref: '#/definitions/ent.Group'
+        description: Group holds the value of the group edge.
+      items:
+        description: Items holds the value of the items edge.
+        items:
+          $ref: '#/definitions/ent.AICaptureSessionItem'
+        type: array
+      location:
+        allOf:
+        - $ref: '#/definitions/ent.Entity'
+        description: Location holds the value of the location edge.
+      photos:
+        description: Photos holds the value of the photos edge.
+        items:
+          $ref: '#/definitions/ent.AICapturePhoto'
+        type: array
+      user:
+        allOf:
+        - $ref: '#/definitions/ent.User'
+        description: User holds the value of the user edge.
+    type: object
+  ent.AICaptureSessionItem:
+    properties:
+      client_id:
+        description: ClientID holds the value of the "client_id" field.
+        type: string
+      created_at:
+        description: CreatedAt holds the value of the "created_at" field.
+        type: string
+      edges:
+        allOf:
+        - $ref: '#/definitions/ent.AICaptureSessionItemEdges'
+        description: |-
+          Edges holds the relations/edges for other nodes in the graph.
+          The values are being populated by the AICaptureSessionItemQuery when eager-loading is set.
+      entity_id:
+        description: EntityID holds the value of the "entity_id" field.
+        type: string
+      error_code:
+        description: ErrorCode holds the value of the "error_code" field.
+        type: string
+      id:
+        description: ID of the ent.
+        type: string
+      session_id:
+        description: SessionID holds the value of the "session_id" field.
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/aicapturesessionitem.Status'
+        description: Status holds the value of the "status" field.
+      updated_at:
+        description: UpdatedAt holds the value of the "updated_at" field.
+        type: string
+      uploaded_photo_ids:
+        description: UploadedPhotoIds holds the value of the "uploaded_photo_ids"
+          field.
+        type: string
+    type: object
+  ent.AICaptureSessionItemEdges:
+    properties:
+      session:
+        allOf:
+        - $ref: '#/definitions/ent.AICaptureSession'
+        description: Session holds the value of the session edge.
     type: object
   ent.APIKey:
     properties:
@@ -272,6 +496,12 @@ definitions:
     type: object
   ent.EntityEdges:
     properties:
+      ai_capture_sessions:
+        description: AiCaptureSessions holds the value of the ai_capture_sessions
+          edge.
+        items:
+          $ref: '#/definitions/ent.AICaptureSession'
+        type: array
       attachments:
         description: Attachments holds the value of the attachments edge.
         items:
@@ -564,6 +794,12 @@ definitions:
     type: object
   ent.GroupEdges:
     properties:
+      ai_capture_sessions:
+        description: AiCaptureSessions holds the value of the ai_capture_sessions
+          edge.
+        items:
+          $ref: '#/definitions/ent.AICaptureSession'
+        type: array
       entities:
         description: Entities holds the value of the entities edge.
         items:
@@ -915,6 +1151,12 @@ definitions:
     type: object
   ent.UserEdges:
     properties:
+      ai_capture_sessions:
+        description: AiCaptureSessions holds the value of the ai_capture_sessions
+          edge.
+        items:
+          $ref: '#/definitions/ent.AICaptureSession'
+        type: array
       api_keys:
         description: APIKeys holds the value of the api_keys edge.
         items:
@@ -2122,6 +2364,13 @@ definitions:
       value:
         type: number
     type: object
+  services.AICaptureCreatedItem:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
   services.AICaptureDraft:
     properties:
       items:
@@ -2149,6 +2398,10 @@ definitions:
         type: string
       needsReview:
         type: boolean
+      photoIds:
+        items:
+          type: string
+        type: array
       photoIndexes:
         items:
           type: integer
@@ -2161,6 +2414,73 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  services.AICaptureOption:
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+    type: object
+  services.AICaptureSessionOut:
+    properties:
+      analysisAttempts:
+        type: integer
+      analyzedAt:
+        type: string
+      completedAt:
+        type: string
+      createdAt:
+        type: string
+      createdItems:
+        items:
+          $ref: '#/definitions/services.AICaptureCreatedItem'
+        type: array
+      draft:
+        $ref: '#/definitions/services.AICaptureDraft'
+      draftRevision:
+        type: integer
+      errorCode:
+        type: string
+      errorMessage:
+        type: string
+      expiresAt:
+        type: string
+      finishedAt:
+        type: string
+      id:
+        type: string
+      location:
+        $ref: '#/definitions/services.AICaptureOption'
+      photoCount:
+        type: integer
+      photos:
+        items:
+          $ref: '#/definitions/services.AICaptureSessionPhoto'
+        type: array
+      status:
+        type: string
+      updatedAt:
+        type: string
+      uploadedPhotoCount:
+        type: integer
+    type: object
+  services.AICaptureSessionPhoto:
+    properties:
+      clientPhotoId:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      mimeType:
+        type: string
+      originalName:
+        type: string
+      position:
+        type: integer
+      sizeBytes:
+        type: integer
     type: object
   services.Latest:
     properties:
@@ -2372,6 +2692,13 @@ definitions:
           $ref: '#/definitions/repo.ExportOut'
         type: array
     type: object
+  v1.Results-services_AICaptureSessionOut:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/services.AICaptureSessionOut'
+        type: array
+    type: object
   v1.TelemetryStatus:
     properties:
       enabled:
@@ -2398,6 +2725,40 @@ definitions:
   v1.Wrapped:
     properties:
       item: {}
+    type: object
+  v1.aiCaptureSessionCorrection:
+    properties:
+      instruction:
+        type: string
+      revision:
+        type: integer
+    type: object
+  v1.aiCaptureSessionCreate:
+    properties:
+      locationId:
+        type: string
+    type: object
+  v1.aiCaptureSessionDraftUpdate:
+    properties:
+      draft:
+        $ref: '#/definitions/services.AICaptureDraft'
+      revision:
+        type: integer
+    type: object
+  v1.aiCaptureSessionFinish:
+    properties:
+      expectedPhotoCount:
+        type: integer
+    type: object
+  v1.aiCaptureSessionLocationUpdate:
+    properties:
+      locationId:
+        type: string
+    type: object
+  v1.aiCaptureSessionSubmit:
+    properties:
+      revision:
+        type: integer
     type: object
   v1.externalAttachmentRequest:
     properties:
@@ -2564,6 +2925,321 @@ paths:
       summary: Analyze inventory photos with an OpenAI-compatible vision model
       tags:
       - AI Capture
+  /v1/ai/capture/sessions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.Results-services_AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: List the current user's AI capture sessions
+      tags:
+      - AI Capture Sessions
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Selected location
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionCreate'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Create an AI capture session
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}:
+    delete:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Delete an AI capture session
+      tags:
+      - AI Capture Sessions
+    get:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Get an AI capture session
+      tags:
+      - AI Capture Sessions
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Replacement location
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionLocationUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Change an AI capture session location
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/corrections:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Correction instruction
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionCorrection'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Ask AI to correct a persisted capture draft
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/draft:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Draft and expected revision
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionDraftUpdate'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Save an edited AI capture draft
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/finish:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Expected uploaded count
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionFinish'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Seal an AI capture session and queue analysis
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/photos:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Normalized image
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Client idempotency UUID
+        in: formData
+        name: clientPhotoId
+        required: true
+        type: string
+      - description: Capture order
+        in: formData
+        name: position
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionPhoto'
+      security:
+      - Bearer: []
+      summary: Upload one photo to an AI capture session
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/photos/{photoId}:
+    delete:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Capture photo ID
+        in: path
+        name: photoId
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+      security:
+      - Bearer: []
+      summary: Delete a photo from a capturing session
+      tags:
+      - AI Capture Sessions
+    get:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Capture photo ID
+        in: path
+        name: photoId
+        required: true
+        type: string
+      produces:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+      security:
+      - Bearer: []
+      summary: Read an authorized AI capture session photo
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/retry-analysis:
+    post:
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Retry failed AI capture analysis
+      tags:
+      - AI Capture Sessions
+  /v1/ai/capture/sessions/{sessionId}/submit:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Capture session ID
+        in: path
+        name: sessionId
+        required: true
+        type: string
+      - description: Expected draft revision
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/v1.aiCaptureSessionSubmit'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/services.AICaptureSessionOut'
+      security:
+      - Bearer: []
+      summary: Create reviewed items from an AI capture session
+      tags:
+      - AI Capture Sessions
   /v1/assets/{id}:
     get:
       parameters:

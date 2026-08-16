@@ -95,9 +95,11 @@ type EntityEdges struct {
 	MaintenanceEntries []*MaintenanceEntry `json:"maintenance_entries,omitempty"`
 	// Attachments holds the value of the attachments edge.
 	Attachments []*Attachment `json:"attachments,omitempty"`
+	// AiCaptureSessions holds the value of the ai_capture_sessions edge.
+	AiCaptureSessions []*AICaptureSession `json:"ai_capture_sessions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [8]bool
+	loadedTypes [9]bool
 }
 
 // GroupOrErr returns the Group value or an error if the edge
@@ -176,6 +178,15 @@ func (e EntityEdges) AttachmentsOrErr() ([]*Attachment, error) {
 		return e.Attachments, nil
 	}
 	return nil, &NotLoadedError{edge: "attachments"}
+}
+
+// AiCaptureSessionsOrErr returns the AiCaptureSessions value or an error if the edge
+// was not loaded in eager-loading.
+func (e EntityEdges) AiCaptureSessionsOrErr() ([]*AICaptureSession, error) {
+	if e.loadedTypes[8] {
+		return e.AiCaptureSessions, nil
+	}
+	return nil, &NotLoadedError{edge: "ai_capture_sessions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -438,6 +449,11 @@ func (_m *Entity) QueryMaintenanceEntries() *MaintenanceEntryQuery {
 // QueryAttachments queries the "attachments" edge of the Entity entity.
 func (_m *Entity) QueryAttachments() *AttachmentQuery {
 	return NewEntityClient(_m.config).QueryAttachments(_m)
+}
+
+// QueryAiCaptureSessions queries the "ai_capture_sessions" edge of the Entity entity.
+func (_m *Entity) QueryAiCaptureSessions() *AICaptureSessionQuery {
+	return NewEntityClient(_m.config).QueryAiCaptureSessions(_m)
 }
 
 // Update returns a builder for updating this Entity.

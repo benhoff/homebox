@@ -4,6 +4,20 @@
         "continue": "Continue",
         "correction_applied": "AI correction applied. Review the changes before submitting.",
         "disabled_help": "AI capture is not enabled on this HomeBox server. An administrator must configure an OpenAI-compatible vision provider.",
+        "camera": {
+            "choose_photos": "Choose photos",
+            "fallback_help": "You can still use your phone's system camera or choose existing photos.",
+            "finish": "Finish",
+            "flash": "Toggle flash",
+            "https_required": "The continuous camera requires HTTPS on a phone.",
+            "photo_count": "{count} of {max} photos",
+            "shutter": "Take photo",
+            "switch": "Switch camera",
+            "unavailable": "The camera is unavailable or permission was denied.",
+            "upload": "Upload",
+            "upload_failed": "{count} photo upload failed.",
+            "uploading": "Uploading {count} photo(s)…"
+        },
         "done": {
             "capture_more": "Capture more items",
             "description": "Created {count} items in {location}, including their selected photos.",
@@ -12,19 +26,29 @@
         },
         "errors": {
             "analysis_failed": "The vision provider could not analyze these photos. Check the photos and try again.",
+            "create_session": "The capture session could not be created.",
+            "delete_photo": "The photo could not be removed.",
+            "delete_session": "The capture session could not be deleted.",
             "disabled": "AI capture is not enabled on this server.",
             "failed_items": "These items still need attention: {names}. Retrying will continue without duplicating items already created.",
             "items_required": "Add at least one item before submitting.",
             "location_required": "Select a location first.",
+            "load_session": "The capture session could not be loaded.",
             "partial_submit": "Some items or photos could not be saved. You can safely retry.",
+            "prepare_photo": "That photo could not be prepared. Try taking it again.",
             "photos_required": "Add at least one photo first.",
             "review_required": "Every item needs a name, positive quantity, and item type.",
             "rotate": "That photo could not be rotated.",
-            "too_many_photos": "You can analyze up to {count} photos at once. Extra photos were not added."
+            "save_draft": "Your edits could not be saved. Reload the session and try again.",
+            "finish_session": "The capture could not be finished. Your photos are still saved.",
+            "request_failed": "The request could not be completed.",
+            "too_many_photos": "You can analyze up to {count} photos at once. Extra photos were not added.",
+            "uploads_pending": "One or more photos did not upload. Retry them before finishing."
         },
         "location": {
             "description": "Search, browse the location tree, or scan a QR label.",
             "selected": "Selected location",
+            "start_camera": "Start capturing",
             "title": "Where do these items belong?"
         },
         "manual_item": "Added manually",
@@ -42,6 +66,12 @@
             "upload_label": "Upload existing photos"
         },
         "progress": "AI capture progress",
+        "processing": {
+            "description": "AI is identifying the visible items and filling the draft. This continues even if you leave this page.",
+            "failed": "The vision provider could not analyze this capture.",
+            "leave": "You can safely come back and review later.",
+            "retry": "Retry analysis"
+        },
         "review": {
             "add_item": "Add missing item",
             "ai_scope": "AI fills visual item details only. Add serial numbers, purchase information, warranty, insurance, asset IDs, and custom fields from the item page after creation.",
@@ -55,11 +85,35 @@
             "photos_button": "Photos",
             "photos_for_item": "Photos attached to this item",
             "retry": "Retry unfinished items",
+            "save_later": "Save for later",
+            "saved": "Draft saved. You can return later.",
             "saving_to": "Saving to",
             "submit": "Create {count} items",
             "title": "Review before creating",
             "undo": "Undo AI correction",
             "unnamed": "Unnamed item"
+        },
+        "sessions": {
+            "delete_confirm": "Delete this capture session and its temporary photos?",
+            "empty": "No capture sessions yet. Start one and take photos without leaving the camera.",
+            "items": "{count} suggested item(s)",
+            "location_removed": "Location removed",
+            "new": "New capture",
+            "new_description": "Choose a location, stay in the camera, and review the results whenever you are ready.",
+            "new_title": "Capture a group of items",
+            "open": "Open",
+            "photos": "{count} photo(s)",
+            "resume": "Resume camera",
+            "title": "Capture sessions"
+        },
+        "status": {
+            "analysis_failed": "Analysis failed",
+            "analyzing": "Analyzing",
+            "capturing": "Capturing",
+            "completed": "Completed",
+            "queued": "Waiting for AI",
+            "ready_for_review": "Ready to review",
+            "submitting": "Creating items"
         },
         "steps": {
             "done": "Done",
@@ -69,6 +123,7 @@
         },
         "submit_complete": "Created {count} inventory items.",
         "subtitle": "Photograph a group of items, let vision AI draft the details, then approve every change.",
+        "subtitle_sessions": "Capture continuously now, then review the AI draft when it suits you.",
         "title": "AI inventory capture"
     },
     "collection": {

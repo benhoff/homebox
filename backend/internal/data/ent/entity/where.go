@@ -1605,6 +1605,29 @@ func HasAttachmentsWith(preds ...predicate.Attachment) predicate.Entity {
 	})
 }
 
+// HasAiCaptureSessions applies the HasEdge predicate on the "ai_capture_sessions" edge.
+func HasAiCaptureSessions() predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AiCaptureSessionsTable, AiCaptureSessionsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAiCaptureSessionsWith applies the HasEdge predicate on the "ai_capture_sessions" edge with a given conditions (other predicates).
+func HasAiCaptureSessionsWith(preds ...predicate.AICaptureSession) predicate.Entity {
+	return predicate.Entity(func(s *sql.Selector) {
+		step := newAiCaptureSessionsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Entity) predicate.Entity {
 	return predicate.Entity(sql.AndPredicates(predicates...))

@@ -9,6 +9,42 @@ import (
 	"github.com/sysadminsmedia/homebox/backend/internal/data/ent"
 )
 
+// The AICapturePhotoFunc type is an adapter to allow the use of ordinary
+// function as AICapturePhoto mutator.
+type AICapturePhotoFunc func(context.Context, *ent.AICapturePhotoMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AICapturePhotoFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AICapturePhotoMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AICapturePhotoMutation", m)
+}
+
+// The AICaptureSessionFunc type is an adapter to allow the use of ordinary
+// function as AICaptureSession mutator.
+type AICaptureSessionFunc func(context.Context, *ent.AICaptureSessionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AICaptureSessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AICaptureSessionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AICaptureSessionMutation", m)
+}
+
+// The AICaptureSessionItemFunc type is an adapter to allow the use of ordinary
+// function as AICaptureSessionItem mutator.
+type AICaptureSessionItemFunc func(context.Context, *ent.AICaptureSessionItemMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AICaptureSessionItemFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.AICaptureSessionItemMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AICaptureSessionItemMutation", m)
+}
+
 // The APIKeyFunc type is an adapter to allow the use of ordinary
 // function as APIKey mutator.
 type APIKeyFunc func(context.Context, *ent.APIKeyMutation) (ent.Value, error)

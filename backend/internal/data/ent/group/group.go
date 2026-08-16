@@ -39,6 +39,8 @@ const (
 	EdgeEntityTemplates = "entity_templates"
 	// EdgeExports holds the string denoting the exports edge name in mutations.
 	EdgeExports = "exports"
+	// EdgeAiCaptureSessions holds the string denoting the ai_capture_sessions edge name in mutations.
+	EdgeAiCaptureSessions = "ai_capture_sessions"
 	// EdgeUserGroups holds the string denoting the user_groups edge name in mutations.
 	EdgeUserGroups = "user_groups"
 	// Table holds the table name of the group in the database.
@@ -97,6 +99,13 @@ const (
 	ExportsInverseTable = "exports"
 	// ExportsColumn is the table column denoting the exports relation/edge.
 	ExportsColumn = "group_id"
+	// AiCaptureSessionsTable is the table that holds the ai_capture_sessions relation/edge.
+	AiCaptureSessionsTable = "ai_capture_sessions"
+	// AiCaptureSessionsInverseTable is the table name for the AICaptureSession entity.
+	// It exists in this package in order to avoid circular dependency with the "aicapturesession" package.
+	AiCaptureSessionsInverseTable = "ai_capture_sessions"
+	// AiCaptureSessionsColumn is the table column denoting the ai_capture_sessions relation/edge.
+	AiCaptureSessionsColumn = "group_id"
 	// UserGroupsTable is the table that holds the user_groups relation/edge.
 	UserGroupsTable = "user_groups"
 	// UserGroupsInverseTable is the table name for the UserGroup entity.
@@ -286,6 +295,20 @@ func ByExports(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByAiCaptureSessionsCount orders the results by ai_capture_sessions count.
+func ByAiCaptureSessionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAiCaptureSessionsStep(), opts...)
+	}
+}
+
+// ByAiCaptureSessions orders the results by ai_capture_sessions terms.
+func ByAiCaptureSessions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAiCaptureSessionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserGroupsCount orders the results by user_groups count.
 func ByUserGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -353,6 +376,13 @@ func newExportsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ExportsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ExportsTable, ExportsColumn),
+	)
+}
+func newAiCaptureSessionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AiCaptureSessionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AiCaptureSessionsTable, AiCaptureSessionsColumn),
 	)
 }
 func newUserGroupsStep() *sqlgraph.Step {
